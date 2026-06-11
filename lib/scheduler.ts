@@ -31,6 +31,11 @@ export function startScheduler() {
       if (!due) return;
       const result = await syncMatches(db, now);
       lastSyncAt = now.getTime();
+      if (result.upserted > 0) {
+        console.log(
+          `[sync] ok: ${result.total} matches, ${result.upserted} upserted`,
+        );
+      }
       if (result.resultsChanged.length > 0) {
         console.log(
           `[sync] results changed for matches ${result.resultsChanged.join(", ")} — rebuilding scores`,
