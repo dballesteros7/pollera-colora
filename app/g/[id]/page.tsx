@@ -33,7 +33,11 @@ export default async function GroupPage({
       </p>
       {group.potNote && <p>Premio: {group.potNote}</p>}
 
-      {/* Phase 3-4: next matches to predict + leaderboard go here */}
+      <p>
+        <Link href={`/g/${group.id}/fixtures`}>Partidos y pronósticos →</Link>
+      </p>
+
+      {/* Phase 4: leaderboard goes here */}
       <h2>Participantes ({members.length})</h2>
       <ul>
         {members.map((m) => (
