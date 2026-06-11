@@ -38,6 +38,8 @@ export async function requestOtp(db: Db, rawEmail: string, now = new Date()) {
   }
 
   const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+  // send first — a failed delivery must not consume the rate limit
+  await sendOtpEmail(email, code);
   db.insert(otpCodes)
     .values({
       email,
@@ -45,8 +47,6 @@ export async function requestOtp(db: Db, rawEmail: string, now = new Date()) {
       expiresAt: new Date(now.getTime() + CODE_TTL_MS),
     })
     .run();
-
-  await sendOtpEmail(email, code);
   return { email };
 }
 
