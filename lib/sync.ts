@@ -17,17 +17,20 @@ const STATUS_RANK: Record<string, number> = {
 };
 const GUARD_BYPASS = new Set(["POSTPONED", "CANCELLED", "SUSPENDED"]);
 
-export function isRegression(
-  prev: { status: string; regHome: number | null; regAway: number | null },
-  next: { status: string; regHome: number | null; regAway: number | null },
-): boolean {
+type ResultFields = {
+  status: string;
+  regHome?: number | null;
+  regAway?: number | null;
+};
+
+export function isRegression(prev: ResultFields, next: ResultFields): boolean {
   if (GUARD_BYPASS.has(next.status)) return false;
   const prevRank = STATUS_RANK[prev.status] ?? 0;
   const nextRank = STATUS_RANK[next.status] ?? 0;
   if (nextRank < prevRank) return true;
   // never wipe a known score with nulls
-  if (prev.regHome !== null && next.regHome === null) return true;
-  if (prev.regAway !== null && next.regAway === null) return true;
+  if (prev.regHome != null && next.regHome == null) return true;
+  if (prev.regAway != null && next.regAway == null) return true;
   return false;
 }
 
