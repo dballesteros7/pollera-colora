@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getUserGroups } from "@/lib/groups";
 import { logout } from "./login/actions";
 import { setDisplayName } from "./actions";
 
@@ -35,11 +37,27 @@ export default async function Home() {
     );
   }
 
+  const memberships = getUserGroups(getDb(), user.id);
+
   return (
     <main>
       <h1>Hola, {user.displayName}</h1>
-      {/* Phase 2: list of the user's pollas + create button goes here */}
-      <p>Tus pollas aparecerán aquí.</p>
+      <h2>Tus pollas</h2>
+      {memberships.length === 0 ? (
+        <p>Aún no estás en ninguna polla.</p>
+      ) : (
+        <ul>
+          {memberships.map(({ group, role }) => (
+            <li key={group.id}>
+              <Link href={`/g/${group.id}`}>{group.name}</Link>
+              {role === "organizer" && " — organizas"}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p>
+        <Link href="/g/new">Crear una polla</Link>
+      </p>
       <form action={logout}>
         <button type="submit">Salir</button>
       </form>
