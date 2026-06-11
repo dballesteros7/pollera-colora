@@ -38,6 +38,8 @@ export default async function GroupPage({
         <Link href={`/g/${group.id}/fixtures`}>Partidos y pronósticos →</Link>
         {" · "}
         <Link href={`/g/${group.id}/bonus`}>Campeón, goleador y más →</Link>
+        {" · "}
+        <Link href={`/g/${group.id}/props`}>Preguntas del parche →</Link>
       </p>
 
       <h2>Tabla</h2>
