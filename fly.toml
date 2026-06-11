@@ -1,0 +1,24 @@
+# fly launch was pre-configured by hand; `fly deploy` is all that's needed.
+app = "pollera-colora"
+primary_region = "mia"
+
+[build]
+
+[env]
+  DATABASE_PATH = "/data/polla.db"
+
+[mounts]
+  source = "polla_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # the poller must keep running between requests — never scale to zero
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
