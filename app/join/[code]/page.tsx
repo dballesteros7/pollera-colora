@@ -34,7 +34,7 @@ export default async function JoinPage({
             <span className="pc-empty__art">🤔</span>
             <span className="pc-empty__title">Enlace inválido</span>
             <p className="pc-empty__body">
-              Este enlace no existe o fue regenerado. Pedile uno nuevo a quien
+              Este enlace no existe o fue regenerado. Pídale uno nuevo a quien
               organiza la polla.
             </p>
           </div>
@@ -65,12 +65,12 @@ export default async function JoinPage({
             borderRadius: "var(--radius-xl)",
           }}
         >
-          <span className="eyebrow">Te invitaron a la polla</span>
+          <span className="eyebrow">Le guardaron puesto en la polla</span>
           <h1 style={{ margin: 0 }}>{group.name}</h1>
           {organizer?.displayName && (
             <p style={{ color: "var(--ink-soft)", margin: 0 }}>
               Organiza <b>{organizer.displayName}</b>
-              {group.potNote && <> · pozo: {group.potNote}</>}
+              {group.potNote && <> · vaca: {group.potNote}</>}
             </p>
           )}
 
@@ -103,7 +103,7 @@ export default async function JoinPage({
             <form action={joinGroupAction} style={{ width: "100%" }}>
               <input type="hidden" name="code" value={group.inviteCode} />
               <button type="submit" className="pc-btn pc-btn--sticker pc-btn--block pc-btn--lg">
-                ¡Unirme al parche!
+                ¡Hágale, me uno al parche!
               </button>
             </form>
           ) : (
@@ -111,14 +111,14 @@ export default async function JoinPage({
               href={`/login?next=${encodeURIComponent(`/join/${code}`)}`}
               className="pc-btn pc-btn--sticker pc-btn--block pc-btn--lg"
             >
-              ¡Unirme al parche!
+              ¡Hágale, me uno al parche!
             </Link>
           )}
           <p className="pc-hint" style={{ margin: 0 }}>
             {user ? (
-              <>Vas como <b>{user.email}</b>. </>
+              <>Va como <b>{user.email}</b>. </>
             ) : (
-              <>Primero entrás con tu correo. </>
+              <>Primero entre con su correo. </>
             )}
             No se mueve plata por la app.
           </p>

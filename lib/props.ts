@@ -119,13 +119,13 @@ export function answerQuestion(
     throw new PropStateError("La respuesta debe ser un número.");
   }
   if (q.answerType === "boolean" && !["si", "no"].includes(value)) {
-    throw new PropStateError("Responde sí o no.");
+    throw new PropStateError("Responda sí o no.");
   }
   if (
     q.answerType === "choice" &&
     !(q.options as string[]).includes(value)
   ) {
-    throw new PropStateError("Elige una de las opciones.");
+    throw new PropStateError("Elija una de las opciones.");
   }
 
   return db

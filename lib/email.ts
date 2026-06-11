@@ -1,7 +1,7 @@
 // Login-code delivery via Resend's REST API; falls back to console logging
 // in development so auth works before the Resend account exists.
 
-const FROM = process.env.EMAIL_FROM ?? "Pollera Colora <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "Pollera Colorá <onboarding@resend.dev>";
 
 export async function sendOtpEmail(email: string, code: string) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -19,8 +19,8 @@ export async function sendOtpEmail(email: string, code: string) {
     body: JSON.stringify({
       from: FROM,
       to: [email],
-      subject: `${code} es tu código — Pollera Colora`,
-      text: `Tu código de ingreso es: ${code}\n\nVence en 10 minutos. Si no lo pediste, ignora este correo.`,
+      subject: `${code} es su código — Pollera Colorá`,
+      text: `Su código de ingreso es: ${code}\n\nVence en 10 minutos. Si usted no lo pidió, ignore este correo.`,
     }),
   });
   if (!res.ok) {

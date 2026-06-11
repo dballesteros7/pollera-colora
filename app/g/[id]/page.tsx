@@ -79,7 +79,7 @@ export default async function GroupPage({
             <span className="pc-empty__art">🏆</span>
             <span className="pc-empty__title">La tabla arranca en ceros</span>
             <p className="pc-empty__body">
-              Invitá al parche y metan sus pronósticos antes del pitazo.
+              Invite al parche y metan sus pronósticos antes del pitazo.
             </p>
           </div>
         ) : (
@@ -119,7 +119,7 @@ export default async function GroupPage({
           <span className="pc-badge">{preset.name}{rules.unicoAcertado ? " · único acertado" : ""}</span>
           {group.potNote && (
             <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <Trophy size={15} style={{ color: "var(--amarillo-deep)" }} aria-hidden /> Pozo: {group.potNote}
+              <Trophy size={15} style={{ color: "var(--amarillo-deep)" }} aria-hidden /> Vaca: {group.potNote}
             </span>
           )}
         </div>
@@ -139,7 +139,7 @@ export default async function GroupPage({
           <Link href={`/g/${group.id}/props`} className="pc-card pc-quicklink">
             <span className="pc-quicklink__icon"><ListChecks size={22} aria-hidden /></span>
             <span className="pc-quicklink__text">
-              <span className="pc-quicklink__label">Props del parche</span>
+              <span className="pc-quicklink__label">Preguntas del parche</span>
               <span className="pc-quicklink__sub">Las preguntas que propone el grupo</span>
             </span>
             {openProps > 0 && <span className="pc-badge">{openProps}</span>}
@@ -151,9 +151,9 @@ export default async function GroupPage({
               <span className="pc-quicklink__label">Bonus: campeón y goleador</span>
               <span className="pc-quicklink__sub">
                 {bonusClosed
-                  ? "Cerrados — mirá los del parche"
+                  ? "Cerrados — mire los del parche"
                   : group.bonusLockAt
-                    ? "Cierran pronto, no te duermas"
+                    ? "Cierran pronto, ¡pilas!"
                     : "Abiertos"}
               </span>
             </span>
@@ -167,7 +167,7 @@ export default async function GroupPage({
         </div>
 
         <p className="pc-hint" style={{ display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
-          <LinkIcon size={14} aria-hidden /> Invitá con este enlace:{" "}
+          <LinkIcon size={14} aria-hidden /> Invite con este enlace:{" "}
           <code className="num">/join/{group.inviteCode}</code>
         </p>
       </main>

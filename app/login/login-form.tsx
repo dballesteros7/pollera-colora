@@ -18,7 +18,7 @@ export function LoginForm({ next }: { next?: string }) {
       <form action={formAction} className="pc-card pc-card--pad-lg pc-flow">
         <div className="pc-field">
           <label className="pc-label" htmlFor="login-email">
-            Tu correo
+            Su correo
           </label>
           <input
             id="login-email"
@@ -35,7 +35,7 @@ export function LoginForm({ next }: { next?: string }) {
           className="pc-btn pc-btn--primary pc-btn--block"
           disabled={pending}
         >
-          {pending ? "Enviando…" : "Mandar código"}
+          {pending ? "Enviando…" : "Mándeme el código"}
           {!pending && <ArrowRight size={18} aria-hidden />}
         </button>
         {state.error && (
@@ -44,7 +44,7 @@ export function LoginForm({ next }: { next?: string }) {
           </p>
         )}
         <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
-          Te llega un código de 6 dígitos. Sin contraseñas.
+          Le llega un código de 6 dígitos. Sin contraseñas.
         </p>
       </form>
     );
@@ -73,7 +73,7 @@ export function LoginForm({ next }: { next?: string }) {
           required
           autoFocus
         />
-        <span className="pc-hint">Te lo mandamos al correo</span>
+        <span className="pc-hint">Se lo mandamos al correo</span>
       </div>
       <button
         type="submit"

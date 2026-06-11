@@ -59,7 +59,7 @@ export default async function BonusPage({
               ? locked
                 ? "Ya cerraron — estos son los del parche."
                 : `Cierran el ${deadlineFormat.format(group.bonusLockAt)} (hora colombiana).`
-              : "Quien organiza todavía no fija el cierre."}
+              : "Quien organiza todavía no ha fijado el cierre."}
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export default async function BonusPage({
               Guardar pronósticos
             </button>
             <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
-              Podés cambiarlos hasta el cierre.
+              Puede cambiarlos hasta el cierre.
             </p>
           </form>
         )}

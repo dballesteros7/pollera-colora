@@ -97,7 +97,7 @@ export default async function FixturesPage({
           <span className="eyebrow">{group.name}</span>
           <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Partidos</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
-            Hora colombiana. Podés cambiar tu pronóstico hasta el pitazo.
+            Hora colombiana. Puede cambiar su pronóstico hasta el pitazo.
           </p>
         </div>
 
@@ -209,13 +209,13 @@ export default async function FixturesPage({
                       {state !== "tbd" && (
                         <div className="pc-match__pick">
                           <span>
-                            Tu pronóstico:{" "}
+                            Su pronóstico:{" "}
                             {pred ? (
                               <b className="pc-pick">
                                 {pred.predHome}–{pred.predAway}
                               </b>
                             ) : (
-                              "no marcaste — pailas"
+                              "no marcó — pailas"
                             )}
                             {pred?.joker && (
                               <span className="pc-badge pc-badge--comodin" style={{ marginLeft: 8 }}>

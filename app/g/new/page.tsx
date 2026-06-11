@@ -12,7 +12,7 @@ export default async function NewGroupPage() {
       <main className="page pc-flow">
         <div>
           <span className="eyebrow">Nueva polla</span>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Armá tu polla</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Arme su polla</h1>
         </div>
 
         <form action={createGroupAction} className="pc-card pc-card--pad-lg pc-flow">
@@ -48,7 +48,7 @@ export default async function NewGroupPage() {
               <span>
                 <span className="pc-option__title">Único acertado</span>
                 <span className="pc-option__desc">
-                  +5 si solo vos pegás el marcador exacto
+                  +5 si solo usted pega el marcador exacto
                 </span>
               </span>
             </label>
@@ -56,19 +56,19 @@ export default async function NewGroupPage() {
 
           <div className="pc-field">
             <label className="pc-label" htmlFor="pot-note">
-              Pozo <span className="pc-hint">(opcional — la plata va por fuera de la app)</span>
+              La vaca <span className="pc-hint">(opcional — la plata va por fuera de la app)</span>
             </label>
             <input
               id="pot-note"
               className="pc-input"
               name="potNote"
-              placeholder="$50.000 entrada · 70/20/10"
+              placeholder="$50.000 por cabeza · 70/20/10"
               maxLength={200}
             />
           </div>
 
           <button type="submit" className="pc-btn pc-btn--sticker pc-btn--block pc-btn--lg">
-            ¡Crear la polla!
+            ¡Armar la polla!
           </button>
         </form>
       </main>

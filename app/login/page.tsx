@@ -25,7 +25,7 @@ export default async function LoginPage({
               está servida
             </h1>
             <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
-              Entrá al parche y armá tus pronósticos.
+              Entre al parche y arme sus pronósticos.
             </p>
           </div>
         </div>

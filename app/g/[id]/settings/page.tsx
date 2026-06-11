@@ -48,7 +48,7 @@ export default async function GroupSettingsPage({
         </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>Pozo</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>La vaca</h2>
           <form action={updatePotNoteAction} className="pc-page-actions">
             <input type="hidden" name="groupId" value={group.id} />
             <input
@@ -57,7 +57,7 @@ export default async function GroupSettingsPage({
               name="potNote"
               maxLength={200}
               defaultValue={group.potNote ?? ""}
-              placeholder="$50.000 entrada · 70/20/10"
+              placeholder="$50.000 por cabeza · 70/20/10"
             />
             <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
               Guardar

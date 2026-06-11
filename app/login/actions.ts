@@ -17,7 +17,7 @@ export async function sendCode(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "");
   if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-    return { step: "email", error: "Ingresa un correo válido." };
+    return { step: "email", error: "Ingrese un correo válido." };
   }
   try {
     const { email: normalized } = await requestOtp(getDb(), email);
@@ -26,13 +26,13 @@ export async function sendCode(
     if (err instanceof OtpRateLimitError) {
       return {
         step: "email",
-        error: "Demasiados códigos pedidos. Espera unos minutos.",
+        error: "Demasiados códigos pedidos. Espere unos minutos.",
       };
     }
     console.error("[auth] sending code failed:", err);
     return {
       step: "email",
-      error: "No pudimos enviar el código. Intenta de nuevo.",
+      error: "No pudimos mandar el código. Intente de nuevo.",
     };
   }
 }
@@ -50,7 +50,7 @@ export async function checkCode(
       email,
       error:
         result.reason === "expired"
-          ? "El código venció. Pide uno nuevo."
+          ? "El código venció. Pida uno nuevo."
           : "Código incorrecto.",
     };
   }

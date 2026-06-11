@@ -61,7 +61,7 @@ export default async function PropsPage({
       <main className="page pc-flow" style={{ gap: "var(--space-6)" }}>
         <div>
           <span className="eyebrow">{group.name}</span>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Props del parche</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Preguntas del parche</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
             Las preguntas las propone el grupo y las resuelve quien organiza.
           </p>
@@ -73,7 +73,7 @@ export default async function PropsPage({
             <div className="pc-card pc-empty">
               <span className="pc-empty__art">🎤</span>
               <span className="pc-empty__title">Nada abierto por ahora</span>
-              <p className="pc-empty__body">Proponé una pregunta abajo — la que sea.</p>
+              <p className="pc-empty__body">Proponga una pregunta abajo — la que sea.</p>
             </div>
           )}
           {open.map(({ q, proposerName }) => (
@@ -100,7 +100,7 @@ export default async function PropsPage({
                 </form>
                 {mine.has(q.id) && (
                   <p className="pc-saved" style={{ margin: 0 }}>
-                    Tu respuesta: {mine.get(q.id)} — podés cambiarla hasta el cierre.
+                    Su respuesta: {mine.get(q.id)} — puede cambiarla hasta el cierre.
                   </p>
                 )}
               </div>
@@ -213,7 +213,7 @@ export default async function PropsPage({
 
         <section className="pc-card pc-card--pad-lg pc-flow">
           <div>
-            <h2 style={{ fontSize: 18, marginBottom: 4 }}>Proponé una pregunta</h2>
+            <h2 style={{ fontSize: 18, marginBottom: 4 }}>Proponga una pregunta</h2>
             <p className="pc-hint" style={{ margin: 0 }}>
               La que sea: “¿cuántos bailes de salsa choke?”, “¿llora el
               comentarista si gana Colombia?”
@@ -262,7 +262,7 @@ export default async function PropsPage({
               </div>
             </div>
             <button type="submit" className="pc-btn pc-btn--accent pc-btn--block">
-              Proponer al parche
+              Mandársela al parche
             </button>
           </form>
         </section>
@@ -290,7 +290,7 @@ function AnswerInput({
         style={{ width: 110 }}
         required
         defaultValue={current ?? ""}
-        aria-label="Tu respuesta"
+        aria-label="Su respuesta"
       />
     );
   }
@@ -311,7 +311,7 @@ function AnswerInput({
   return (
     <select name="value" className="pc-input" style={{ flex: 1, minWidth: 140 }} required defaultValue={current ?? ""}>
       <option value="" disabled>
-        Elegí…
+        Elija…
       </option>
       {options.map((o) => (
         <option key={o} value={o}>

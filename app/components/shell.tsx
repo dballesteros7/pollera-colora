@@ -29,7 +29,7 @@ export function Header({ children }: { children?: React.ReactNode }) {
 const TABS = [
   { href: "", icon: Trophy, label: "Tabla" },
   { href: "/fixtures", icon: CalendarDays, label: "Partidos" },
-  { href: "/props", icon: ListChecks, label: "Props" },
+  { href: "/props", icon: ListChecks, label: "Preguntas" },
   { href: "/bonus", icon: Star, label: "Bonus" },
 ] as const;
 

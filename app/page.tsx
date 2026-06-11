@@ -25,13 +25,13 @@ export default async function Home() {
                 está servida
               </h1>
               <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
-                La polla del Mundial 2026 para tu parche. Pronósticos,
-                preguntas del grupo y la tabla para pelear.
+                La polla del Mundial 2026 para el parche. Pronósticos,
+                preguntas del parche y la tabla para pelear.
               </p>
             </div>
           </div>
           <Link href="/login" className="pc-btn pc-btn--primary pc-btn--block pc-btn--lg">
-            Entrar con tu correo
+            Entrar con su correo
           </Link>
           <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
             Sin contraseñas. No se mueve plata por la app.
@@ -48,9 +48,9 @@ export default async function Home() {
         <div className="pc-hero-shell__center">
           <div className="pc-hero-head">
             <Image src="/emblem.svg" alt="" width={56} height={56} />
-            <h1 style={{ margin: 0 }}>¡Llegaste!</h1>
+            <h1 style={{ margin: 0 }}>¡Quiubo!</h1>
             <p style={{ color: "var(--ink-soft)", margin: 0 }}>
-              ¿Cómo te llamamos en las pollas?
+              ¿Cómo le decimos en las pollas?
             </p>
           </div>
           <form action={setDisplayName} className="pc-card pc-card--pad-lg pc-flow">
@@ -62,7 +62,7 @@ export default async function Home() {
                 id="displayName"
                 className="pc-input"
                 name="displayName"
-                placeholder="Como te dice el parche"
+                placeholder="Como le dicen en el parche"
                 required
                 minLength={2}
                 maxLength={40}
@@ -92,15 +92,15 @@ export default async function Home() {
       <main className="page pc-flow">
         <div>
           <span className="eyebrow">Hola, {user.displayName}</span>
-          <h1 style={{ margin: "2px 0 0" }}>Tus pollas</h1>
+          <h1 style={{ margin: "2px 0 0" }}>Sus pollas</h1>
         </div>
 
         {memberships.length === 0 ? (
           <div className="pc-card pc-empty">
             <span className="pc-empty__art">⚽</span>
-            <span className="pc-empty__title">Todavía no estás en ninguna</span>
+            <span className="pc-empty__title">Todavía no está en ninguna</span>
             <p className="pc-empty__body">
-              Armá tu propia polla o pedile el enlace a quien organiza la del
+              Arme su propia polla o pídale el enlace a quien organiza la del
               parche.
             </p>
           </div>
@@ -114,7 +114,7 @@ export default async function Home() {
                 <span className="pc-quicklink__text">
                   <span className="pc-quicklink__label">{group.name}</span>
                   <span className="pc-quicklink__sub">
-                    {role === "organizer" ? "Organizás esta polla" : "Sos del parche"}
+                    {role === "organizer" ? "Usted organiza esta polla" : "Es del parche"}
                   </span>
                 </span>
                 <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
