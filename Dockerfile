@@ -2,7 +2,8 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# lockfile is written by npm 11; npm 10 (bundled with node 22) misreads its optional deps
+RUN npm install -g npm@11 && npm ci
 COPY . .
 RUN npm run build
 

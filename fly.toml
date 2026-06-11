@@ -1,6 +1,6 @@
 # fly launch was pre-configured by hand; `fly deploy` is all that's needed.
 app = "pollera-colora"
-primary_region = "mia"
+primary_region = "iad"
 
 [build]
 
