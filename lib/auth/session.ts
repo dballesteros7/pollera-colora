@@ -7,6 +7,25 @@ import { sessions, users } from "../db/schema";
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 export const SESSION_COOKIE = "polla_session";
 
+// comma-separated emails granted app admin (set via Fly secrets)
+function isConfiguredAdmin(email: string): boolean {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(email.toLowerCase());
+}
+
+function ensureAdminFlag<T extends { id: string; email: string; isAdmin: boolean }>(
+  user: T,
+): T {
+  if (!user.isAdmin && isConfiguredAdmin(user.email)) {
+    getDb().update(users).set({ isAdmin: true }).where(eq(users.id, user.id)).run();
+    return { ...user, isAdmin: true };
+  }
+  return user;
+}
+
 export async function createSessionForEmail(email: string) {
   const db = getDb();
   const now = new Date();
@@ -37,7 +56,7 @@ export async function createSessionForEmail(email: string) {
     maxAge: SESSION_TTL_MS / 1000,
     path: "/",
   });
-  return user;
+  return ensureAdminFlag(user);
 }
 
 export async function getCurrentUser() {
@@ -57,7 +76,8 @@ export async function getCurrentUser() {
     db.delete(sessions).where(eq(sessions.id, token)).run();
     return null;
   }
-  return row.user;
+  // existing sessions pick up ADMIN_EMAILS grants without re-login
+  return ensureAdminFlag(row.user);
 }
 
 export async function destroySession() {
