@@ -9,6 +9,7 @@ import {
   propQuestions,
   propAnswers,
 } from "../db/schema";
+import { getGroupBonusPicks, getOutcomes } from "../bonus";
 import { PRESETS, parseScoringRules, type PresetDef } from "./presets";
 
 export interface MatchResult {
@@ -195,15 +196,36 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
     }
   }
 
+  // tournament bonus picks vs real outcomes (entered by app admin)
+  const outcomes = getOutcomes(db);
+  const bonusByUser = new Map<string, number>();
+  if (outcomes.size > 0) {
+    for (const pick of getGroupBonusPicks(db, groupId)) {
+      if (!totals.has(pick.userId)) continue;
+      const real = outcomes.get(pick.category);
+      if (
+        real &&
+        real.trim().toLowerCase() === pick.value.trim().toLowerCase()
+      ) {
+        bonusByUser.set(
+          pick.userId,
+          (bonusByUser.get(pick.userId) ?? 0) +
+            preset.bonusPoints[pick.category],
+        );
+      }
+    }
+  }
+
   for (const m of members) {
     const t = totals.get(m.userId)!;
     const props = propPoints.get(m.userId) ?? 0;
+    const bonus = bonusByUser.get(m.userId) ?? 0;
     db.insert(scores)
       .values({
         userId: m.userId,
         groupId,
         pointsMatches: t.points,
-        pointsBonus: 0, // Phase 5: tournament bonus picks
+        pointsBonus: bonus,
         pointsProps: props,
         exactCount: t.exact,
         resultCount: t.result,
@@ -213,6 +235,7 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
         target: [scores.userId, scores.groupId],
         set: {
           pointsMatches: t.points,
+          pointsBonus: bonus,
           pointsProps: props,
           exactCount: t.exact,
           resultCount: t.result,

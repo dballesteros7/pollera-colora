@@ -8,6 +8,13 @@
       "when": 1781200334258,
       "tag": "0000_minor_harpoon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781201094772,
+      "tag": "0001_yielding_spyke",
+      "breakpoints": true
     }
   ]
 }

@@ -181,6 +181,15 @@ export const propAnswers = sqliteTable(
   (t) => [uniqueIndex("prop_answers_question_user").on(t.questionId, t.userId)],
 );
 
+// real tournament outcomes, entered by the app admin as they become known
+export const tournamentOutcomes = sqliteTable("tournament_outcomes", {
+  category: text("category", {
+    enum: ["champion", "runner_up", "third", "top_scorer", "best_gk"],
+  }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 // cache, rebuilt whenever results change
 export const scores = sqliteTable(
   "scores",
