@@ -37,7 +37,7 @@ export default async function GroupSettingsPage({
         <section className="pc-card pc-card--pad-lg pc-flow">
           <h2 style={{ fontSize: 18, margin: 0 }}>Enlace de invitación</h2>
           <p style={{ margin: 0 }}>
-            <code className="num">/join/{group.inviteCode}</code>
+            <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
           </p>
           <form action={regenerateCodeAction}>
             <input type="hidden" name="groupId" value={group.id} />

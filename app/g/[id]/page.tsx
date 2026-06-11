@@ -168,7 +168,7 @@ export default async function GroupPage({
 
         <p className="pc-hint" style={{ display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
           <LinkIcon size={14} aria-hidden /> Invite con este enlace:{" "}
-          <code className="num">/join/{group.inviteCode}</code>
+          <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
         </p>
       </main>
       <GroupTabs groupId={group.id} active="home" />
