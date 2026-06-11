@@ -1,7 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
+import { ChevronRight, Plus, LogOut, Crown } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUserGroups } from "@/lib/groups";
+import { Header } from "@/app/components/shell";
 import { logout } from "./login/actions";
 import { setDisplayName } from "./actions";
 
@@ -10,29 +13,67 @@ export default async function Home() {
 
   if (!user) {
     return (
-      <main>
-        <h1>Pollera Colora</h1>
-        <p>La polla del Mundial 2026 para tu combo.</p>
-        <Link href="/login">Entrar</Link>
+      <main className="pc-hero-shell">
+        <div className="pc-tricolor-rule" />
+        <div className="pc-hero-shell__center">
+          <div className="pc-hero-head">
+            <Image src="/emblem.svg" alt="Pollera Colorá" width={76} height={76} />
+            <div>
+              <h1 style={{ margin: 0 }}>
+                La pollera
+                <br />
+                está servida
+              </h1>
+              <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
+                La polla del Mundial 2026 para tu parche. Pronósticos,
+                preguntas del grupo y la tabla para pelear.
+              </p>
+            </div>
+          </div>
+          <Link href="/login" className="pc-btn pc-btn--primary pc-btn--block pc-btn--lg">
+            Entrar con tu correo
+          </Link>
+          <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
+            Sin contraseñas. No se mueve plata por la app.
+          </p>
+        </div>
       </main>
     );
   }
 
   if (!user.displayName) {
     return (
-      <main>
-        <h1>¡Bienvenido!</h1>
-        <p>¿Cómo te llamamos en las pollas?</p>
-        <form action={setDisplayName}>
-          <input
-            name="displayName"
-            required
-            minLength={2}
-            maxLength={40}
-            autoFocus
-          />
-          <button type="submit">Listo</button>
-        </form>
+      <main className="pc-hero-shell">
+        <div className="pc-tricolor-rule" />
+        <div className="pc-hero-shell__center">
+          <div className="pc-hero-head">
+            <Image src="/emblem.svg" alt="" width={56} height={56} />
+            <h1 style={{ margin: 0 }}>¡Llegaste!</h1>
+            <p style={{ color: "var(--ink-soft)", margin: 0 }}>
+              ¿Cómo te llamamos en las pollas?
+            </p>
+          </div>
+          <form action={setDisplayName} className="pc-card pc-card--pad-lg pc-flow">
+            <div className="pc-field">
+              <label className="pc-label" htmlFor="displayName">
+                Tu nombre
+              </label>
+              <input
+                id="displayName"
+                className="pc-input"
+                name="displayName"
+                placeholder="Como te dice el parche"
+                required
+                minLength={2}
+                maxLength={40}
+                autoFocus
+              />
+            </div>
+            <button type="submit" className="pc-btn pc-btn--primary pc-btn--block">
+              Listo
+            </button>
+          </form>
+        </div>
       </main>
     );
   }
@@ -40,27 +81,52 @@ export default async function Home() {
   const memberships = getUserGroups(getDb(), user.id);
 
   return (
-    <main>
-      <h1>Hola, {user.displayName}</h1>
-      <h2>Tus pollas</h2>
-      {memberships.length === 0 ? (
-        <p>Aún no estás en ninguna polla.</p>
-      ) : (
-        <ul>
-          {memberships.map(({ group, role }) => (
-            <li key={group.id}>
-              <Link href={`/g/${group.id}`}>{group.name}</Link>
-              {role === "organizer" && " — organizas"}
-            </li>
-          ))}
-        </ul>
-      )}
-      <p>
-        <Link href="/g/new">Crear una polla</Link>
-      </p>
-      <form action={logout}>
-        <button type="submit">Salir</button>
-      </form>
-    </main>
+    <>
+      <Header>
+        <form action={logout}>
+          <button type="submit" className="pc-iconbtn" aria-label="Salir" title="Salir">
+            <LogOut size={20} aria-hidden />
+          </button>
+        </form>
+      </Header>
+      <main className="page pc-flow">
+        <div>
+          <span className="eyebrow">Hola, {user.displayName}</span>
+          <h1 style={{ margin: "2px 0 0" }}>Tus pollas</h1>
+        </div>
+
+        {memberships.length === 0 ? (
+          <div className="pc-card pc-empty">
+            <span className="pc-empty__art">⚽</span>
+            <span className="pc-empty__title">Todavía no estás en ninguna</span>
+            <p className="pc-empty__body">
+              Armá tu propia polla o pedile el enlace a quien organiza la del
+              parche.
+            </p>
+          </div>
+        ) : (
+          <div className="pc-flow" style={{ gap: "var(--gap-card)" }}>
+            {memberships.map(({ group, role }) => (
+              <Link key={group.id} href={`/g/${group.id}`} className="pc-card pc-quicklink">
+                <span className="pc-quicklink__icon">
+                  {role === "organizer" ? <Crown size={22} aria-hidden /> : <span aria-hidden>⚽</span>}
+                </span>
+                <span className="pc-quicklink__text">
+                  <span className="pc-quicklink__label">{group.name}</span>
+                  <span className="pc-quicklink__sub">
+                    {role === "organizer" ? "Organizás esta polla" : "Sos del parche"}
+                  </span>
+                </span>
+                <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <Link href="/g/new" className="pc-btn pc-btn--sticker pc-btn--block">
+          <Plus size={18} aria-hidden /> Crear una polla
+        </Link>
+      </main>
+    </>
   );
 }

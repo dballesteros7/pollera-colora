@@ -1,0 +1,28 @@
+/* ============================================================
+   Pollera Colorá — SHADOW & ELEVATION TOKENS
+   Warm-tinted shadows (never neutral gray) so cards sit on sand.
+   A signature "sticker" outline for badges/buttons.
+   ============================================================ */
+
+:root {
+  /* Warm ambient shadows */
+  --shadow-xs:  0 1px 2px rgba(74, 48, 22, 0.06);
+  --shadow-sm:  0 1px 3px rgba(74, 48, 22, 0.10), 0 1px 2px rgba(74, 48, 22, 0.06);
+  --shadow-md:  0 4px 12px rgba(74, 48, 22, 0.10), 0 2px 4px rgba(74, 48, 22, 0.06);
+  --shadow-lg:  0 10px 28px rgba(74, 48, 22, 0.14), 0 4px 8px rgba(74, 48, 22, 0.07);
+  --shadow-xl:  0 22px 48px rgba(74, 48, 22, 0.18);
+
+  /* Inset for wells / inputs */
+  --shadow-inset: inset 0 1px 2px rgba(74, 48, 22, 0.08);
+
+  /* Signature: hard "sticker" offset (festive, tactile) */
+  --shadow-sticker:    3px 3px 0 var(--line-ink);
+  --shadow-sticker-sm: 2px 2px 0 var(--line-ink);
+
+  /* Colored glow for live / celebratory pulses */
+  --glow-live:   0 0 0 4px var(--state-live-soft);
+  --glow-brand:  0 0 0 4px var(--brand-soft);
+
+  /* Focus ring (keyboard) */
+  --ring: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
+}

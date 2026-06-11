@@ -1,0 +1,55 @@
+/* ============================================================
+   Pollera Colorá — TYPOGRAPHY TOKENS
+   ============================================================ */
+
+:root {
+  /* ---- Families ---- */
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans:    var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--font-geist-mono), ui-monospace, 'SFMono-Regular', monospace;
+
+  /* ---- Weights ---- */
+  --w-regular:   400; /* @kind font */
+  --w-medium:    500; /* @kind font */
+  --w-semibold:  600; /* @kind font */
+  --w-bold:      700; /* @kind font */
+  --w-extrabold: 800; /* @kind font */
+
+  /* ---- Type scale (mobile-first, rem @16px base) ---- */
+  --text-2xs:  0.6875rem; /* 11px — micro labels, table sub */
+  --text-xs:   0.75rem;   /* 12px — captions, chips         */
+  --text-sm:   0.875rem;  /* 14px — secondary, meta         */
+  --text-base: 1rem;      /* 16px — body                    */
+  --text-lg:   1.125rem;  /* 18px — emphasised body         */
+  --text-xl:   1.375rem;  /* 22px — card titles             */
+  --text-2xl:  1.75rem;   /* 28px — section headers         */
+  --text-3xl:  2.25rem;   /* 36px — page titles             */
+  --text-4xl:  3rem;      /* 48px — display                 */
+  --text-5xl:  4rem;      /* 64px — hero display            */
+
+  /* ---- Score / number display (mono, tabular) ---- */
+  --score-sm:  1.5rem;    /* 24px — picks in lists  */
+  --score-md:  2.25rem;   /* 36px — match card pick */
+  --score-lg:  3rem;      /* 48px — big score input */
+
+  /* ---- Line heights ---- */
+  --lh-tight:   1.05; /* @kind font */
+  --lh-snug:    1.2; /* @kind font */
+  --lh-normal:  1.45; /* @kind font */
+  --lh-relaxed: 1.6; /* @kind font */
+
+  /* ---- Letter spacing ---- */
+  --ls-tight:  -0.02em; /* @kind font */
+  --ls-snug:   -0.01em; /* @kind font */
+  --ls-normal: 0; /* @kind font */
+  --ls-wide:   0.04em; /* @kind font */
+  --ls-caps:   0.08em;  /* @kind font */
+
+  /* ---- Semantic roles ---- */
+  --font-numeric: var(--font-mono);  /* always tabular for scores/points */
+}
+
+/* Tabular figures helper for any number context */
+:root {
+  --fnum: "tnum" 1, "lnum" 1; /* @kind font */
+}

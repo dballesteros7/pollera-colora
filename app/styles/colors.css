@@ -1,0 +1,104 @@
+/* ============================================================
+   Pollera Colorá — COLOR TOKENS
+   Vibe: Bad Bunny "DtMF" warm nostalgia (sand paper, warm ink)
+   + Karol G "Tropicoqueta" tropical pop (magenta, papaya, turquesa)
+   + Colombian tricolor (amarillo / azul / rojo) used with confidence.
+   ============================================================ */
+
+:root {
+  /* ---- Warm paper foundation (DtMF) ---- */
+  --paper:        #FBF3E2;  /* page background — warm sand            */
+  --paper-deep:   #F3E6CC;  /* deeper sand — banded sections, wells   */
+  --paper-tint:   #F7ECD7;  /* subtle warm fill                       */
+  --card:         #FFFDF8;  /* card surface — warm white              */
+  --card-2:       #FFF8EC;  /* alt card / striped rows                */
+
+  /* ---- Warm ink (text) ---- */
+  --ink:          #2A1C12;  /* primary text — espresso brown-black    */
+  --ink-soft:     #6E5A45;  /* secondary text                         */
+  --ink-faint:    #A8927A;  /* tertiary / placeholder                 */
+  --ink-invert:   #FFF8EC;  /* text on dark/saturated fills           */
+
+  /* ---- Hairlines & lines ---- */
+  --line:         #E7D7BC;  /* default warm border                    */
+  --line-strong:  #D8C09A;  /* stronger divider                       */
+  --line-ink:     #2A1C12;  /* bold "sticker" outline                 */
+
+  /* ============================================================
+     COLOMBIAN TRICOLOR — confident, restrained
+     ============================================================ */
+  --amarillo:        #FFC400;  /* gold-yellow */
+  --amarillo-deep:   #F2A900;  /* text-safe gold */
+  --amarillo-soft:   #FCEFC2;  /* tint */
+  --azul:            #1B4DD1;  /* cobalt */
+  --azul-deep:       #15348C;  /* text-safe blue */
+  --azul-soft:       #DCE4FB;  /* tint */
+  --rojo:            #E0312E;  /* vivid red */
+  --rojo-deep:       #A81F1C;  /* text-safe red */
+  --rojo-soft:       #FBDDD8;  /* tint */
+
+  /* ============================================================
+     TROPICOQUETA POP — accents
+     ============================================================ */
+  --magenta:         #E6177D;  /* primary brand / action */
+  --magenta-hover:   #C9106A;  /* pressed / hover-dark    */
+  --magenta-deep:    #9E0E55;  /* text-safe magenta       */
+  --magenta-soft:    #FBD9E9;  /* tint                    */
+  --papaya:          #FF6B2C;  /* secondary warm accent   */
+  --papaya-deep:     #B8430F;  /* text-safe papaya        */
+  --papaya-soft:     #FFE2D2;  /* tint                    */
+  --turquesa:        #0FA89F;  /* fresh cool accent       */
+  --turquesa-deep:   #0A5F5A;  /* text-safe teal          */
+  --turquesa-soft:   #D6F2EF;  /* tint                    */
+
+  /* ============================================================
+     BRAND ROLES
+     ============================================================ */
+  --brand:           var(--magenta);
+  --brand-hover:     var(--magenta-hover);
+  --brand-ink:       var(--magenta-deep);
+  --brand-soft:      var(--magenta-soft);
+
+  --accent:          var(--amarillo);   /* highlights, points, comodín */
+  --accent-ink:      var(--amarillo-deep);
+
+  /* ============================================================
+     SEMANTIC MATCH / GAME STATES
+     teal = abierto · gray = cerrado · red = en juego ·
+     blue = final · gold = puntos
+     ============================================================ */
+  --state-open:           #0FA89F;   /* abierto — predictions open  */
+  --state-open-soft:      #D6F2EF;
+  --state-open-ink:       #0A5F5A;
+
+  --state-locked:         #94836C;   /* cerrado — locked at kickoff */
+  --state-locked-soft:    #EADFCD;
+  --state-locked-ink:     #5C4B36;
+
+  --state-live:           #E0312E;   /* en juego — delayed live     */
+  --state-live-soft:      #FBDDD8;
+  --state-live-ink:       #A81F1C;
+
+  --state-final:          #1B4DD1;   /* final — finished result     */
+  --state-final-soft:     #DCE4FB;
+  --state-final-ink:      #15348C;
+
+  --points:               #F2A900;   /* puntos ganados — gold       */
+  --points-bright:        #FFC400;
+  --points-soft:          #FCEFC2;
+  --points-ink:           #7A5300;
+
+  --tbd:                  #A8927A;   /* "por definir" disabled      */
+  --tbd-soft:             #EFE6D6;
+
+  /* Status feedback (forms, toasts) */
+  --success:      #1E8A5B;
+  --success-soft: #D6EFE1;
+  --danger:       var(--rojo);
+  --danger-soft:  var(--rojo-soft);
+  --warning:      var(--papaya);
+  --warning-soft: var(--papaya-soft);
+
+  /* Focus ring */
+  --focus-ring:   #1B4DD1;
+}

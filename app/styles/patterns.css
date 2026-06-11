@@ -1,0 +1,216 @@
+/* ============================================================
+   Pollera Colorá — COMPOSITE PATTERNS (CSS-first)
+   Match card, leaderboard, page header, empty state.
+   ============================================================ */
+
+/* ---------------------------------------------------------
+   MATCH CARD  .pc-match  (data-state: open|locked|live|final|tbd)
+   --------------------------------------------------------- */
+.pc-match {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  position: relative;
+}
+/* left accent rail keyed to state */
+.pc-match::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--line-strong);
+}
+.pc-match[data-state="open"]::before   { background: var(--state-open); }
+.pc-match[data-state="locked"]::before { background: var(--state-locked); }
+.pc-match[data-state="live"]::before   { background: var(--state-live); }
+.pc-match[data-state="final"]::before  { background: var(--state-final); }
+.pc-match[data-state="tbd"]::before    { background: var(--tbd); }
+
+.pc-match__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+}
+.pc-match__meta { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-sans); }
+.pc-match__time { font-family: var(--font-mono); font-weight: var(--w-medium); }
+
+.pc-match__body { padding: var(--space-4); }
+
+/* team + score grid */
+.pc-match__row {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: var(--space-3);
+}
+.pc-team { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.pc-team__flag { width: 26px; height: 19px; border-radius: 3px; flex: none; object-fit: cover; box-shadow: var(--shadow-xs); background: var(--paper-deep); }
+.pc-team__name { font-weight: var(--w-semibold); font-size: var(--text-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-team--home { justify-content: flex-start; }
+.pc-team--away { justify-content: flex-end; text-align: right; }
+.pc-team--away .pc-team__name { order: -1; }
+
+/* the actual / result score (live/final) */
+.pc-result {
+  font-family: var(--font-mono); font-feature-settings: var(--fnum);
+  font-size: var(--score-md); font-weight: var(--w-semibold);
+  color: var(--ink); letter-spacing: -0.01em; text-align: center;
+  min-width: 92px;
+}
+.pc-result small { display: block; font-family: var(--font-sans); font-size: var(--text-2xs); color: var(--ink-faint); margin-top: 2px; letter-spacing: var(--ls-wide); }
+
+/* "your pick" strip shown under result when locked/live/final */
+.pc-match__pick {
+  margin-top: var(--space-3); padding-top: var(--space-3);
+  border-top: 1px dashed var(--line-strong);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  font-size: var(--text-sm); color: var(--ink-soft);
+}
+.pc-match__pick b { font-family: var(--font-mono); color: var(--ink); }
+
+/* everyone's picks reveal (locked+) */
+.pc-picklist { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+.pc-picklist__row { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.pc-picklist__row .pc-pick { margin-left: auto; }
+
+.pc-match__footer { padding: var(--space-3) var(--space-4) var(--space-4); display: flex; gap: var(--space-3); align-items: center; }
+
+/* finished result tint */
+.pc-match[data-state="final"] .pc-result { color: var(--state-final-ink); }
+.pc-match[data-state="tbd"]   .pc-team__name { color: var(--ink-faint); }
+
+/* ---------------------------------------------------------
+   LEADERBOARD  .pc-board  (screenshot-worthy)
+   --------------------------------------------------------- */
+.pc-board {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+.pc-board caption {
+  caption-side: top; text-align: left;
+  font-family: var(--font-display); font-weight: var(--w-bold);
+  font-size: var(--text-xl); color: var(--ink);
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+.pc-board thead th {
+  font-family: var(--font-sans); font-size: var(--text-2xs);
+  font-weight: var(--w-bold); letter-spacing: var(--ls-caps); text-transform: uppercase;
+  color: var(--ink-soft); text-align: left;
+  padding: var(--space-2) var(--space-3);
+  background: var(--paper-deep);
+  border-bottom: 1px solid var(--line);
+}
+.pc-board th.pc-num, .pc-board td.pc-num { text-align: right; font-family: var(--font-mono); font-feature-settings: var(--fnum); }
+.pc-board tbody td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-base);
+  vertical-align: middle;
+}
+.pc-board tbody tr:last-child td { border-bottom: none; }
+
+/* rank cell */
+.pc-rank {
+  font-family: var(--font-mono); font-weight: var(--w-semibold);
+  font-size: var(--text-lg); color: var(--ink-soft); width: 2.5ch; text-align: center;
+}
+.pc-rank--1 { color: var(--amarillo-deep); }
+.pc-rank--2 { color: var(--ink-soft); }
+.pc-rank--3 { color: var(--papaya-deep); }
+/* medal puck for top 3 */
+.pc-medal {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-family: var(--font-mono); font-weight: var(--w-bold); font-size: var(--text-sm);
+  color: var(--ink);
+}
+.pc-medal--1 { background: var(--amarillo); box-shadow: inset 0 0 0 1.5px var(--amarillo-deep); }
+.pc-medal--2 { background: #E6DECF; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.pc-medal--3 { background: var(--papaya-soft); box-shadow: inset 0 0 0 1.5px var(--papaya); color: var(--papaya-deep); }
+
+/* player name cell */
+.pc-player { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.pc-player__name { font-weight: var(--w-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-player__sub { font-size: var(--text-xs); color: var(--ink-soft); }
+
+/* total points — the hero number */
+.pc-board .pc-points {
+  font-family: var(--font-mono); font-feature-settings: var(--fnum);
+  font-weight: var(--w-bold); font-size: var(--text-xl); color: var(--ink);
+}
+.pc-board .pc-exact { color: var(--ink-soft); }
+
+/* movement arrows */
+.pc-move { font-size: var(--text-xs); font-weight: var(--w-bold); font-family: var(--font-mono); }
+.pc-move--up { color: var(--success); }
+.pc-move--down { color: var(--rojo-deep); }
+.pc-move--same { color: var(--ink-faint); }
+
+/* "tú" highlight row */
+.pc-board tbody tr.is-you td {
+  background: var(--brand-soft);
+  box-shadow: inset 3px 0 0 var(--magenta);
+}
+.pc-board tbody tr.is-you .pc-player__name::after {
+  content: "← tú"; margin-left: var(--space-2);
+  font-family: var(--font-sans); font-size: var(--text-2xs); font-weight: var(--w-bold);
+  color: var(--magenta-deep); letter-spacing: var(--ls-wide); vertical-align: 1px;
+}
+
+/* ---------------------------------------------------------
+   PAGE HEADER / NAV  .pc-header
+   --------------------------------------------------------- */
+.pc-header {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--page-pad);
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 10;
+}
+.pc-header__brand {
+  font-family: var(--font-display); font-weight: var(--w-extrabold);
+  font-size: var(--text-lg); letter-spacing: var(--ls-tight); color: var(--ink);
+  text-decoration: none; display: flex; align-items: center; gap: var(--space-2);
+}
+.pc-header__spacer { margin-left: auto; }
+
+/* tricolor hairline under headers — signature */
+.pc-tricolor-rule {
+  height: 4px; width: 100%;
+  background: linear-gradient(90deg,
+    var(--amarillo) 0 33.33%, var(--azul) 33.33% 66.66%, var(--rojo) 66.66% 100%);
+}
+
+/* segmented tabs */
+.pc-tabs {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--paper-deep); border-radius: var(--radius-pill);
+}
+.pc-tabs a {
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill);
+  font-size: var(--text-sm); font-weight: var(--w-semibold);
+  color: var(--ink-soft); text-decoration: none; white-space: nowrap;
+}
+.pc-tabs a[aria-current="page"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-xs); }
+
+/* ---------------------------------------------------------
+   EMPTY STATE  .pc-empty
+   --------------------------------------------------------- */
+.pc-empty {
+  text-align: center; padding: var(--space-10) var(--space-6);
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+}
+.pc-empty__art {
+  font-size: 44px; line-height: 1;
+  width: 84px; height: 84px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--paper-deep);
+}
+.pc-empty__title { font-family: var(--font-display); font-weight: var(--w-bold); font-size: var(--text-xl); }
+.pc-empty__body { color: var(--ink-soft); max-width: 32ch; }

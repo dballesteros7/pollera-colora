@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers } from "@/lib/groups";
@@ -11,7 +10,18 @@ import {
   getKnownTeams,
 } from "@/lib/bonus";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
+import { Header, GroupTabs } from "@/app/components/shell";
 import { saveBonusPicksAction } from "./actions";
+
+const deadlineFormat = new Intl.DateTimeFormat("es-CO", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+  timeZone: "America/Bogota",
+});
 
 export default async function BonusPage({
   params,
@@ -33,50 +43,74 @@ export default async function BonusPage({
   const teams = getKnownTeams(db);
 
   return (
-    <main>
-      <p>
-        <Link href={`/g/${group.id}`}>← {group.name}</Link>
-      </p>
-      <h1>Pronósticos del torneo</h1>
-      <p>
-        {group.bonusLockAt
-          ? locked
-            ? "Cerrados."
-            : `Cierran el ${group.bonusLockAt.toLocaleString("es-CO", { timeZone: "America/Bogota" })} (hora colombiana).`
-          : "Quien organiza aún no fija la fecha de cierre."}
-      </p>
+    <>
+      <Header>
+        <span className={`pc-badge ${locked ? "pc-badge--locked" : "pc-badge--open"}`}>
+          {!locked && <span className="pc-dot" />}
+          {locked ? "cerrado" : "abierto"}
+        </span>
+      </Header>
+      <main className="page pc-flow">
+        <div>
+          <span className="eyebrow">{group.name}</span>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Bonus del torneo</h1>
+          <p className="pc-hint" style={{ margin: "4px 0 0" }}>
+            {group.bonusLockAt
+              ? locked
+                ? "Ya cerraron — estos son los del parche."
+                : `Cierran el ${deadlineFormat.format(group.bonusLockAt)} (hora colombiana).`
+              : "Quien organiza todavía no fija el cierre."}
+          </p>
+        </div>
 
-      {locked ? (
-        <BonusReveal groupId={group.id} />
-      ) : (
-        <form action={saveBonusPicksAction}>
-          <input type="hidden" name="groupId" value={group.id} />
-          {BONUS_CATEGORIES.map((cat) => (
-            <label key={cat.id}>
-              {cat.label} ({points[cat.id]} pts)
-              {cat.team ? (
-                <select name={`pick_${cat.id}`} defaultValue={mine.get(cat.id) ?? ""}>
-                  <option value="">— sin pronóstico —</option>
-                  {teams.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  name={`pick_${cat.id}`}
-                  defaultValue={mine.get(cat.id) ?? ""}
-                  placeholder="Nombre del jugador"
-                  maxLength={60}
-                />
-              )}
-            </label>
-          ))}
-          <button type="submit">Guardar pronósticos</button>
-        </form>
-      )}
-    </main>
+        {locked ? (
+          <BonusReveal groupId={group.id} />
+        ) : (
+          <form action={saveBonusPicksAction} className="pc-card pc-card--pad-lg pc-flow">
+            <input type="hidden" name="groupId" value={group.id} />
+            {BONUS_CATEGORIES.map((cat) => (
+              <div className="pc-field" key={cat.id}>
+                <label className="pc-label" htmlFor={`pick_${cat.id}`}>
+                  {cat.label}{" "}
+                  <span className="pc-badge pc-badge--points">+{points[cat.id]} pts</span>
+                </label>
+                {cat.team ? (
+                  <select
+                    id={`pick_${cat.id}`}
+                    name={`pick_${cat.id}`}
+                    className="pc-input"
+                    defaultValue={mine.get(cat.id) ?? ""}
+                  >
+                    <option value="">— sin pronóstico —</option>
+                    {teams.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id={`pick_${cat.id}`}
+                    name={`pick_${cat.id}`}
+                    className="pc-input"
+                    defaultValue={mine.get(cat.id) ?? ""}
+                    placeholder="Nombre del jugador"
+                    maxLength={60}
+                  />
+                )}
+              </div>
+            ))}
+            <button type="submit" className="pc-btn pc-btn--primary pc-btn--block">
+              Guardar pronósticos
+            </button>
+            <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
+              Podés cambiarlos hasta el cierre.
+            </p>
+          </form>
+        )}
+      </main>
+      <GroupTabs groupId={group.id} active="bonus" />
+    </>
   );
 }
 
@@ -91,19 +125,32 @@ async function BonusReveal({ groupId }: { groupId: string }) {
     byCategory.set(p.category, [...(byCategory.get(p.category) ?? []), p]);
   }
   return (
-    <div>
-      {BONUS_CATEGORIES.map((cat) => (
-        <section key={cat.id}>
-          <h2>{cat.label}</h2>
-          <ul>
-            {(byCategory.get(cat.id) ?? []).map((p) => (
-              <li key={`${p.userId}`}>
-                {members.get(p.userId) ?? "(sin nombre)"}: {p.value}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="pc-flow" style={{ gap: "var(--gap-card)" }}>
+      {BONUS_CATEGORIES.map((cat) => {
+        const rows = byCategory.get(cat.id) ?? [];
+        return (
+          <section key={cat.id} className="pc-card">
+            <h3 style={{ fontSize: 16, marginBottom: "var(--space-2)" }}>{cat.label}</h3>
+            {rows.length === 0 ? (
+              <p className="pc-hint" style={{ margin: 0 }}>
+                Nadie se le midió.
+              </p>
+            ) : (
+              <div className="pc-picklist" style={{ marginTop: 0 }}>
+                {rows.map((p) => (
+                  <span key={p.userId} className="pc-picklist__row">
+                    <span className="pc-avatar pc-avatar--sm">
+                      {(members.get(p.userId) ?? "?").slice(0, 2)}
+                    </span>
+                    {members.get(p.userId) ?? "(sin nombre)"}
+                    <span className="pc-pick">{p.value}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

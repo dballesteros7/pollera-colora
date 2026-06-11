@@ -1,0 +1,15 @@
+/* ============================================================
+   Pollera Colorá — RADII TOKENS
+   Friendly, rounded — festive not corporate. Pills for chips.
+   ============================================================ */
+
+:root {
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;   /* default — inputs, small cards   */
+  --radius-lg:   16px;   /* cards                           */
+  --radius-xl:   22px;   /* hero cards, sheets              */
+  --radius-2xl:  28px;
+  --radius-pill: 999px;  /* chips, badges, segmented        */
+  --radius-circle: 50%;
+}

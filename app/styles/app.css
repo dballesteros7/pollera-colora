@@ -1,0 +1,151 @@
+/* ============================================================
+   App-layer compositions translated from the UI kit's inline
+   styles (shell.jsx / GroupHome.jsx) — kept in system vocabulary.
+   ============================================================ */
+
+/* sticky bottom tab bar (GroupHome / Fixtures / Props / Bonus) */
+.pc-tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(8px + env(safe-area-inset-bottom));
+  max-width: var(--page-max);
+  margin-inline: auto;
+  width: 100%;
+}
+.pc-tabbar__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-weight: var(--w-medium);
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.pc-tabbar__tab[aria-current="page"] {
+  color: var(--magenta);
+  font-weight: var(--w-bold);
+}
+
+/* quick-link card rows on group home */
+.pc-quicklink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  color: var(--ink);
+}
+.pc-quicklink__icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-deep);
+  color: var(--magenta);
+  flex: none;
+}
+.pc-quicklink__text { flex: 1; min-width: 0; }
+.pc-quicklink__label { font-weight: var(--w-bold); display: block; }
+.pc-quicklink__sub { font-size: var(--text-sm); color: var(--ink-soft); }
+.pc-quicklink__chev { color: var(--ink-faint); flex: none; }
+
+/* page-level vertical rhythm */
+.pc-flow { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* full-height centered column (login / join) */
+.pc-hero-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.pc-hero-shell__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-5) var(--space-10);
+  max-width: var(--page-max);
+  margin-inline: auto;
+  width: 100%;
+}
+.pc-hero-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+/* avatar overlap row (join page) */
+.pc-avatar-row { display: flex; justify-content: center; align-items: center; }
+.pc-avatar-row > * + * { margin-left: -10px; }
+
+/* footer actions row */
+.pc-page-actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* checkbox/radio option rows (forms are server-rendered) */
+.pc-option {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  cursor: pointer;
+}
+.pc-option input { margin-top: 3px; accent-color: var(--magenta); width: 18px; height: 18px; flex: none; }
+.pc-option:has(input:checked) {
+  border-color: var(--magenta);
+  background: var(--brand-soft);
+}
+.pc-option__title { font-weight: var(--w-bold); display: block; }
+.pc-option__desc { font-size: var(--text-sm); color: var(--ink-soft); }
+
+/* inline comodín checkbox chip */
+.pc-comodin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--amarillo);
+  color: var(--ink);
+  border: 1.5px solid var(--line-ink);
+  font-size: var(--text-xs);
+  font-weight: var(--w-bold);
+  cursor: pointer;
+  box-shadow: var(--shadow-sticker-sm);
+}
+.pc-comodin:has(input:not(:checked)) {
+  background: var(--card);
+  box-shadow: none;
+  border-color: var(--line-strong);
+  color: var(--ink-soft);
+}
+.pc-comodin input { accent-color: var(--ink); width: 14px; height: 14px; }
+
+/* tiny success hint after save */
+.pc-saved {
+  font-size: var(--text-xs);
+  color: var(--success);
+  font-weight: var(--w-semibold);
+}

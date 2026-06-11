@@ -1,0 +1,15 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pollera Colorá">
+  <defs>
+    <clipPath id="pc-circle"><circle cx="60" cy="60" r="56"></circle></clipPath>
+  </defs>
+  
+  <circle cx="60" cy="60" r="58" fill="#2A1C12"></circle>
+  
+  <g clip-path="url(#pc-circle)">
+    <rect x="4" y="4" width="112" height="56" fill="#FFC400"></rect>
+    <rect x="4" y="60" width="112" height="28" fill="#1B4DD1"></rect>
+    <rect x="4" y="88" width="112" height="28" fill="#E0312E"></rect>
+  </g>
+  
+  <text x="60" y="75" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="44" fill="#2A1C12">PC</text>
+</svg>
