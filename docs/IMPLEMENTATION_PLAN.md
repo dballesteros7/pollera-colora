@@ -11,67 +11,67 @@ so pollas can run for the knockouts even in the worst case.
 
 The poller is the riskiest external dependency, so it goes first.
 
-- [ ] `npx create-next-app` (App Router, TS), Drizzle + better-sqlite3, schema from
+- [x] `npx create-next-app` (App Router, TS), Drizzle + better-sqlite3, schema from
       DESIGN.md, migrations
 - [ ] Register football-data.org key (needs Diego's email) → `.env`
-- [ ] Sync job: fetch `/v4/competitions/WC/matches`, upsert all 104 matches;
+- [x] Sync job: fetch `/v4/competitions/WC/matches`, upsert all 104 matches;
       node-cron in `instrumentation.ts` (60s when any match is live, else 15min)
-- [ ] Respect `manual_override`; store regulation-time score using `duration`
+- [x] Respect `manual_override`; store regulation-time score using `duration`
 - [ ] Verify against tonight's real opening match: kickoff status flip + final score
 - Acceptance: `matches` table mirrors reality without human help
 
 ## Phase 1 — Auth + deploy
 
-- [ ] Email OTP: request code → Resend (needs account + domain or onboarding sender)
+- [x] Email OTP: request code → Resend (needs account + domain or onboarding sender)
       → verify → session cookie (90 days); rate-limit code requests per email/IP
-- [ ] Minimal `/login`, signed-in shell, display-name prompt on first login
+- [x] Minimal `/login`, signed-in shell, display-name prompt on first login
 - [ ] Fly.io (or Railway) deploy: Dockerfile, persistent volume for SQLite, secrets,
       domain; SQLite backup cron (litestream or volume snapshots)
 - Acceptance: stranger can sign in on their phone in <1 min
 
 ## Phase 2 — Groups & invites
 
-- [ ] Create group (name, preset picker with the 3 presets + único toggle, pot note)
-- [ ] `/join/[code]` flow incl. login redirect; invite-code regeneration
-- [ ] Group home skeleton, member list, organizer settings page
+- [x] Create group (name, preset picker with the 3 presets + único toggle, pot note)
+- [x] `/join/[code]` flow incl. login redirect; invite-code regeneration
+- [x] Group home skeleton, member list, organizer settings page
 - Acceptance: two real users in one group via link
 
 ## Phase 3 — Predictions
 
-- [ ] Fixtures page: upcoming matches grouped by day, score inputs, autosave
-- [ ] Server-side lock at kickoff; locked matches reveal everyone's predictions
-- [ ] Joker UI when preset is Escalonada
+- [x] Fixtures page: upcoming matches grouped by day, score inputs, autosave
+- [x] Server-side lock at kickoff; locked matches reveal everyone's predictions
+- [x] Joker UI when preset is Escalonada
 - Acceptance: predict on phone, see it lock at a real kickoff
 
 ## Phase 4 — Scoring + leaderboard  ← MVP line
 
-- [ ] `scoreMatch(prediction, result, rules)` pure function, all 3 presets +
+- [x] `scoreMatch(prediction, result, rules)` pure function, all 3 presets +
       único acertado + knockout multipliers; unit tests against hand-computed cases
-- [ ] Score-cache rebuild triggered by poller result changes
-- [ ] Leaderboard on group home: totals, exact/result counts, tiebreaker order,
+- [x] Score-cache rebuild triggered by poller result changes
+- [x] Leaderboard on group home: totals, exact/result counts, tiebreaker order,
       per-member drill-down (which matches earned what)
 - Acceptance: leaderboard provably correct for a finished matchday
 - **→ Announce to friends, real pollas start here**
 
 ## Phase 5 — Bonus picks
 
-- [ ] Bonus picks page (champion, runner-up, third, top scorer, best GK) with
+- [x] Bonus picks page (champion, runner-up, third, top scorer, best GK) with
       per-group grace deadline (default: end of group stage, organizer-set)
-- [ ] Resolution: app admin enters tournament outcomes once at the end; scoring
+- [x] Resolution: app admin enters tournament outcomes once at the end; scoring
       integrates into cache
 - Acceptance: picks lock at deadline; mock resolution scores correctly
 
 ## Phase 6 — Prop questions (the salsa-choke feature)
 
-- [ ] Propose form (text, type, options, lock, suggested points)
-- [ ] Organizer queue: approve/adjust/reject; group answer UI with lock
-- [ ] Resolution UI (exact or closest-wins for numbers) → scoring integration
+- [x] Propose form (text, type, options, lock, suggested points)
+- [x] Organizer queue: approve/adjust/reject; group answer UI with lock
+- [x] Resolution UI (exact or closest-wins for numbers) → scoring integration
 - Acceptance: full propose→approve→answer→resolve→points cycle in a real group
 
 ## Phase 7 — Polish & passkeys (during knockouts)
 
 - [ ] Passkey registration + login (SimpleWebAuthn)
-- [ ] Admin manual-override screen (until here: SQL by hand is the fallback)
+- [x] Admin manual-override screen (until here: SQL by hand is the fallback)
 - [ ] Mobile polish pass, empty states, Spanish copy review
 - [ ] Nice-to-haves as time allows: email digest of today's matches, prediction
       reminders, group activity feed
