@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { createDb, type Db } from "../lib/db";
 import { matches } from "../lib/db/schema";
-import { upsertMatches, regulationScore, isLiveWindow } from "../lib/sync";
+import {
+  upsertMatches,
+  regulationScore,
+  isLiveWindow,
+  isRegression,
+} from "../lib/sync";
 import type { FdMatch } from "../lib/fd/types";
 
 const NOW = new Date("2026-06-11T20:00:00Z");
@@ -169,6 +174,42 @@ describe("upsertMatches", () => {
     expect(result.upserted).toBe(1);
     row = db.select().from(matches).all()[0];
     expect(row.homeTeam).toBe("Mexico");
+  });
+});
+
+describe("regression guard", () => {
+  it("classifies stale snapshots", () => {
+    const live = { status: "IN_PLAY", regHome: 1, regAway: 0 };
+    expect(isRegression(live, { status: "TIMED", regHome: null, regAway: null })).toBe(true);
+    expect(isRegression(live, { status: "IN_PLAY", regHome: null, regAway: null })).toBe(true);
+    expect(isRegression(live, { status: "PAUSED", regHome: 1, regAway: 0 })).toBe(false);
+    expect(isRegression(live, { status: "FINISHED", regHome: 2, regAway: 0 })).toBe(false);
+    expect(isRegression({ status: "FINISHED", regHome: 2, regAway: 0 }, { status: "IN_PLAY", regHome: 2, regAway: 0 })).toBe(true);
+    // legitimate backwards transitions pass through
+    expect(isRegression(live, { status: "SUSPENDED", regHome: null, regAway: null })).toBe(false);
+  });
+
+  it("upsert rejects stale list snapshots", () => {
+    const db = createDb(":memory:");
+    const live = fdMatch({
+      status: "IN_PLAY",
+      score: {
+        winner: null,
+        duration: "REGULAR",
+        fullTime: { home: 1, away: 0 },
+        halfTime: { home: 1, away: 0 },
+      },
+    });
+    upsertMatches(db, [live], NOW);
+
+    // stale cache snapshot arrives a tick later
+    const stale = fdMatch(); // TIMED, null score
+    const result = upsertMatches(db, [stale], NOW);
+    expect(result.skippedStale).toBe(1);
+    expect(result.upserted).toBe(0);
+    const row = db.select().from(matches).all()[0];
+    expect(row.status).toBe("IN_PLAY");
+    expect(row.regHome).toBe(1);
   });
 });
 

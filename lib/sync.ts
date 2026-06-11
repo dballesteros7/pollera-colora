@@ -1,8 +1,35 @@
 import { eq, inArray } from "drizzle-orm";
 import type { Db } from "./db";
 import { matches } from "./db/schema";
-import { fetchWorldCupMatches } from "./fd/client";
+import { fetchWorldCupMatches, fetchMatch } from "./fd/client";
 import type { FdMatch } from "./fd/types";
+
+// Progress rank: the API's list endpoint can serve stale snapshots, so we
+// never let a sync move a match backwards. POSTPONED/CANCELLED/SUSPENDED are
+// legitimate "backwards" transitions and bypass the guard.
+const STATUS_RANK: Record<string, number> = {
+  SCHEDULED: 0,
+  TIMED: 0,
+  IN_PLAY: 1,
+  PAUSED: 1,
+  FINISHED: 2,
+  AWARDED: 2,
+};
+const GUARD_BYPASS = new Set(["POSTPONED", "CANCELLED", "SUSPENDED"]);
+
+export function isRegression(
+  prev: { status: string; regHome: number | null; regAway: number | null },
+  next: { status: string; regHome: number | null; regAway: number | null },
+): boolean {
+  if (GUARD_BYPASS.has(next.status)) return false;
+  const prevRank = STATUS_RANK[prev.status] ?? 0;
+  const nextRank = STATUS_RANK[next.status] ?? 0;
+  if (nextRank < prevRank) return true;
+  // never wipe a known score with nulls
+  if (prev.regHome !== null && next.regHome === null) return true;
+  if (prev.regAway !== null && next.regAway === null) return true;
+  return false;
+}
 
 export type MatchRow = typeof matches.$inferInsert;
 
@@ -45,6 +72,7 @@ export interface SyncResult {
   total: number;
   upserted: number;
   skippedOverridden: number;
+  skippedStale: number; // stale API snapshots rejected by the regression guard
   resultsChanged: number[]; // internal match ids whose result fields changed
 }
 
@@ -73,6 +101,7 @@ export function upsertMatches(
   const resultsChanged: number[] = [];
   let upserted = 0;
   let skippedOverridden = 0;
+  let skippedStale = 0;
 
   for (const fdMatch of fdMatches) {
     if (overridden.has(fdMatch.id)) {
@@ -81,6 +110,10 @@ export function upsertMatches(
     }
     const row = mapFdMatch(fdMatch, now);
     const prev = existing.get(fdMatch.id);
+    if (prev && isRegression(prev, row)) {
+      skippedStale++;
+      continue;
+    }
     if (!prev) {
       const inserted = db.insert(matches).values(row).returning().get();
       if (row.status === "FINISHED") resultsChanged.push(inserted.id);
@@ -111,13 +144,47 @@ export function upsertMatches(
     total: fdMatches.length,
     upserted,
     skippedOverridden,
+    skippedStale,
     resultsChanged,
   };
 }
 
+// matches currently inside the live window per our DB (not yet FINISHED)
+export function liveWindowMatches(db: Db, now: Date) {
+  return db
+    .select()
+    .from(matches)
+    .all()
+    .filter((r) => {
+      if (r.status === "IN_PLAY" || r.status === "PAUSED") return true;
+      const diff = now.getTime() - r.kickoffUtc.getTime();
+      return (
+        diff >= -LIVE_WINDOW_BEFORE_MS &&
+        diff <= LIVE_WINDOW_AFTER_MS &&
+        r.status !== "FINISHED"
+      );
+    });
+}
+
 export async function syncMatches(db: Db, now = new Date()): Promise<SyncResult> {
   const fdMatches = await fetchWorldCupMatches();
-  return upsertMatches(db, fdMatches, now);
+  const result = upsertMatches(db, fdMatches, now);
+
+  // The list endpoint lags behind live matches; re-fetch those individually
+  // from the fresher single-match endpoint (a handful of requests at most).
+  const live = liveWindowMatches(db, now);
+  for (const m of live) {
+    try {
+      const fresh = await fetchMatch(m.fdId);
+      const detail = upsertMatches(db, [fresh], now);
+      result.upserted += detail.upserted;
+      result.skippedStale += detail.skippedStale;
+      result.resultsChanged.push(...detail.resultsChanged);
+    } catch (err) {
+      console.warn(`[sync] detail fetch failed for fdId ${m.fdId}:`, err);
+    }
+  }
+  return result;
 }
 
 // Poll fast while anything is live or about to kick off; lazily otherwise.

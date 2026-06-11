@@ -6,7 +6,7 @@ const db = getDb();
 syncMatches(db)
   .then((r) => {
     console.log(
-      `synced ${r.total} matches (${r.upserted} upserted, ${r.skippedOverridden} overridden, ${r.resultsChanged.length} results changed)`,
+      `synced ${r.total} matches (${r.upserted} upserted, ${r.skippedOverridden} overridden, ${r.skippedStale} stale rejected, ${r.resultsChanged.length} results changed)`,
     );
   })
   .catch((err) => {

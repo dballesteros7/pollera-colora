@@ -31,9 +31,9 @@ export function startScheduler() {
       if (!due) return;
       const result = await syncMatches(db, now);
       lastSyncAt = now.getTime();
-      if (result.upserted > 0) {
+      if (result.upserted > 0 || result.skippedStale > 0) {
         console.log(
-          `[sync] ok: ${result.total} matches, ${result.upserted} upserted`,
+          `[sync] ok: ${result.total} matches, ${result.upserted} upserted, ${result.skippedStale} stale rejected`,
         );
       }
       if (result.resultsChanged.length > 0) {
