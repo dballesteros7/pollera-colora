@@ -20,9 +20,9 @@ export default async function Home() {
             <Image src="/emblem.svg" alt="Pollera Colorá" width={76} height={76} />
             <div>
               <h1 style={{ margin: 0 }}>
-                La pollera
+                ¡Se armó
                 <br />
-                está servida
+                la polla!
               </h1>
               <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
                 La polla del Mundial 2026 para el parche. Pronósticos,
