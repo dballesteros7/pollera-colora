@@ -6,9 +6,25 @@ import { FdConfigError } from "./fd/client";
 
 const IDLE_INTERVAL_MS = 15 * 60 * 1000;
 
+export interface SyncStatus {
+  lastOkAt: string | null;
+  lastErrorAt: string | null;
+  lastError: string | null;
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var __polleraSchedulerStarted: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __polleraSyncStatus: SyncStatus | undefined;
+}
+
+export function getSyncStatus(): SyncStatus {
+  return (globalThis.__polleraSyncStatus ??= {
+    lastOkAt: null,
+    lastErrorAt: null,
+    lastError: null,
+  });
 }
 
 export function startScheduler() {
@@ -17,11 +33,22 @@ export function startScheduler() {
 
   let lastSyncAt = 0;
   let running = false;
+  let runningSince = 0;
 
   // tick every minute; the tick decides whether it's time to actually sync
   cron.schedule("* * * * *", async () => {
-    if (running) return;
+    if (running) {
+      // belt and braces: fetch timeouts should make hangs impossible, but a
+      // stuck flag must never silence the scheduler forever again
+      if (Date.now() - runningSince > 5 * 60 * 1000) {
+        console.error("[sync] watchdog: previous run stuck >5min, resetting");
+        running = false;
+      } else {
+        return;
+      }
+    }
     running = true;
+    runningSince = Date.now();
     try {
       const db = getDb();
       const now = new Date();
@@ -31,6 +58,7 @@ export function startScheduler() {
       if (!due) return;
       const result = await syncMatches(db, now);
       lastSyncAt = now.getTime();
+      getSyncStatus().lastOkAt = new Date().toISOString();
       if (result.upserted > 0 || result.skippedStale > 0) {
         console.log(
           `[sync] ok: ${result.total} matches, ${result.upserted} upserted, ${result.skippedStale} stale rejected`,
@@ -49,6 +77,9 @@ export function startScheduler() {
         lastSyncAt = Date.now();
       } else {
         console.error("[sync] failed:", err);
+        const status = getSyncStatus();
+        status.lastErrorAt = new Date().toISOString();
+        status.lastError = err instanceof Error ? err.message : String(err);
       }
     } finally {
       running = false;

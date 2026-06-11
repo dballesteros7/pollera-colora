@@ -30,6 +30,8 @@ export async function fetchWorldCupMatches(): Promise<FdMatch[]> {
   const res = await fetch(`${BASE_URL}/competitions/WC/matches`, {
     headers: { "X-Auth-Token": getToken() },
     cache: "no-store",
+    // a hung connection must never block the scheduler loop
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
     throw new FdApiError(
@@ -45,6 +47,7 @@ export async function fetchMatch(fdId: number): Promise<FdMatch> {
   const res = await fetch(`${BASE_URL}/matches/${fdId}`, {
     headers: { "X-Auth-Token": getToken() },
     cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
     throw new FdApiError(
