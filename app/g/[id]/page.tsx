@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { getGroupForMember, getGroupMembers } from "@/lib/groups";
+import { getGroupForMember } from "@/lib/groups";
+import { getLeaderboard } from "@/lib/leaderboard";
 import { requireUser } from "@/lib/auth/require";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 
@@ -17,9 +18,9 @@ export default async function GroupPage({
   if (!access) notFound();
 
   const { group, role } = access;
-  const members = getGroupMembers(db, group.id);
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
+  const board = getLeaderboard(db, group.id);
 
   return (
     <main>
@@ -37,16 +38,32 @@ export default async function GroupPage({
         <Link href={`/g/${group.id}/fixtures`}>Partidos y pronósticos →</Link>
       </p>
 
-      {/* Phase 4: leaderboard goes here */}
-      <h2>Participantes ({members.length})</h2>
-      <ul>
-        {members.map((m) => (
-          <li key={m.userId}>
-            {m.displayName ?? "(sin nombre)"}
-            {m.role === "organizer" && " — organiza"}
-          </li>
-        ))}
-      </ul>
+      <h2>Tabla</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Quién</th>
+            <th>Puntos</th>
+            <th>Exactos</th>
+            <th>Resultados</th>
+          </tr>
+        </thead>
+        <tbody>
+          {board.map((row, i) => (
+            <tr key={row.userId}>
+              <td>{i + 1}</td>
+              <td>
+                {row.displayName ?? "(sin nombre)"}
+                {row.userId === user.id && " ← tú"}
+              </td>
+              <td>{row.total}</td>
+              <td>{row.exactCount}</td>
+              <td>{row.resultCount}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <h2>Invitar</h2>
       <p>

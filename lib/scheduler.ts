@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { getDb } from "./db";
 import { syncMatches, isLiveWindow } from "./sync";
+import { rebuildAllScores } from "./scoring/score";
 import { FdConfigError } from "./fd/client";
 
 const IDLE_INTERVAL_MS = 15 * 60 * 1000;
@@ -32,9 +33,9 @@ export function startScheduler() {
       lastSyncAt = now.getTime();
       if (result.resultsChanged.length > 0) {
         console.log(
-          `[sync] results changed for matches ${result.resultsChanged.join(", ")}`,
+          `[sync] results changed for matches ${result.resultsChanged.join(", ")} — rebuilding scores`,
         );
-        // Phase 4 hooks in here: rebuild score cache for changed matches
+        rebuildAllScores(db, now);
       }
     } catch (err) {
       if (err instanceof FdConfigError) {
