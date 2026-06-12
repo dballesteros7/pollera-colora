@@ -150,6 +150,12 @@
   font-weight: var(--w-semibold);
 }
 
+/* mid-size phones: slim the result block so one-word team names
+   ("Chequia") keep their line instead of splitting mid-word */
+@media (max-width: 520px) {
+  .pc-result { font-size: var(--score-sm); min-width: 56px; }
+}
+
 /* ---- narrow phones (Galaxy Z Flip outer ~344px, small Androids) ---- */
 @media (max-width: 400px) {
   .pc-score { gap: var(--space-1); }
