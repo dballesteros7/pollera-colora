@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { getGroupForMember } from "@/lib/groups";
+import { getGroupForMember, getUserGroups } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
 import {
   getAllMatches,
@@ -16,7 +16,7 @@ import { getLocale, t, LOCALE_TAG, type Locale } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
-import { savePredictionAction } from "./actions";
+import { savePredictionAction, copyPredictionsAction } from "./actions";
 
 const STAGE_KEY: Record<string, string> = {
   LAST_32: "f.r32",
@@ -66,6 +66,7 @@ export default async function FixturesPage({
   const preset = PRESETS[rules.preset];
   const matches = getAllMatches(db);
   const mine = getUserPredictions(db, user.id, group.id);
+  const otherGroups = getUserGroups(db, user.id).filter((m) => m.group.id !== group.id);
 
   const openCount = matches.filter((m) => matchState(m, now) === "open").length;
 
@@ -93,6 +94,31 @@ export default async function FixturesPage({
             {t(lo, "f.hint")}
           </p>
         </div>
+
+        {otherGroups.length > 0 && (
+          <details className="pc-card pc-sheet">
+            <summary>{t(lo, "f.copyFrom")}…</summary>
+            <form action={copyPredictionsAction} className="pc-page-actions" style={{ marginTop: "var(--space-2)" }}>
+              <input type="hidden" name="groupId" value={group.id} />
+              <select name="fromGroupId" className="pc-input" style={{ flex: 1 }} required defaultValue="">
+                <option value="" disabled>
+                  {t(lo, "f.copyFrom")}
+                </option>
+                {otherGroups.map(({ group: g }) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="pc-btn pc-btn--secondary pc-btn--sm">
+                {t(lo, "f.copyBtn")}
+              </button>
+            </form>
+            <p className="pc-hint" style={{ margin: "var(--space-2) 0 0" }}>
+              {t(lo, "f.copyHint")}
+            </p>
+          </details>
+        )}
 
         {matches.length === 0 && (
           <div className="pc-card pc-empty">
@@ -157,6 +183,12 @@ export default async function FixturesPage({
                           <label className="pc-comodin">
                             <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
                             {t(lo, "comodin")}
+                          </label>
+                        )}
+                        {otherGroups.length > 0 && (
+                          <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
+                            {t(lo, "f.alsoAll")}
                           </label>
                         )}
                         <button

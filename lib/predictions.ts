@@ -120,6 +120,89 @@ export function savePrediction(
     .get();
 }
 
+// save the same score into several of the user's groups (joker only in the
+// originating group — jokers are preset- and round-specific per polla)
+export function savePredictionForGroups(
+  db: Db,
+  opts: {
+    userId: string;
+    matchId: number;
+    predHome: number;
+    predAway: number;
+    groups: { groupId: string; joker: boolean; allowJoker: boolean }[];
+  },
+  now = new Date(),
+): number {
+  let saved = 0;
+  for (const g of opts.groups) {
+    try {
+      savePrediction(
+        db,
+        {
+          userId: opts.userId,
+          groupId: g.groupId,
+          matchId: opts.matchId,
+          predHome: opts.predHome,
+          predAway: opts.predAway,
+          joker: g.joker,
+          allowJoker: g.allowJoker,
+        },
+        now,
+      );
+      saved++;
+    } catch (err) {
+      if (
+        err instanceof PredictionLockedError ||
+        err instanceof MatchNotPredictableError
+      ) {
+        continue; // that group misses out — match locked meanwhile
+      }
+      throw err;
+    }
+  }
+  return saved;
+}
+
+// bulk-copy scores from one of the user's pollas into another: only matches
+// still open here and not yet predicted here; jokers never copy
+export function copyPredictions(
+  db: Db,
+  opts: { userId: string; fromGroupId: string; toGroupId: string },
+  now = new Date(),
+): number {
+  const source = getUserPredictions(db, opts.userId, opts.fromGroupId);
+  const existing = getUserPredictions(db, opts.userId, opts.toGroupId);
+  let copied = 0;
+  for (const [matchId, pred] of source) {
+    if (existing.has(matchId)) continue;
+    try {
+      savePrediction(
+        db,
+        {
+          userId: opts.userId,
+          groupId: opts.toGroupId,
+          matchId,
+          predHome: pred.predHome,
+          predAway: pred.predAway,
+          joker: false,
+          allowJoker: false,
+        },
+        now,
+      );
+      copied++;
+    } catch (err) {
+      if (
+        err instanceof PredictionLockedError ||
+        err instanceof MatchNotPredictableError
+      ) {
+        continue;
+      }
+      throw err;
+    }
+  }
+  return copied;
+}
+
 export function getUserPredictions(db: Db, userId: string, groupId: string) {
   const rows = db
     .select()

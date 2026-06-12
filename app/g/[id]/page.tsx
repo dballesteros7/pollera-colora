@@ -11,7 +11,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { getGroupForMember, getGroupMembers } from "@/lib/groups";
+import { getGroupForMember, getGroupMembers, getUserGroups } from "@/lib/groups";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { requireUser } from "@/lib/auth/require";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
@@ -53,6 +53,7 @@ export default async function GroupPage({
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
+  const hasOtherGroups = getUserGroups(db, user.id).length > 1;
   const organizer = getGroupMembers(db, group.id).find((m) => m.role === "organizer");
 
   const matches = getAllMatches(db);
@@ -147,6 +148,12 @@ export default async function GroupPage({
                     <label className="pc-comodin">
                       <input type="checkbox" name="joker" defaultChecked={heroPred?.joker ?? false} />
                       {t(lo, "comodin")}
+                    </label>
+                  )}
+                  {hasOtherGroups && (
+                    <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
+                      {t(lo, "f.alsoAll")}
                     </label>
                   )}
                   <button
