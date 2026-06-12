@@ -45,7 +45,7 @@
 }
 .pc-team { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .pc-team__flag { width: 26px; height: 19px; border-radius: 3px; flex: none; object-fit: cover; box-shadow: var(--shadow-xs); background: var(--paper-deep); }
-.pc-team__name { font-weight: var(--w-semibold); font-size: var(--text-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-team__name { font-weight: var(--w-semibold); font-size: var(--text-base); overflow-wrap: break-word; min-width: 0; }
 .pc-team--home { justify-content: flex-start; }
 .pc-team--away { justify-content: flex-end; text-align: right; }
 .pc-team--away .pc-team__name { order: -1; }
