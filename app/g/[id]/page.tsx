@@ -23,6 +23,7 @@ import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
+import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
 import { ScoringSheet } from "@/app/components/scoring-rules";
 import { savePredictionAction } from "./fixtures/actions";
 
@@ -127,7 +128,11 @@ export default async function GroupPage({
               )}
             </div>
             {heroOpen && !heroIsLive ? (
-              <form action={savePredictionAction}>
+              <FeedbackForm
+                action={savePredictionAction}
+                doneMsg={t(lo, "ui.saved")}
+                errMsg={t(lo, "ui.lockedErr")}
+              >
                 <input type="hidden" name="groupId" value={group.id} />
                 <input type="hidden" name="matchId" value={nextMatch.id} />
                 <div className="pc-match__body">
@@ -154,15 +159,14 @@ export default async function GroupPage({
                       {t(lo, "f.alsoAll")}
                     </label>
                   )}
-                  <button
-                    type="submit"
+                  <PendingButton
+                    label={heroPred ? t(lo, "btn.update") : t(lo, "btn.save")}
+                    pendingLabel={t(lo, "ui.saving")}
                     className={`pc-btn ${heroPred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
                     style={{ marginLeft: "auto" }}
-                  >
-                    {heroPred ? t(lo, "btn.update") : t(lo, "btn.save")}
-                  </button>
+                  />
                 </div>
-              </form>
+              </FeedbackForm>
             ) : (
               <div className="pc-match__body">
                 <div className="pc-match__row">

@@ -32,6 +32,9 @@ export async function saveBonusPicksAction(formData: FormData) {
     }
   } catch (err) {
     if (!(err instanceof BonusLockedError)) throw err;
+    revalidatePath(`/g/${groupId}/bonus`);
+    return { err: true };
   }
   revalidatePath(`/g/${groupId}/bonus`);
+  return {};
 }

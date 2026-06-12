@@ -379,6 +379,13 @@ const M: Record<string, Msg> = {
   },
   "preset.unicoTag": { es: "único acertado", en: "sole-exact bonus", de: "Allein-exakt-Bonus", it: "bonus unico esatto", pt: "bônus único exato", fr: "bonus seul exact", zh: "独中奖励", zht: "獨中獎勵", nl: "als enige exact" },
 
+  // ---- action feedback (toasts + pending buttons) ----
+  "ui.saving": { es: "Guardando…", en: "Saving…", de: "Wird gespeichert…", it: "Salvataggio…", fr: "Enregistrement…", nl: "Opslaan…", pt: "Salvando…", zh: "保存中…", zht: "儲存中…" },
+  "ui.saved": { es: "¡Guardado!", en: "Saved!", de: "Gespeichert!", it: "Salvato!", fr: "Enregistré !", nl: "Opgeslagen!", pt: "Salvo!", zh: "已保存！", zht: "已儲存！" },
+  "ui.copiedN": { es: "{n} pronósticos copiados", en: "{n} picks copied", de: "{n} Tipps übernommen", it: "{n} pronostici copiati", fr: "{n} pronos copiés", nl: "{n} voorspellingen gekopieerd", pt: "{n} palpites copiados", zh: "已复制 {n} 个预测", zht: "已複製 {n} 個預測" },
+  "ui.copied0": { es: "Nada para copiar — ya estaba al día.", en: "Nothing to copy — you're up to date.", de: "Nichts zu übernehmen — alles aktuell.", it: "Niente da copiare — sei già a posto.", fr: "Rien à copier — tout est à jour.", nl: "Niets te kopiëren — je bent al bij.", pt: "Nada pra copiar — já tá em dia.", zh: "没有可复制的 — 都是最新的。", zht: "沒有可複製的 — 都是最新的。" },
+  "ui.lockedErr": { es: "Pailas, ya cerró — no se guardó.", en: "Locked — couldn't save.", de: "Schon gesperrt — nicht gespeichert.", it: "Già chiusa — non salvato.", fr: "Déjà verrouillé — pas enregistré.", nl: "Al gesloten — niet opgeslagen.", pt: "Já fechou — não salvou.", zh: "已锁定 — 未保存。", zht: "已鎖定 — 未儲存。" },
+
   // ---- email (Tania from Bucaramanga handles the codes) ----
   "mail.subject": { es: "{code} — su código, se lo manda Tania", en: "{code} — your code, from Tania", de: "{code} — dein Code, von Tania", it: "{code} — il tuo codice, da Tania", pt: "{code} — seu código, da Tania", fr: "{code} — ton code, de la part de Tania", zh: "{code} — 你的验证码，Tania 发来", zht: "{code} — 你的驗證碼，Tania 寄來的", nl: "{code} — je code, van Tania" },
   "mail.body": {

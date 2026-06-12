@@ -16,6 +16,7 @@ import { getLocale, t, LOCALE_TAG, type Locale } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
+import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
 import { savePredictionAction, copyPredictionsAction } from "./actions";
 
 const STAGE_KEY: Record<string, string> = {
@@ -98,7 +99,14 @@ export default async function FixturesPage({
         {otherGroups.length > 0 && (
           <details className="pc-card pc-sheet">
             <summary>{t(lo, "f.copyFrom")}…</summary>
-            <form action={copyPredictionsAction} className="pc-page-actions" style={{ marginTop: "var(--space-2)" }}>
+            <FeedbackForm
+              action={copyPredictionsAction}
+              doneMsg={t(lo, "ui.saved")}
+              copiedMsg={t(lo, "ui.copiedN", { n: "{n}" })}
+              zeroMsg={t(lo, "ui.copied0")}
+              className="pc-page-actions"
+              style={{ marginTop: "var(--space-2)" }}
+            >
               <input type="hidden" name="groupId" value={group.id} />
               <select name="fromGroupId" className="pc-input" style={{ flex: 1 }} required defaultValue="">
                 <option value="" disabled>
@@ -110,10 +118,12 @@ export default async function FixturesPage({
                   </option>
                 ))}
               </select>
-              <button type="submit" className="pc-btn pc-btn--secondary pc-btn--sm">
-                {t(lo, "f.copyBtn")}
-              </button>
-            </form>
+              <PendingButton
+                label={t(lo, "f.copyBtn")}
+                pendingLabel={t(lo, "ui.saving")}
+                className="pc-btn pc-btn--secondary pc-btn--sm"
+              />
+            </FeedbackForm>
             <p className="pc-hint" style={{ margin: "var(--space-2) 0 0" }}>
               {t(lo, "f.copyHint")}
             </p>
@@ -164,7 +174,11 @@ export default async function FixturesPage({
                   </div>
 
                   {state === "open" ? (
-                    <form action={savePredictionAction}>
+                    <FeedbackForm
+                      action={savePredictionAction}
+                      doneMsg={t(lo, "ui.saved")}
+                      errMsg={t(lo, "ui.lockedErr")}
+                    >
                       <input type="hidden" name="groupId" value={group.id} />
                       <input type="hidden" name="matchId" value={m.id} />
                       <div className="pc-match__body">
@@ -191,15 +205,14 @@ export default async function FixturesPage({
                             {t(lo, "f.alsoAll")}
                           </label>
                         )}
-                        <button
-                          type="submit"
+                        <PendingButton
+                          label={pred ? t(lo, "btn.update") : t(lo, "btn.save")}
+                          pendingLabel={t(lo, "ui.saving")}
                           className={`pc-btn ${pred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
                           style={{ marginLeft: "auto" }}
-                        >
-                          {pred ? t(lo, "btn.update") : t(lo, "btn.save")}
-                        </button>
+                        />
                       </div>
-                    </form>
+                    </FeedbackForm>
                   ) : (
                     <div className="pc-match__body">
                       <div className="pc-match__row">

@@ -14,6 +14,7 @@ import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG, type Locale } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
+import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
 import { saveBonusPicksAction } from "./actions";
 
 const CAT_KEY: Record<string, string> = {
@@ -69,7 +70,12 @@ export default async function BonusPage({
         {locked ? (
           <BonusReveal groupId={group.id} lo={lo} />
         ) : (
-          <form action={saveBonusPicksAction} className="pc-card pc-card--pad-lg pc-flow">
+          <FeedbackForm
+            action={saveBonusPicksAction}
+            doneMsg={t(lo, "ui.saved")}
+            errMsg={t(lo, "ui.lockedErr")}
+            className="pc-card pc-card--pad-lg pc-flow"
+          >
             <input type="hidden" name="groupId" value={group.id} />
             {BONUS_CATEGORIES.map((cat) => (
               <div className="pc-field" key={cat.id}>
@@ -103,13 +109,15 @@ export default async function BonusPage({
                 )}
               </div>
             ))}
-            <button type="submit" className="pc-btn pc-btn--primary pc-btn--block">
-              {t(lo, "b.save")}
-            </button>
+            <PendingButton
+              label={t(lo, "b.save")}
+              pendingLabel={t(lo, "ui.saving")}
+              className="pc-btn pc-btn--primary pc-btn--block"
+            />
             <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
               {t(lo, "b.editable")}
             </p>
-          </form>
+          </FeedbackForm>
         )}
       </main>
       <GroupTabs groupId={group.id} active="bonus" />

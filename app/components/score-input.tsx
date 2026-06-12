@@ -31,9 +31,15 @@ function Side({
   defaultValue: number | null;
   aria: ScoreAria;
 }) {
-  const [value, setValue] = useState<string>(
-    defaultValue === null ? "" : String(defaultValue),
-  );
+  // track the saved value so a revalidation (copy, apply-to-all) refreshes
+  // the box, while plain typing is left alone
+  const init = defaultValue === null ? "" : String(defaultValue);
+  const [state, setState] = useState({ seen: defaultValue, value: init });
+  if (state.seen !== defaultValue) {
+    setState({ seen: defaultValue, value: init });
+  }
+  const value = state.seen !== defaultValue ? init : state.value;
+  const setValue = (v: string) => setState((s) => ({ ...s, value: v }));
   const num = value === "" ? null : Number(value);
 
   const step = (d: number) => {

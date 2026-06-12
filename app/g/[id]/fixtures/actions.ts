@@ -61,11 +61,14 @@ export async function savePredictionAction(formData: FormData) {
     ) {
       // form re-renders against current state; the lock shows itself
       revalidatePath(`/g/${groupId}/fixtures`);
-      return;
+      revalidatePath(`/g/${groupId}`);
+      return { err: true };
     }
     throw err;
   }
   revalidatePath(`/g/${groupId}/fixtures`);
+  revalidatePath(`/g/${groupId}`);
+  return {};
 }
 
 export async function copyPredictionsAction(formData: FormData) {
@@ -77,8 +80,9 @@ export async function copyPredictionsAction(formData: FormData) {
   const fromGroupId = String(formData.get("fromGroupId") ?? "");
   // source must also be one of the user's own groups
   const fromAccess = getGroupForMember(db, user.id, fromGroupId);
-  if (!fromAccess || fromGroupId === groupId) return;
-  copyPredictions(db, { userId: user.id, fromGroupId, toGroupId: groupId });
+  if (!fromAccess || fromGroupId === groupId) return { err: true };
+  const copied = copyPredictions(db, { userId: user.id, fromGroupId, toGroupId: groupId });
   revalidatePath(`/g/${groupId}/fixtures`);
   revalidatePath(`/g/${groupId}`);
+  return { copied };
 }

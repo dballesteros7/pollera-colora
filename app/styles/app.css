@@ -257,3 +257,32 @@
 /* checkbox labels like "Auch in meinen anderen Pollas" wrap cleanly */
 .pc-match__footer label.pc-hint { align-items: flex-start; min-width: 0; }
 .pc-match__footer label.pc-hint input { margin-top: 2px; flex: none; }
+
+/* action-feedback toast (FeedbackForm) — floats above the tab bar */
+.pc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: min(86vw, 420px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(42, 28, 18, 0.3);
+  pointer-events: none;
+  animation: pc-toast 2.6s ease forwards;
+}
+@keyframes pc-toast {
+  0% { opacity: 0; translate: 0 10px; }
+  12%, 78% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 -4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-toast { animation: pc-toast-rm 2.6s steps(1) forwards; }
+  @keyframes pc-toast-rm { 0% { opacity: 1; } 100% { opacity: 0; } }
+}
