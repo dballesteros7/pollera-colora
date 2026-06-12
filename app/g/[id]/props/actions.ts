@@ -7,7 +7,7 @@ import { getGroupForMember } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
 import {
   proposeQuestion,
-  reviewQuestion,
+  voteQuestion,
   answerQuestion,
   resolveQuestion,
   PropLockedError,
@@ -53,17 +53,15 @@ export async function proposeAction(formData: FormData) {
   revalidatePath(`/g/${groupId}/props`);
 }
 
-export async function reviewAction(formData: FormData) {
+export async function voteAction(formData: FormData) {
   const groupId = String(formData.get("groupId") ?? "");
-  const { access } = await requireMember(groupId);
-  if (access.role !== "organizer") notFound();
+  const { user } = await requireMember(groupId);
   try {
-    reviewQuestion(
-      getDb(),
-      String(formData.get("questionId") ?? ""),
-      formData.get("decision") === "approved" ? "approved" : "rejected",
-      Number(formData.get("points")) || undefined,
-    );
+    voteQuestion(getDb(), {
+      questionId: String(formData.get("questionId") ?? ""),
+      userId: user.id,
+      vote: formData.get("vote") === "approve" ? "approve" : "reject",
+    });
   } catch (err) {
     swallowPropErrors(err);
   }

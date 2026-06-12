@@ -224,11 +224,16 @@ const M: Record<string, Msg> = {
   "r.correct": { es: "Respuesta correcta", en: "Correct answer", de: "Richtige Antwort" },
   "r.closestOpt": { es: "Gana quien más se acerque (en vez de exacto)", en: "Closest answer wins (instead of exact)", de: "Näheste Antwort gewinnt (statt exakt)" },
   "r.resolve": { es: "Resolver", en: "Settle", de: "Entscheiden" },
-  "r.toApprove": { es: "Por aprobar", en: "Awaiting approval", de: "Wartet auf Freigabe" },
+  "r.toApprove": { es: "En votación del parche", en: "Up for a crew vote", de: "Crew-Abstimmung läuft" },
+  "r.tally": { es: "{a} a favor · {r} en contra · pasa con {needed} de {eligible}", en: "{a} for · {r} against · passes at {needed} of {eligible}", de: "{a} dafür · {r} dagegen · braucht {needed} von {eligible}" },
+  "r.voteApprove": { es: "¡Que entre!", en: "Approve", de: "Dafür" },
+  "r.voteReject": { es: "Que no", en: "Reject", de: "Dagegen" },
+  "r.yourVote": { es: "su voto", en: "your vote", de: "deine Stimme" },
+  "r.quorumNote": { es: "Mayoría del parche al momento de proponerla ({n} entonces).", en: "Majority of the crew as of when it was proposed ({n} back then).", de: "Mehrheit der Crew zum Zeitpunkt des Vorschlags ({n} damals)." },
   "r.proposes": { es: "Propone {name} · tipo {type} · cierra {when}", en: "By {name} · type {type} · closes {when}", de: "Von {name} · Typ {type} · schließt {when}" },
   "r.approve": { es: "Aprobar", en: "Approve", de: "Freigeben" },
   "r.reject": { es: "Rechazar", en: "Reject", de: "Ablehnen" },
-  "r.pending": { es: "{n} pregunta(s) esperando a quien organiza.", en: "{n} question(s) waiting on the organizer.", de: "{n} Frage(n) warten auf den Organisator." },
+
   "r.nobody": { es: "Nadie respondió.", en: "Nobody answered.", de: "Keiner hat geantwortet." },
   "r.proposeH": { es: "Proponga una pregunta", en: "Propose a question", de: "Frage vorschlagen" },
   "r.proposeSub": {

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "./db";
-import { matches, propQuestions, propAnswers, users } from "./db/schema";
+import { matches, propQuestions, propAnswers, propVotes, memberships, users } from "./db/schema";
 import { rebuildGroupScores } from "./scoring/score";
 
 export const DEFAULT_PROP_POINTS = 3;
@@ -54,7 +54,13 @@ export function proposeQuestion(
     }
   }
 
-  return db
+  const eligibleCount = db
+    .select({ n: sql<number>`count(*)` })
+    .from(memberships)
+    .where(eq(memberships.groupId, opts.groupId))
+    .get()!.n;
+
+  const q = db
     .insert(propQuestions)
     .values({
       id: randomUUID(),
@@ -67,35 +73,99 @@ export function proposeQuestion(
       points: opts.points && opts.points > 0 ? opts.points : DEFAULT_PROP_POINTS,
       matchId,
       lockAt,
+      eligibleCount,
       createdAt: now,
     })
     .returning()
     .get();
+  // proposing is an implicit approve vote (a 1-person group self-approves)
+  voteQuestion(db, { questionId: q.id, userId: opts.proposerId, vote: "approve" }, now);
+  return db.select().from(propQuestions).where(eq(propQuestions.id, q.id)).get()!;
 }
 
-export function reviewQuestion(
+export interface VoteTally {
+  approvals: number;
+  rejections: number;
+  eligible: number;
+  needed: number; // strict majority of the frozen member count
+}
+
+export function getVoteTally(
   db: Db,
-  questionId: string,
-  decision: "approved" | "rejected",
-  points?: number,
+  question: { id: string; eligibleCount: number | null; groupId: string },
+): VoteTally {
+  // legacy rows (pre-voting) have no frozen count — fall back to current size
+  const eligible =
+    question.eligibleCount ??
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(memberships)
+      .where(eq(memberships.groupId, question.groupId))
+      .get()!.n;
+  const votes = db
+    .select()
+    .from(propVotes)
+    .where(eq(propVotes.questionId, question.id))
+    .all();
+  return {
+    approvals: votes.filter((v) => v.vote === "approve").length,
+    rejections: votes.filter((v) => v.vote === "reject").length,
+    eligible,
+    needed: Math.floor(eligible / 2) + 1,
+  };
+}
+
+export function voteQuestion(
+  db: Db,
+  opts: { questionId: string; userId: string; vote: "approve" | "reject" },
+  now = new Date(),
 ) {
   const q = db
     .select()
     .from(propQuestions)
-    .where(eq(propQuestions.id, questionId))
+    .where(eq(propQuestions.id, opts.questionId))
     .get();
   if (!q || q.status !== "proposed") {
-    throw new PropStateError("La pregunta no está pendiente.");
+    throw new PropStateError("La pregunta no está en votación.");
   }
-  return db
-    .update(propQuestions)
-    .set({
-      status: decision,
-      points: points && points > 0 ? points : q.points,
+  if (now >= q.lockAt) throw new PropLockedError("La votación ya cerró.");
+
+  db.insert(propVotes)
+    .values({
+      questionId: opts.questionId,
+      userId: opts.userId,
+      vote: opts.vote,
+      updatedAt: now,
     })
-    .where(eq(propQuestions.id, questionId))
-    .returning()
-    .get();
+    .onConflictDoUpdate({
+      target: [propVotes.questionId, propVotes.userId],
+      set: { vote: opts.vote, updatedAt: now },
+    })
+    .run();
+
+  const tally = getVoteTally(db, q);
+  if (tally.approvals >= tally.needed) {
+    db.update(propQuestions)
+      .set({ status: "approved" })
+      .where(eq(propQuestions.id, q.id))
+      .run();
+  } else if (tally.rejections >= tally.needed) {
+    db.update(propQuestions)
+      .set({ status: "rejected" })
+      .where(eq(propQuestions.id, q.id))
+      .run();
+  }
+  return getVoteTally(db, q);
+}
+
+export function getUserVotes(db: Db, groupId: string, userId: string) {
+  const rows = db
+    .select({ v: propVotes })
+    .from(propVotes)
+    .innerJoin(propQuestions, eq(propVotes.questionId, propQuestions.id))
+    .where(and(eq(propQuestions.groupId, groupId), eq(propVotes.userId, userId)))
+    .all();
+  return new Map(rows.map((r) => [r.v.questionId, r.v.vote]));
 }
 
 export function answerQuestion(

@@ -6,6 +6,8 @@ import {
   getGroupQuestions,
   getUserAnswers,
   getQuestionAnswers,
+  getVoteTally,
+  getUserVotes,
 } from "@/lib/props";
 import { getAllMatches, isLocked } from "@/lib/predictions";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
@@ -14,7 +16,7 @@ import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import {
   proposeAction,
-  reviewAction,
+  voteAction,
   answerAction,
   resolveAction,
 } from "./actions";
@@ -37,6 +39,7 @@ export default async function PropsPage({
   const lockFormat = dateTimeFormatter(tz, LOCALE_TAG[lo]);
   const all = getGroupQuestions(db, group.id);
   const mine = getUserAnswers(db, group.id, user.id);
+  const myVotes = getUserVotes(db, group.id, user.id);
   const upcoming = getAllMatches(db).filter((m) => !isLocked(m, now) && m.homeTeam);
 
   const proposed = all.filter((r) => r.q.status === "proposed");
@@ -169,43 +172,49 @@ export default async function PropsPage({
           </section>
         )}
 
-        {role === "organizer" && proposed.length > 0 && (
+        {proposed.length > 0 && (
           <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
             <h2 style={{ margin: "0 2px", fontSize: 18 }}>{t(lo, "r.toApprove")}</h2>
-            {proposed.map(({ q, proposerName }) => (
-              <article key={q.id} className="pc-card pc-flow" style={{ gap: "var(--space-3)" }}>
-                <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
-                <p className="pc-hint" style={{ margin: 0 }}>
-                  {t(lo, "r.proposes", { name: proposerName ?? "?", type: q.answerType, when: lockFormat.format(q.lockAt) })}
-                </p>
-                <form action={reviewAction} className="pc-page-actions">
-                  <input type="hidden" name="groupId" value={group.id} />
-                  <input type="hidden" name="questionId" value={q.id} />
-                  <input
-                    type="number"
-                    name="points"
-                    className="pc-input"
-                    style={{ width: 90 }}
-                    min={1}
-                    max={50}
-                    defaultValue={q.points}
-                    aria-label="Puntos"
-                  />
-                  <button type="submit" name="decision" value="approved" className="pc-btn pc-btn--primary pc-btn--sm">
-                    {t(lo, "r.approve")}
-                  </button>
-                  <button type="submit" name="decision" value="rejected" className="pc-btn pc-btn--ghost pc-btn--sm">
-                    {t(lo, "r.reject")}
-                  </button>
-                </form>
-              </article>
-            ))}
+            {proposed.map(({ q, proposerName }) => {
+              const tally = getVoteTally(db, q);
+              const myVote = myVotes.get(q.id);
+              return (
+                <article key={q.id} className="pc-card pc-flow" style={{ gap: "var(--space-3)" }}>
+                  <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
+                  <p className="pc-hint" style={{ margin: 0 }}>
+                    {t(lo, "r.proposes", { name: proposerName ?? "?", type: q.answerType, when: lockFormat.format(q.lockAt) })}
+                  </p>
+                  <p className="pc-hint" style={{ margin: 0 }}>
+                    <strong>{t(lo, "r.tally", { a: tally.approvals, r: tally.rejections, needed: tally.needed, eligible: tally.eligible })}</strong>
+                    {" · "}
+                    {t(lo, "r.quorumNote", { n: tally.eligible })}
+                  </p>
+                  <form action={voteAction} className="pc-page-actions">
+                    <input type="hidden" name="groupId" value={group.id} />
+                    <input type="hidden" name="questionId" value={q.id} />
+                    <button
+                      type="submit"
+                      name="vote"
+                      value="approve"
+                      className={`pc-btn ${myVote === "approve" ? "pc-btn--accent" : "pc-btn--primary"} pc-btn--sm`}
+                    >
+                      {t(lo, "r.voteApprove")}
+                      {myVote === "approve" && " ✓"}
+                    </button>
+                    <button
+                      type="submit"
+                      name="vote"
+                      value="reject"
+                      className={`pc-btn ${myVote === "reject" ? "pc-btn--danger" : "pc-btn--ghost"} pc-btn--sm`}
+                    >
+                      {t(lo, "r.voteReject")}
+                      {myVote === "reject" && " ✓"}
+                    </button>
+                  </form>
+                </article>
+              );
+            })}
           </section>
-        )}
-        {role !== "organizer" && proposed.length > 0 && (
-          <p className="pc-hint">
-            {t(lo, "r.pending", { n: proposed.length })}
-          </p>
         )}
 
         <section className="pc-card pc-card--pad-lg pc-flow">

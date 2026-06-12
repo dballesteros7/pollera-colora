@@ -15,6 +15,13 @@
       "when": 1781201094772,
       "tag": "0001_yielding_spyke",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781247083632,
+      "tag": "0002_clever_longshot",
+      "breakpoints": true
     }
   ]
 }

@@ -162,8 +162,26 @@ export const propQuestions = sqliteTable("prop_questions", {
   lockAt: integer("lock_at", { mode: "timestamp_ms" }).notNull(),
   resolutionMode: text("resolution_mode", { enum: ["exact", "closest"] }),
   correctValue: text("correct_value"),
+  // member count frozen at proposal time — the approval quorum base
+  eligibleCount: integer("eligible_count"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+export const propVotes = sqliteTable(
+  "prop_votes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => propQuestions.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    vote: text("vote", { enum: ["approve", "reject"] }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [uniqueIndex("prop_votes_question_user").on(t.questionId, t.userId)],
+);
 
 export const propAnswers = sqliteTable(
   "prop_answers",

@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { createDb, type Db } from "../lib/db";
-import { users, scores } from "../lib/db/schema";
+import { users, scores, propQuestions } from "../lib/db/schema";
 import { createGroup, joinGroup } from "../lib/groups";
 import {
   proposeQuestion,
-  reviewQuestion,
+  voteQuestion,
+  getVoteTally,
   answerQuestion,
   resolveQuestion,
   PropLockedError,
@@ -57,7 +59,7 @@ describe("prop questions", () => {
   }
 
   it("full cycle: propose → approve → answer → resolve → points", () => {
-    const q = propose();
+    const q = propose({ points: 5 });
     expect(q.status).toBe("proposed");
 
     // answers rejected while still proposed
@@ -65,7 +67,7 @@ describe("prop questions", () => {
       answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, NOW),
     ).toThrow(PropStateError);
 
-    reviewQuestion(db, q.id, "approved", 5);
+    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
     answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, NOW);
     answerQuestion(db, { questionId: q.id, userId: beto, value: "7" }, NOW);
 
@@ -87,7 +89,7 @@ describe("prop questions", () => {
 
   it("closest mode splits ties", () => {
     const q = propose();
-    reviewQuestion(db, q.id, "approved");
+    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
     answerQuestion(db, { questionId: q.id, userId: ana, value: "2" }, NOW);
     answerQuestion(db, { questionId: q.id, userId: beto, value: "6" }, NOW);
     resolveQuestion(
@@ -102,7 +104,7 @@ describe("prop questions", () => {
 
   it("locks answers at lockAt", () => {
     const q = propose();
-    reviewQuestion(db, q.id, "approved");
+    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
     expect(() =>
       answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, AFTER_LOCK),
     ).toThrow(PropLockedError);
@@ -113,7 +115,7 @@ describe("prop questions", () => {
       answerType: "choice",
       options: ["James", "Luis Díaz", "Nadie"],
     });
-    reviewQuestion(db, q.id, "approved");
+    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
     expect(() =>
       answerQuestion(db, { questionId: q.id, userId: ana, value: "Falcao" }, NOW),
     ).toThrow(PropStateError);
@@ -124,11 +126,62 @@ describe("prop questions", () => {
     ).toBe(3);
   });
 
-  it("rejected questions never open", () => {
+  it("majority rejection kills the question", () => {
+    // 2-member group: proposer auto-approves (1), ana alone can't reject (needs 2)
     const q = propose();
-    reviewQuestion(db, q.id, "rejected");
+    voteQuestion(db, { questionId: q.id, userId: ana, vote: "reject" }, NOW);
+    let tally = getVoteTally(db, db.select().from(propQuestions).where(eq(propQuestions.id, q.id)).get()!);
+    expect(tally).toMatchObject({ approvals: 1, rejections: 1, eligible: 2, needed: 2 });
+    // proposer flips their own vote — rejections reach majority
+    voteQuestion(db, { questionId: q.id, userId: beto, vote: "reject" }, NOW);
     expect(() =>
       answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, NOW),
+    ).toThrow(PropStateError);
+  });
+
+  it("quorum is frozen at proposal time", () => {
+    const q = propose(); // eligible = 2 (ana + beto), needs 2
+    // a third member joins AFTER the proposal
+    const celia = db
+      .insert(users)
+      .values({ id: randomUUID(), email: "celia@b.co", createdAt: NOW })
+      .returning()
+      .get();
+    joinGroup(db, celia.id, groupId, NOW);
+    // still only needs 2 of the frozen 2 — ana's approval settles it
+    const tally = voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
+    expect(tally.needed).toBe(2);
+    expect(tally.eligible).toBe(2);
+    const updated = db.select().from(propQuestions).where(eq(propQuestions.id, q.id)).get()!;
+    expect(updated.status).toBe("approved");
+  });
+
+  it("a 1-person group self-approves on proposal", () => {
+    const soloId = db
+      .insert(users)
+      .values({ id: randomUUID(), email: "solo@b.co", createdAt: NOW })
+      .returning()
+      .get().id;
+    const soloGroup = createGroup(db, soloId, {
+      name: "Solo",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }).id;
+    const q = proposeQuestion(
+      db,
+      { groupId: soloGroup, proposerId: soloId, question: "¿Cuántos goles hoy en total?", answerType: "number", lockAt: LOCK },
+      NOW,
+    );
+    expect(q.status).toBe("approved");
+  });
+
+  it("votes can't be cast after lock or once decided", () => {
+    const q = propose();
+    expect(() =>
+      voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, AFTER_LOCK),
+    ).toThrow(PropLockedError);
+    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW); // approved now
+    expect(() =>
+      voteQuestion(db, { questionId: q.id, userId: ana, vote: "reject" }, NOW),
     ).toThrow(PropStateError);
   });
 
