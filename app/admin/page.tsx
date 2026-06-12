@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/require";
 import { getAllMatches } from "@/lib/predictions";
 import { BONUS_CATEGORIES, getOutcomes, getKnownTeams } from "@/lib/bonus";
 import { collectMetrics, readSnapshots } from "@/lib/metrics";
@@ -8,8 +8,9 @@ import { Header } from "@/app/components/shell";
 import { overrideMatchAction, setOutcomesAction } from "./actions";
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
-  if (!user?.isAdmin) notFound();
+  // logged-out visitors get the login flow instead of a confusing 404
+  const user = await requireUser("/admin");
+  if (!user.isAdmin) notFound();
 
   const db = getDb();
   const matches = getAllMatches(db);
