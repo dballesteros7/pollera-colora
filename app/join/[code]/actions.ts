@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth/require";
 
 export async function joinGroupAction(formData: FormData) {
   const code = String(formData.get("code") ?? "");
-  const user = await requireUser(`/join/${code}`);
+  const user = await requireUser(`/join/${code}?go=1`);
   const group = getGroupByInviteCode(getDb(), code);
   if (!group) redirect("/");
   joinGroup(getDb(), user.id, group.id);

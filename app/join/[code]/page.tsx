@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Users, Target } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { getGroupByInviteCode, getGroupMembers, getGroupForMember } from "@/lib/groups";
+import { getGroupByInviteCode, getGroupMembers, getGroupForMember, joinGroup } from "@/lib/groups";
 import { getCurrentUser } from "@/lib/auth/session";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getLocale, t } from "@/lib/i18n";
@@ -20,10 +20,13 @@ function initials(name: string | null): string {
 
 export default async function JoinPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ go?: string }>;
 }) {
   const { code } = await params;
+  const { go } = await searchParams;
   const lo = await getLocale();
   const db = getDb();
   const group = getGroupByInviteCode(db, code);
@@ -48,6 +51,15 @@ export default async function JoinPage({
   const user = await getCurrentUser();
   // already in this polla? straight to the table
   if (user && getGroupForMember(db, user.id, group.id)) {
+    redirect(`/g/${group.id}`);
+  }
+  // ?go=1 carries the "count me in" click through login + name collection,
+  // so nobody has to press the button again after each detour
+  if (user && go === "1") {
+    if (!user.displayName) {
+      redirect(`/welcome?next=${encodeURIComponent(`/join/${code}?go=1`)}`);
+    }
+    joinGroup(db, user.id, group.id);
     redirect(`/g/${group.id}`);
   }
   const members = getGroupMembers(db, group.id);
@@ -115,7 +127,7 @@ export default async function JoinPage({
             </form>
           ) : (
             <Link
-              href={`/login?next=${encodeURIComponent(`/join/${code}`)}`}
+              href={`/login?next=${encodeURIComponent(`/join/${code}?go=1`)}`}
               className="pc-btn pc-btn--sticker pc-btn--block pc-btn--lg"
             >
               {t(lo, "join.cta")}

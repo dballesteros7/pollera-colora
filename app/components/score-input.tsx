@@ -32,8 +32,9 @@ function Side({
   aria: ScoreAria;
 }) {
   // track the saved value so a revalidation (copy, apply-to-all) refreshes
-  // the box, while plain typing is left alone
-  const init = defaultValue === null ? "" : String(defaultValue);
+  // the box, while plain typing is left alone. No pick yet shows as 0 so the
+  // steppers work from a real number instead of an empty box.
+  const init = defaultValue === null ? "0" : String(defaultValue);
   const [state, setState] = useState({ seen: defaultValue, value: init });
   if (state.seen !== defaultValue) {
     setState({ seen: defaultValue, value: init });
