@@ -19,10 +19,31 @@ const bricolage = Bricolage_Grotesque({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+const APP_URL = process.env.APP_URL ?? "https://pollera-colora.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(APP_URL),
   title: "Pollera Colorá",
   description: "La polla del Mundial 2026 para el parche · The Colombian World Cup prediction pool",
-  icons: { icon: "/emblem.svg" },
+  icons: {
+    icon: [{ url: "/emblem.svg", type: "image/svg+xml" }, { url: "/icon-512.png", sizes: "512x512" }],
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Pollera Colorá",
+    title: "Pollera Colorá",
+    description: "La polla del Mundial 2026 para el parche · The Colombian World Cup prediction pool",
+    url: APP_URL,
+    locale: "es_CO",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Pollera Colorá" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pollera Colorá",
+    description: "La polla del Mundial 2026 para el parche",
+    images: ["/og.png"],
+  },
 };
 
 export const viewport: Viewport = {
