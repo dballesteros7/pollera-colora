@@ -191,3 +191,21 @@
   font-weight: var(--w-semibold);
   color: var(--state-open-ink);
 }
+
+/* ---- language switcher ---- */
+.pc-lang { display: inline-flex; gap: 2px; }
+.pc-lang a {
+  font-size: var(--text-2xs);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--ls-wide);
+  color: var(--ink-faint);
+  text-decoration: none;
+  padding: 6px 5px;
+  border-radius: var(--radius-sm);
+}
+.pc-lang a[aria-current="true"] { color: var(--magenta); background: var(--brand-soft); }
+
+/* ---- decramp match-card header: let meta and time/badge wrap ---- */
+.pc-match__head { flex-wrap: wrap; row-gap: var(--space-1); }
+.pc-match__head > :last-child { margin-left: auto; }
+.pc-match__meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

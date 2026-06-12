@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { getGroupByInviteCode, getGroupMembers } from "@/lib/groups";
 import { getCurrentUser } from "@/lib/auth/session";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
-import { Header } from "@/app/components/shell";
+import { getLocale, t } from "@/lib/i18n";
 import { joinGroupAction } from "./actions";
 
 function initials(name: string | null): string {
@@ -22,6 +22,7 @@ export default async function JoinPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
+  const lo = await getLocale();
   const db = getDb();
   const group = getGroupByInviteCode(db, code);
 
@@ -32,10 +33,9 @@ export default async function JoinPage({
         <div className="pc-hero-shell__center">
           <div className="pc-empty pc-card pc-card--pad-lg">
             <span className="pc-empty__art">🤔</span>
-            <span className="pc-empty__title">Enlace inválido</span>
+            <span className="pc-empty__title">{t(lo, "join.badLinkTitle")}</span>
             <p className="pc-empty__body">
-              Este enlace no existe o fue regenerado. Pídale uno nuevo a quien
-              organiza la polla.
+              {t(lo, "join.badLinkBody")}
             </p>
           </div>
         </div>
@@ -65,12 +65,12 @@ export default async function JoinPage({
             borderRadius: "var(--radius-xl)",
           }}
         >
-          <span className="eyebrow">Le guardaron puesto en la polla</span>
+          <span className="eyebrow">{t(lo, "join.eyebrow")}</span>
           <h1 style={{ margin: 0 }}>{group.name}</h1>
           {organizer?.displayName && (
             <p style={{ color: "var(--ink-soft)", margin: 0 }}>
-              Organiza <b>{organizer.displayName}</b>
-              {group.potNote && <> · vaca: {group.potNote}</>}
+              {t(lo, "join.organizes")} <b>{organizer.displayName}</b>
+              {group.potNote && <> · {t(lo, "join.vaca")}: {group.potNote}</>}
             </p>
           )}
 
@@ -83,7 +83,7 @@ export default async function JoinPage({
               ))}
               {members.length > shown.length && (
                 <span style={{ marginLeft: 16, color: "var(--ink-soft)", fontSize: 14, fontWeight: 600 }}>
-                  + {members.length - shown.length} más
+                  {t(lo, "join.more", { n: members.length - shown.length })}
                 </span>
               )}
             </div>
@@ -91,10 +91,10 @@ export default async function JoinPage({
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
             <span className="pc-badge">
-              <Users size={14} aria-hidden /> {members.length} jugador{members.length === 1 ? "" : "es"}
+              <Users size={14} aria-hidden /> {t(lo, "join.players", { n: members.length })}
             </span>
             <span className="pc-badge">
-              <Target size={14} aria-hidden /> 104 partidos
+              <Target size={14} aria-hidden /> {t(lo, "join.matches")}
             </span>
             <span className="pc-badge pc-badge--organiza">{preset.name}</span>
           </div>
@@ -103,7 +103,7 @@ export default async function JoinPage({
             <form action={joinGroupAction} style={{ width: "100%" }}>
               <input type="hidden" name="code" value={group.inviteCode} />
               <button type="submit" className="pc-btn pc-btn--sticker pc-btn--block pc-btn--lg">
-                ¡Hágale, me uno al parche!
+                {t(lo, "join.cta")}
               </button>
             </form>
           ) : (
@@ -111,18 +111,25 @@ export default async function JoinPage({
               href={`/login?next=${encodeURIComponent(`/join/${code}`)}`}
               className="pc-btn pc-btn--sticker pc-btn--block pc-btn--lg"
             >
-              ¡Hágale, me uno al parche!
+              {t(lo, "join.cta")}
             </Link>
           )}
           <p className="pc-hint" style={{ margin: 0 }}>
             {user ? (
-              <>Va como <b>{user.email}</b>. </>
+              <>{t(lo, "join.as")} <b>{user.email}</b>. </>
             ) : (
-              <>Primero entre con su correo. </>
+              <>{t(lo, "join.loginFirst")} </>
             )}
-            No se mueve plata por la app.
+            {t(lo, "join.noMoney")}
           </p>
         </div>
+
+        <details className="pc-card pc-sheet" open={lo !== "es"}>
+          <summary>{t(lo, "explain.title")}</summary>
+          <p style={{ margin: "var(--space-2) 0 0", fontSize: "var(--text-sm)", color: "var(--ink-soft)" }}>
+            {t(lo, "explain.body")}
+          </p>
+        </details>
       </div>
     </main>
   );

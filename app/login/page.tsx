@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getLocale, t } from "@/lib/i18n";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
@@ -11,6 +12,7 @@ export default async function LoginPage({
   const { next } = await searchParams;
   const user = await getCurrentUser();
   if (user) redirect(next && next.startsWith("/") ? next : "/");
+  const lo = await getLocale();
 
   return (
     <main className="pc-hero-shell">
@@ -20,16 +22,30 @@ export default async function LoginPage({
           <Image src="/emblem.svg" alt="Pollera Colorá" width={76} height={76} />
           <div>
             <h1 style={{ margin: 0 }}>
-              ¡Se armó
+              {t(lo, "hero.title1")}
               <br />
-              la polla!
+              {t(lo, "hero.title2")}
             </h1>
             <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
-              Entre al parche y meta sus pronósticos.
+              {t(lo, "login.sub")}
             </p>
           </div>
         </div>
-        <LoginForm next={next} />
+        <LoginForm
+          next={next}
+          labels={{
+            email: t(lo, "login.email"),
+            emailPh: t(lo, "login.emailPh"),
+            send: t(lo, "login.send"),
+            sending: t(lo, "login.sending"),
+            codeInfo: t(lo, "login.codeInfo"),
+            sentTo: t(lo, "login.sentTo"),
+            code: t(lo, "login.code"),
+            codeMailed: t(lo, "login.codeMailed"),
+            enter: t(lo, "login.enter"),
+            verifying: t(lo, "login.verifying"),
+          }}
+        />
       </div>
     </main>
   );

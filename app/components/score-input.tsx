@@ -2,16 +2,34 @@
 
 import { useState } from "react";
 
+export interface ScoreAria {
+  goals: string; // "{team}" placeholder
+  minus: string;
+  plus: string;
+}
+
+const DEFAULT_ARIA: ScoreAria = {
+  goals: "Goles {team}",
+  minus: "Menos goles {team}",
+  plus: "Más goles {team}",
+};
+
+function fill(tpl: string, team: string) {
+  return tpl.replaceAll("{team}", team);
+}
+
 function Side({
   team,
   crest,
   name,
   defaultValue,
+  aria,
 }: {
   team: string;
   crest: string | null;
   name: string;
   defaultValue: number | null;
+  aria: ScoreAria;
 }) {
   const [value, setValue] = useState<string>(
     defaultValue === null ? "" : String(defaultValue),
@@ -33,7 +51,7 @@ function Side({
         {team}
       </span>
       <span className="pc-score__box">
-        <button type="button" className="pc-stepper" aria-label={`Menos goles ${team}`} onClick={() => step(-1)}>
+        <button type="button" className="pc-stepper" aria-label={fill(aria.minus, team)} onClick={() => step(-1)}>
           −
         </button>
         <input
@@ -46,9 +64,9 @@ function Side({
           inputMode="numeric"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          aria-label={`Goles ${team}`}
+          aria-label={fill(aria.goals, team)}
         />
-        <button type="button" className="pc-stepper" aria-label={`Más goles ${team}`} onClick={() => step(1)}>
+        <button type="button" className="pc-stepper" aria-label={fill(aria.plus, team)} onClick={() => step(1)}>
           +
         </button>
       </span>
@@ -63,6 +81,7 @@ export function ScoreInput({
   awayCrest,
   defaultHome,
   defaultAway,
+  aria = DEFAULT_ARIA,
 }: {
   homeTeam: string;
   awayTeam: string;
@@ -70,14 +89,15 @@ export function ScoreInput({
   awayCrest: string | null;
   defaultHome: number | null;
   defaultAway: number | null;
+  aria?: ScoreAria;
 }) {
   return (
     <div className="pc-score">
-      <Side team={homeTeam} crest={homeCrest} name="predHome" defaultValue={defaultHome} />
+      <Side team={homeTeam} crest={homeCrest} name="predHome" defaultValue={defaultHome} aria={aria} />
       <span className="pc-score__dash" aria-hidden>
         –
       </span>
-      <Side team={awayTeam} crest={awayCrest} name="predAway" defaultValue={defaultAway} />
+      <Side team={awayTeam} crest={awayCrest} name="predAway" defaultValue={defaultAway} aria={aria} />
     </div>
   );
 }

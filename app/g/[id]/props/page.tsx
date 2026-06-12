@@ -9,6 +9,8 @@ import {
 } from "@/lib/props";
 import { getAllMatches, isLocked } from "@/lib/predictions";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
+import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
+import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import {
   proposeAction,
@@ -30,8 +32,9 @@ export default async function PropsPage({
   const { group, role } = access;
 
   const now = new Date();
+  const lo = await getLocale();
   const tz = await getViewerTz();
-  const lockFormat = dateTimeFormatter(tz);
+  const lockFormat = dateTimeFormatter(tz, LOCALE_TAG[lo]);
   const all = getGroupQuestions(db, group.id);
   const mine = getUserAnswers(db, group.id, user.id);
   const upcoming = getAllMatches(db).filter((m) => !isLocked(m, now) && m.homeTeam);
@@ -47,35 +50,35 @@ export default async function PropsPage({
         {open.length > 0 && (
           <span className="pc-badge pc-badge--open">
             <span className="pc-dot" />
-            {open.length} abiertas
+            {t(lo, "r.nOpen", { n: open.length })}
           </span>
         )}
       </Header>
       <main className="page pc-flow" style={{ gap: "var(--space-6)" }}>
         <div>
           <span className="eyebrow">{group.name}</span>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>La Recocha</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "r.title")}</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
-            Las preguntas las propone el grupo y las resuelve quien organiza.
+            {t(lo, "r.sub")}
           </p>
         </div>
 
         <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
-          <h2 style={{ margin: "0 2px", fontSize: 18 }}>Abiertas</h2>
+          <h2 style={{ margin: "0 2px", fontSize: 18 }}>{t(lo, "r.open")}</h2>
           {open.length === 0 && (
             <div className="pc-card pc-empty">
               <span className="pc-empty__art">🎤</span>
-              <span className="pc-empty__title">Nada abierto por ahora</span>
-              <p className="pc-empty__body">Proponga una pregunta abajo — la que sea.</p>
+              <span className="pc-empty__title">{t(lo, "r.emptyTitle")}</span>
+              <p className="pc-empty__body">{t(lo, "r.emptyBody")}</p>
             </div>
           )}
           {open.map(({ q, proposerName }) => (
             <article key={q.id} className="pc-match" data-state="open">
               <div className="pc-match__head">
                 <span className="pc-match__meta">
-                  propuso {proposerName ?? "alguien"} · {q.points} pts
+                  {t(lo, "r.proposedBy", { name: proposerName ?? "?", n: q.points })}
                 </span>
-                <span className="pc-match__time">cierra {lockFormat.format(q.lockAt)}</span>
+                <span className="pc-match__time">{t(lo, "r.closes", { when: lockFormat.format(q.lockAt) })}</span>
               </div>
               <div className="pc-match__body pc-flow" style={{ gap: "var(--space-3)" }}>
                 <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
@@ -86,14 +89,15 @@ export default async function PropsPage({
                     answerType={q.answerType}
                     options={(q.options as string[]) ?? []}
                     current={mine.get(q.id)}
+                    lo={lo}
                   />
                   <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
-                    {mine.has(q.id) ? "Cambiar" : "Responder"}
+                    {mine.has(q.id) ? t(lo, "r.change") : t(lo, "r.answer")}
                   </button>
                 </form>
                 {mine.has(q.id) && (
                   <p className="pc-saved" style={{ margin: 0 }}>
-                    Su respuesta: {mine.get(q.id)} — puede cambiarla hasta el cierre.
+                    {t(lo, "r.yourAnswer", { v: mine.get(q.id)! })}
                   </p>
                 )}
               </div>
@@ -103,37 +107,38 @@ export default async function PropsPage({
 
         {awaiting.length > 0 && (
           <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
-            <h2 style={{ margin: "0 2px", fontSize: 18 }}>Cerradas, esperando resultado</h2>
+            <h2 style={{ margin: "0 2px", fontSize: 18 }}>{t(lo, "r.waiting")}</h2>
             {awaiting.map(({ q }) => (
               <article key={q.id} className="pc-match" data-state="locked">
                 <div className="pc-match__head">
-                  <span className="pc-match__meta">{q.points} pts</span>
-                  <span className="pc-badge pc-badge--locked">cerrada</span>
+                  <span className="pc-match__meta">{t(lo, "s.pts", { n: q.points })}</span>
+                  <span className="pc-badge pc-badge--locked">{t(lo, "r.closed")}</span>
                 </div>
                 <div className="pc-match__body pc-flow" style={{ gap: "var(--space-3)" }}>
                   <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
-                  <AnswersList questionId={q.id} />
+                  <AnswersList questionId={q.id} lo={lo} />
                   {role === "organizer" && (
                     <form action={resolveAction} className="pc-flow" style={{ gap: "var(--space-3)" }}>
                       <input type="hidden" name="groupId" value={group.id} />
                       <input type="hidden" name="questionId" value={q.id} />
                       <div className="pc-field">
-                        <label className="pc-label">Respuesta correcta</label>
+                        <label className="pc-label">{t(lo, "r.correct")}</label>
                         <ResolveInput
                           answerType={q.answerType}
                           options={(q.options as string[]) ?? []}
+                          lo={lo}
                         />
                       </div>
                       {q.answerType === "number" && (
                         <label className="pc-option" style={{ padding: "var(--space-2) var(--space-3)" }}>
                           <input type="checkbox" name="resolutionMode" value="closest" />
                           <span className="pc-option__desc">
-                            Gana quien más se acerque (en vez de exacto)
+                            {t(lo, "r.closestOpt")}
                           </span>
                         </label>
                       )}
                       <button type="submit" className="pc-btn pc-btn--secondary pc-btn--sm">
-                        Resolver
+                        {t(lo, "r.resolve")}
                       </button>
                     </form>
                   )}
@@ -145,19 +150,19 @@ export default async function PropsPage({
 
         {resolved.length > 0 && (
           <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
-            <h2 style={{ margin: "0 2px", fontSize: 18 }}>Resueltas</h2>
+            <h2 style={{ margin: "0 2px", fontSize: 18 }}>{t(lo, "r.resolvedH")}</h2>
             {resolved.map(({ q }) => (
               <article key={q.id} className="pc-match" data-state="final">
                 <div className="pc-match__head">
-                  <span className="pc-match__meta">{q.points} pts{q.resolutionMode === "closest" && " · al más cercano"}</span>
-                  <span className="pc-badge pc-badge--final">resuelta</span>
+                  <span className="pc-match__meta">{t(lo, "s.pts", { n: q.points })}{q.resolutionMode === "closest" && <> · {t(lo, "r.closest")}</>}</span>
+                  <span className="pc-badge pc-badge--final">{t(lo, "r.resolved")}</span>
                 </div>
                 <div className="pc-match__body pc-flow" style={{ gap: "var(--space-3)" }}>
                   <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
                   <p style={{ margin: 0 }}>
-                    Respuesta: <b className="pc-pick">{q.correctValue}</b>
+                    {t(lo, "r.answerIs")} <b className="pc-pick">{q.correctValue}</b>
                   </p>
-                  <AnswersList questionId={q.id} />
+                  <AnswersList questionId={q.id} lo={lo} />
                 </div>
               </article>
             ))}
@@ -166,13 +171,12 @@ export default async function PropsPage({
 
         {role === "organizer" && proposed.length > 0 && (
           <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
-            <h2 style={{ margin: "0 2px", fontSize: 18 }}>Por aprobar</h2>
+            <h2 style={{ margin: "0 2px", fontSize: 18 }}>{t(lo, "r.toApprove")}</h2>
             {proposed.map(({ q, proposerName }) => (
               <article key={q.id} className="pc-card pc-flow" style={{ gap: "var(--space-3)" }}>
                 <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
                 <p className="pc-hint" style={{ margin: 0 }}>
-                  Propone {proposerName ?? "alguien"} · tipo {q.answerType} · cierra{" "}
-                  {lockFormat.format(q.lockAt)}
+                  {t(lo, "r.proposes", { name: proposerName ?? "?", type: q.answerType, when: lockFormat.format(q.lockAt) })}
                 </p>
                 <form action={reviewAction} className="pc-page-actions">
                   <input type="hidden" name="groupId" value={group.id} />
@@ -188,10 +192,10 @@ export default async function PropsPage({
                     aria-label="Puntos"
                   />
                   <button type="submit" name="decision" value="approved" className="pc-btn pc-btn--primary pc-btn--sm">
-                    Aprobar
+                    {t(lo, "r.approve")}
                   </button>
                   <button type="submit" name="decision" value="rejected" className="pc-btn pc-btn--ghost pc-btn--sm">
-                    Rechazar
+                    {t(lo, "r.reject")}
                   </button>
                 </form>
               </article>
@@ -200,45 +204,44 @@ export default async function PropsPage({
         )}
         {role !== "organizer" && proposed.length > 0 && (
           <p className="pc-hint">
-            {proposed.length} pregunta(s) esperando a quien organiza.
+            {t(lo, "r.pending", { n: proposed.length })}
           </p>
         )}
 
         <section className="pc-card pc-card--pad-lg pc-flow">
           <div>
-            <h2 style={{ fontSize: 18, marginBottom: 4 }}>Proponga una pregunta</h2>
+            <h2 style={{ fontSize: 18, marginBottom: 4 }}>{t(lo, "r.proposeH")}</h2>
             <p className="pc-hint" style={{ margin: 0 }}>
-              La que sea: “¿cuántos bailes de salsa choke?”, “¿llora el
-              comentarista si gana Colombia?”
+              {t(lo, "r.proposeSub")}
             </p>
           </div>
           <form action={proposeAction} className="pc-flow">
             <input type="hidden" name="groupId" value={group.id} />
             <div className="pc-field">
-              <label className="pc-label" htmlFor="prop-q">Pregunta</label>
+              <label className="pc-label" htmlFor="prop-q">{t(lo, "r.q")}</label>
               <input id="prop-q" className="pc-input" name="question" required minLength={5} maxLength={200} />
             </div>
             <div className="pc-field">
-              <label className="pc-label" htmlFor="prop-type">Tipo de respuesta</label>
+              <label className="pc-label" htmlFor="prop-type">{t(lo, "r.type")}</label>
               <select id="prop-type" className="pc-input" name="answerType">
-                <option value="number">Número</option>
-                <option value="boolean">Sí / No</option>
-                <option value="choice">Opciones</option>
+                <option value="number">{t(lo, "r.number")}</option>
+                <option value="boolean">{t(lo, "r.yesno")}</option>
+                <option value="choice">{t(lo, "r.choice")}</option>
               </select>
             </div>
             <div className="pc-field">
               <label className="pc-label" htmlFor="prop-options">
-                Opciones <span className="pc-hint">(una por línea, solo para tipo “Opciones”)</span>
+                {t(lo, "r.options")} <span className="pc-hint">{t(lo, "r.optionsHint")}</span>
               </label>
               <textarea id="prop-options" className="pc-input" name="options" rows={3} style={{ paddingTop: 10, minHeight: 80 }} />
             </div>
             <div className="pc-field">
-              <label className="pc-label" htmlFor="prop-match">Partido (opcional — cierra con el pitazo)</label>
+              <label className="pc-label" htmlFor="prop-match">{t(lo, "r.match")}</label>
               <select id="prop-match" className="pc-input" name="matchId" defaultValue="">
-                <option value="">Sin partido — cierre manual</option>
+                <option value="">{t(lo, "r.noMatch")}</option>
                 {upcoming.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.homeTeam} vs {m.awayTeam} (
+                    {teamName(m.homeTeam, lo)} vs {teamName(m.awayTeam, lo)} (
                     {m.kickoffUtc.toLocaleDateString("es-CO", { timeZone: tz, day: "numeric", month: "short" })})
                   </option>
                 ))}
@@ -246,16 +249,16 @@ export default async function PropsPage({
             </div>
             <div className="pc-page-actions">
               <div className="pc-field" style={{ flex: 1 }}>
-                <label className="pc-label" htmlFor="prop-lock">Cierre manual</label>
+                <label className="pc-label" htmlFor="prop-lock">{t(lo, "r.manualClose")}</label>
                 <input id="prop-lock" type="datetime-local" className="pc-input" name="lockAt" />
               </div>
               <div className="pc-field" style={{ width: 110 }}>
-                <label className="pc-label" htmlFor="prop-points">Puntos</label>
+                <label className="pc-label" htmlFor="prop-points">{t(lo, "r.points")}</label>
                 <input id="prop-points" type="number" className="pc-input" name="points" min={1} max={50} defaultValue={3} />
               </div>
             </div>
             <button type="submit" className="pc-btn pc-btn--accent pc-btn--block">
-              Mandársela al parche
+              {t(lo, "r.propose")}
             </button>
           </form>
         </section>
@@ -269,10 +272,12 @@ function AnswerInput({
   answerType,
   options,
   current,
+  lo,
 }: {
   answerType: string;
   options: string[];
   current?: string;
+  lo: import("@/lib/i18n").Locale;
 }) {
   if (answerType === "number") {
     return (
@@ -283,7 +288,7 @@ function AnswerInput({
         style={{ width: 110 }}
         required
         defaultValue={current ?? ""}
-        aria-label="Su respuesta"
+        aria-label={t(lo, "r.yourAnswerLabel")}
       />
     );
   }
@@ -292,11 +297,11 @@ function AnswerInput({
       <span style={{ display: "inline-flex", gap: 8 }}>
         <label className="pc-option" style={{ padding: "var(--space-2) var(--space-3)" }}>
           <input type="radio" name="value" value="si" required defaultChecked={current === "si"} />
-          <span>Sí</span>
+          <span>{t(lo, "r.yes")}</span>
         </label>
         <label className="pc-option" style={{ padding: "var(--space-2) var(--space-3)" }}>
           <input type="radio" name="value" value="no" defaultChecked={current === "no"} />
-          <span>No</span>
+          <span>{t(lo, "r.no")}</span>
         </label>
       </span>
     );
@@ -304,7 +309,7 @@ function AnswerInput({
   return (
     <select name="value" className="pc-input" style={{ flex: 1, minWidth: 140 }} required defaultValue={current ?? ""}>
       <option value="" disabled>
-        Elija…
+        {t(lo, "r.choose")}
       </option>
       {options.map((o) => (
         <option key={o} value={o}>
@@ -318,9 +323,11 @@ function AnswerInput({
 function ResolveInput({
   answerType,
   options,
+  lo,
 }: {
   answerType: string;
   options: string[];
+  lo: import("@/lib/i18n").Locale;
 }) {
   if (answerType === "number") {
     return <input type="number" name="correctValue" className="pc-input" required />;
@@ -328,8 +335,8 @@ function ResolveInput({
   if (answerType === "boolean") {
     return (
       <select name="correctValue" className="pc-input" required>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
+        <option value="si">{t(lo, "r.yes")}</option>
+        <option value="no">{t(lo, "r.no")}</option>
       </select>
     );
   }
@@ -344,12 +351,12 @@ function ResolveInput({
   );
 }
 
-async function AnswersList({ questionId }: { questionId: string }) {
+async function AnswersList({ questionId, lo }: { questionId: string; lo: import("@/lib/i18n").Locale }) {
   const answers = getQuestionAnswers(getDb(), questionId);
   if (answers.length === 0)
     return (
       <p className="pc-hint" style={{ margin: 0 }}>
-        Nadie respondió.
+        {t(lo, "r.nobody")}
       </p>
     );
   return (

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { requestOtp, verifyOtp, OtpRateLimitError } from "@/lib/auth/otp";
 import { createSessionForEmail, destroySession } from "@/lib/auth/session";
+import { getLocale, t } from "@/lib/i18n";
 
 export interface LoginState {
   step: "email" | "code";
@@ -15,25 +16,20 @@ export async function sendCode(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
+  const lo = await getLocale();
   const email = String(formData.get("email") ?? "");
   if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-    return { step: "email", error: "Ingrese un correo válido." };
+    return { step: "email", error: t(lo, "err.email") };
   }
   try {
-    const { email: normalized } = await requestOtp(getDb(), email);
+    const { email: normalized } = await requestOtp(getDb(), email, new Date(), lo);
     return { step: "code", email: normalized };
   } catch (err) {
     if (err instanceof OtpRateLimitError) {
-      return {
-        step: "email",
-        error: "Demasiados códigos pedidos. Espere unos minutos.",
-      };
+      return { step: "email", error: t(lo, "err.rate") };
     }
     console.error("[auth] sending code failed:", err);
-    return {
-      step: "email",
-      error: "No pudimos mandar el código. Intente de nuevo.",
-    };
+    return { step: "email", error: t(lo, "err.send") };
   }
 }
 
@@ -41,6 +37,7 @@ export async function checkCode(
   prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
+  const lo = await getLocale();
   const email = prev.email ?? String(formData.get("email") ?? "");
   const code = String(formData.get("code") ?? "");
   const result = verifyOtp(getDb(), email, code);
@@ -48,10 +45,7 @@ export async function checkCode(
     return {
       step: "code",
       email,
-      error:
-        result.reason === "expired"
-          ? "El código venció. Pida uno nuevo."
-          : "Código incorrecto.",
+      error: result.reason === "expired" ? t(lo, "err.expired") : t(lo, "err.wrongCode"),
     };
   }
   await createSessionForEmail(result.email);

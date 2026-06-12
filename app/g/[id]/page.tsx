@@ -19,6 +19,8 @@ import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predicti
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
 import { bonusLocked } from "@/lib/bonus";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
+import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
+import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
 import { ScoringSheet } from "@/app/components/scoring-rules";
@@ -45,8 +47,9 @@ export default async function GroupPage({
 
   const { group, role } = access;
   const now = new Date();
+  const lo = await getLocale();
   const tz = await getViewerTz();
-  const fmtDateTime = dateTimeFormatter(tz);
+  const fmtDateTime = dateTimeFormatter(tz, LOCALE_TAG[lo]);
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
@@ -86,7 +89,7 @@ export default async function GroupPage({
     <>
       <Header>
         {role === "organizer" && (
-          <Link href={`/g/${group.id}/settings`} className="pc-iconbtn" aria-label="Configuración">
+          <Link href={`/g/${group.id}/settings`} className="pc-iconbtn" aria-label={t(lo, "a11y.settings")}>
             <Settings size={20} aria-hidden />
           </Link>
         )}
@@ -95,11 +98,11 @@ export default async function GroupPage({
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
           <div style={{ minWidth: 0 }}>
             <span className="eyebrow">{group.name}</span>
-            <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Tabla de posiciones</h1>
+            <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "g.title")}</h1>
           </div>
           {organizer?.displayName && (
             <span className="pc-badge pc-badge--organiza">
-              <Crown size={14} aria-hidden /> {organizer.displayName.split(" ")[0]} organiza
+              <Crown size={14} aria-hidden /> {t(lo, "badge.organiza", { name: organizer.displayName.split(" ")[0] })}
             </span>
           )}
         </div>
@@ -111,16 +114,16 @@ export default async function GroupPage({
           >
             <div className="pc-match__head">
               <span className="pc-match__meta">
-                {heroIsLive ? "¡En juego!" : "Próximo partido"}
+                {heroIsLive ? t(lo, "g.live") : t(lo, "g.next")}
               </span>
               {heroIsLive ? (
                 <span className="pc-badge pc-badge--live">
                   <span className="pc-dot" />
-                  en juego
+                  {t(lo, "badge.live")}
                 </span>
               ) : (
                 <span className="pc-countdown">
-                  arranca en {countdown(nextMatch.kickoffUtc.getTime() - now.getTime())}
+                  {t(lo, "g.startsIn", { t: countdown(nextMatch.kickoffUtc.getTime() - now.getTime()) })}
                 </span>
               )}
             </div>
@@ -130,19 +133,20 @@ export default async function GroupPage({
                 <input type="hidden" name="matchId" value={nextMatch.id} />
                 <div className="pc-match__body">
                   <ScoreInput
-                    homeTeam={nextMatch.homeTeam!}
-                    awayTeam={nextMatch.awayTeam!}
+                    homeTeam={teamName(nextMatch.homeTeam, lo)!}
+                    awayTeam={teamName(nextMatch.awayTeam, lo)!}
                     homeCrest={nextMatch.homeCrest}
                     awayCrest={nextMatch.awayCrest}
                     defaultHome={heroPred?.predHome ?? null}
                     defaultAway={heroPred?.predAway ?? null}
+                    aria={{ goals: t(lo, "f.goalsOf", { team: "{team}" }), minus: t(lo, "f.minus", { team: "{team}" }), plus: t(lo, "f.plus", { team: "{team}" }) }}
                   />
                 </div>
                 <div className="pc-match__footer">
                   {preset.joker && (
                     <label className="pc-comodin">
                       <input type="checkbox" name="joker" defaultChecked={heroPred?.joker ?? false} />
-                      Comodín ×2
+                      {t(lo, "comodin")}
                     </label>
                   )}
                   <button
@@ -150,7 +154,7 @@ export default async function GroupPage({
                     className={`pc-btn ${heroPred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
                     style={{ marginLeft: "auto" }}
                   >
-                    {heroPred ? "Actualizar" : "Guardar"}
+                    {heroPred ? t(lo, "btn.update") : t(lo, "btn.save")}
                   </button>
                 </div>
               </form>
@@ -162,7 +166,7 @@ export default async function GroupPage({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={nextMatch.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
                     )}
-                    <span className="pc-team__name">{nextMatch.homeTeam}</span>
+                    <span className="pc-team__name">{teamName(nextMatch.homeTeam, lo)}</span>
                   </span>
                   <span className="pc-result">
                     {heroIsLive ? (
@@ -178,22 +182,22 @@ export default async function GroupPage({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={nextMatch.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
                     )}
-                    <span className="pc-team__name">{nextMatch.awayTeam}</span>
+                    <span className="pc-team__name">{teamName(nextMatch.awayTeam, lo)}</span>
                   </span>
                 </div>
                 <div className="pc-match__pick">
                   <span>
-                    {fmtDateTime.format(nextMatch.kickoffUtc)} · su pronóstico:{" "}
+                    {fmtDateTime.format(nextMatch.kickoffUtc)} · {t(lo, "g.yourPick")}:{" "}
                     {heroPred ? (
                       <b className="pc-pick">
                         {heroPred.predHome}–{heroPred.predAway}
                       </b>
                     ) : (
-                      "no marcó"
+                      t(lo, "g.noPick")
                     )}
                   </span>
                   <Link href={`/g/${group.id}/fixtures`} className="pc-btn pc-btn--quiet pc-btn--sm">
-                    Ver partidos
+                    {t(lo, "g.seeMatches")}
                   </Link>
                 </div>
               </div>
@@ -204,9 +208,9 @@ export default async function GroupPage({
         {board.length <= 1 && board.every((r) => r.total === 0) ? (
           <div className="pc-card pc-empty">
             <span className="pc-empty__art">🏆</span>
-            <span className="pc-empty__title">La tabla arranca en ceros</span>
+            <span className="pc-empty__title">{t(lo, "g.emptyTitle")}</span>
             <p className="pc-empty__body">
-              Invite al parche y metan sus pronósticos antes del pitazo.
+              {t(lo, "g.emptyBody")}
             </p>
           </div>
         ) : (
@@ -214,9 +218,9 @@ export default async function GroupPage({
             <thead>
               <tr>
                 <th scope="col" aria-label="Puesto">#</th>
-                <th scope="col">Quién</th>
-                <th scope="col" className="pc-num">Pts</th>
-                <th scope="col" className="pc-num">Exactos</th>
+                <th scope="col">{t(lo, "g.who")}</th>
+                <th scope="col" className="pc-num">{t(lo, "g.pts")}</th>
+                <th scope="col" className="pc-num">{t(lo, "g.exact")}</th>
               </tr>
             </thead>
             <tbody>
@@ -244,29 +248,29 @@ export default async function GroupPage({
 
         {group.potNote && (
           <p style={{ display: "inline-flex", alignItems: "center", gap: 5, margin: 0, fontSize: 13, color: "var(--ink-soft)" }}>
-            <Trophy size={15} style={{ color: "var(--amarillo-deep)" }} aria-hidden /> Vaca: {group.potNote}
+            <Trophy size={15} style={{ color: "var(--amarillo-deep)" }} aria-hidden /> {t(lo, "g.vaca", { note: group.potNote })}
           </p>
         )}
 
-        <ScoringSheet preset={preset} rules={rules} />
+        <ScoringSheet preset={preset} rules={rules} locale={lo} />
 
         <div className="pc-flow" style={{ gap: "var(--gap-card)" }}>
           <Link href={`/g/${group.id}/fixtures`} className="pc-card pc-quicklink">
             <span className="pc-quicklink__icon"><CalendarDays size={22} aria-hidden /></span>
             <span className="pc-quicklink__text">
-              <span className="pc-quicklink__label">Pronosticar partidos</span>
-              <span className="pc-quicklink__sub">Los 104 del Mundial, día a día</span>
+              <span className="pc-quicklink__label">{t(lo, "g.predict")}</span>
+              <span className="pc-quicklink__sub">{t(lo, "g.predictSub")}</span>
             </span>
             {openUnpredicted > 0 && (
-              <span className="pc-badge pc-badge--open"><span className="pc-dot" />{openUnpredicted} sin marcar</span>
+              <span className="pc-badge pc-badge--open"><span className="pc-dot" />{t(lo, "g.unmarked", { n: openUnpredicted })}</span>
             )}
             <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
           </Link>
           <Link href={`/g/${group.id}/props`} className="pc-card pc-quicklink">
             <span className="pc-quicklink__icon"><ListChecks size={22} aria-hidden /></span>
             <span className="pc-quicklink__text">
-              <span className="pc-quicklink__label">La Recocha</span>
-              <span className="pc-quicklink__sub">Las preguntas locas del parche</span>
+              <span className="pc-quicklink__label">{t(lo, "r.title")}</span>
+              <span className="pc-quicklink__sub">{t(lo, "g.recochaSub")}</span>
             </span>
             {openProps > 0 && <span className="pc-badge">{openProps}</span>}
             <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
@@ -274,26 +278,26 @@ export default async function GroupPage({
           <Link href={`/g/${group.id}/bonus`} className="pc-card pc-quicklink">
             <span className="pc-quicklink__icon"><Star size={22} aria-hidden /></span>
             <span className="pc-quicklink__text">
-              <span className="pc-quicklink__label">Bonus: campeón y goleador</span>
+              <span className="pc-quicklink__label">{t(lo, "g.bonusTitle")}</span>
               <span className="pc-quicklink__sub">
                 {bonusClosed
-                  ? "Cerrados — mire los del parche"
+                  ? t(lo, "g.bonusClosed")
                   : group.bonusLockAt
-                    ? "Cierran pronto, ¡pilas!"
-                    : "Abiertos"}
+                    ? t(lo, "g.bonusSoon")
+                    : t(lo, "g.bonusOpen")}
               </span>
             </span>
             {bonusClosed ? (
-              <span className="pc-badge pc-badge--locked">cerrado</span>
+              <span className="pc-badge pc-badge--locked">{t(lo, "badge.locked")}</span>
             ) : (
-              <span className="pc-badge pc-badge--open"><span className="pc-dot" />abierto</span>
+              <span className="pc-badge pc-badge--open"><span className="pc-dot" />{t(lo, "badge.open")}</span>
             )}
             <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
           </Link>
         </div>
 
         <p className="pc-hint" style={{ display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
-          <LinkIcon size={14} aria-hidden /> Invite con este enlace:{" "}
+          <LinkIcon size={14} aria-hidden /> {t(lo, "g.invite")}{" "}
           <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
         </p>
       </main>

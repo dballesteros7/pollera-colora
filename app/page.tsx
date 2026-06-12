@@ -5,11 +5,13 @@ import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUserGroups } from "@/lib/groups";
 import { Header } from "@/app/components/shell";
+import { getLocale, t } from "@/lib/i18n";
 import { logout } from "./login/actions";
 import { setDisplayName } from "./actions";
 
 export default async function Home() {
   const user = await getCurrentUser();
+  const lo = await getLocale();
 
   if (!user) {
     return (
@@ -20,21 +22,20 @@ export default async function Home() {
             <Image src="/emblem.svg" alt="Pollera Colorá" width={76} height={76} />
             <div>
               <h1 style={{ margin: 0 }}>
-                ¡Se armó
+                {t(lo, "hero.title1")}
                 <br />
-                la polla!
+                {t(lo, "hero.title2")}
               </h1>
               <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
-                La polla del Mundial 2026 para el parche. Pronósticos,
-                preguntas del parche y la tabla para pelear.
+                {t(lo, "landing.sub")}
               </p>
             </div>
           </div>
           <Link href="/login" className="pc-btn pc-btn--primary pc-btn--block pc-btn--lg">
-            Entrar con su correo
+            {t(lo, "landing.cta")}
           </Link>
           <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
-            Sin contraseñas. No se mueve plata por la app.
+            {t(lo, "landing.hint")}
           </p>
         </div>
       </main>
@@ -48,21 +49,21 @@ export default async function Home() {
         <div className="pc-hero-shell__center">
           <div className="pc-hero-head">
             <Image src="/emblem.svg" alt="" width={56} height={56} />
-            <h1 style={{ margin: 0 }}>¡Quiubo!</h1>
+            <h1 style={{ margin: 0 }}>{t(lo, "name.title")}</h1>
             <p style={{ color: "var(--ink-soft)", margin: 0 }}>
-              ¿Cómo le decimos en las pollas?
+              {t(lo, "name.q")}
             </p>
           </div>
           <form action={setDisplayName} className="pc-card pc-card--pad-lg pc-flow">
             <div className="pc-field">
               <label className="pc-label" htmlFor="displayName">
-                Tu nombre
+                {t(lo, "name.label")}
               </label>
               <input
                 id="displayName"
                 className="pc-input"
                 name="displayName"
-                placeholder="Como le dicen en el parche"
+                placeholder={t(lo, "name.placeholder")}
                 required
                 minLength={2}
                 maxLength={40}
@@ -70,7 +71,7 @@ export default async function Home() {
               />
             </div>
             <button type="submit" className="pc-btn pc-btn--primary pc-btn--block">
-              Listo
+              {t(lo, "name.done")}
             </button>
           </form>
         </div>
@@ -84,24 +85,23 @@ export default async function Home() {
     <>
       <Header>
         <form action={logout}>
-          <button type="submit" className="pc-iconbtn" aria-label="Salir" title="Salir">
+          <button type="submit" className="pc-iconbtn" aria-label={t(lo, "a11y.logout")} title={t(lo, "a11y.logout")}>
             <LogOut size={20} aria-hidden />
           </button>
         </form>
       </Header>
       <main className="page pc-flow">
         <div>
-          <span className="eyebrow">Hola, {user.displayName}</span>
-          <h1 style={{ margin: "2px 0 0" }}>Sus pollas</h1>
+          <span className="eyebrow">{t(lo, "home.greeting", { name: user.displayName })}</span>
+          <h1 style={{ margin: "2px 0 0" }}>{t(lo, "home.yourPollas")}</h1>
         </div>
 
         {memberships.length === 0 ? (
           <div className="pc-card pc-empty">
             <span className="pc-empty__art">⚽</span>
-            <span className="pc-empty__title">Todavía no está en ninguna</span>
+            <span className="pc-empty__title">{t(lo, "home.emptyTitle")}</span>
             <p className="pc-empty__body">
-              Arme su propia polla o pídale el enlace a quien organiza la del
-              parche.
+              {t(lo, "home.emptyBody")}
             </p>
           </div>
         ) : (
@@ -114,7 +114,7 @@ export default async function Home() {
                 <span className="pc-quicklink__text">
                   <span className="pc-quicklink__label">{group.name}</span>
                   <span className="pc-quicklink__sub">
-                    {role === "organizer" ? "Usted organiza esta polla" : "Es del parche"}
+                    {role === "organizer" ? t(lo, "home.youOrganize") : t(lo, "home.member")}
                   </span>
                 </span>
                 <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
@@ -124,7 +124,7 @@ export default async function Home() {
         )}
 
         <Link href="/g/new" className="pc-btn pc-btn--sticker pc-btn--block">
-          <Plus size={18} aria-hidden /> Crear una polla
+          <Plus size={18} aria-hidden /> {t(lo, "home.create")}
         </Link>
       </main>
     </>

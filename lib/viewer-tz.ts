@@ -14,8 +14,8 @@ export async function getViewerTz(): Promise<string> {
   }
 }
 
-export function dayFormatter(tz: string) {
-  return new Intl.DateTimeFormat("es-CO", {
+export function dayFormatter(tz: string, tag = "es-CO") {
+  return new Intl.DateTimeFormat(tag, {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -23,23 +23,21 @@ export function dayFormatter(tz: string) {
   });
 }
 
-export function timeFormatter(tz: string) {
-  return new Intl.DateTimeFormat("es-CO", {
+export function timeFormatter(tz: string, tag = "es-CO") {
+  return new Intl.DateTimeFormat(tag, {
     hour: "numeric",
     minute: "2-digit",
-    hour12: true,
     timeZone: tz,
   });
 }
 
-export function dateTimeFormatter(tz: string) {
-  return new Intl.DateTimeFormat("es-CO", {
+export function dateTimeFormatter(tz: string, tag = "es-CO") {
+  return new Intl.DateTimeFormat(tag, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    hour12: true,
     timeZone: tz,
   });
 }

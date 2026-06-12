@@ -21,7 +21,7 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: "Pollera Colorá",
-  description: "La polla del Mundial 2026 para el parche",
+  description: "La polla del Mundial 2026 para el parche · The Colombian World Cup prediction pool",
   icons: { icon: "/emblem.svg" },
 };
 

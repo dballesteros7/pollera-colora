@@ -12,18 +12,19 @@ import {
 import { parseScoringRules, PRESETS } from "@/lib/scoring/presets";
 import { scoreMatch } from "@/lib/scoring/score";
 import { getViewerTz, dayFormatter, timeFormatter } from "@/lib/viewer-tz";
+import { getLocale, t, LOCALE_TAG, type Locale } from "@/lib/i18n";
+import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
 import { savePredictionAction } from "./actions";
 
-const STAGE_LABEL: Record<string, string> = {
-  GROUP_STAGE: "Fase de grupos",
-  LAST_32: "Dieciseisavos",
-  LAST_16: "Octavos",
-  QUARTER_FINALS: "Cuartos",
-  SEMI_FINALS: "Semifinal",
-  THIRD_PLACE: "Tercer puesto",
-  FINAL: "La final",
+const STAGE_KEY: Record<string, string> = {
+  LAST_32: "f.r32",
+  LAST_16: "f.r16",
+  QUARTER_FINALS: "f.qf",
+  SEMI_FINALS: "f.sf",
+  THIRD_PLACE: "f.third",
+  FINAL: "f.final",
 };
 
 type Match = ReturnType<typeof getAllMatches>[number];
@@ -36,12 +37,12 @@ function matchState(m: Match, now: Date): "tbd" | "open" | "locked" | "live" | "
   return isLocked(m, now) ? "locked" : "locked";
 }
 
-const STATE_BADGE: Record<string, { cls: string; label: string; dot?: boolean }> = {
-  open: { cls: "pc-badge--open", label: "abierto", dot: true },
-  locked: { cls: "pc-badge--locked", label: "cerrado" },
-  live: { cls: "pc-badge--live", label: "en juego", dot: true },
-  final: { cls: "pc-badge--final", label: "final" },
-  tbd: { cls: "pc-badge--tbd", label: "por definir" },
+const STATE_BADGE: Record<string, { cls: string; key: string; dot?: boolean }> = {
+  open: { cls: "pc-badge--open", key: "badge.open", dot: true },
+  locked: { cls: "pc-badge--locked", key: "badge.locked" },
+  live: { cls: "pc-badge--live", key: "badge.live", dot: true },
+  final: { cls: "pc-badge--final", key: "badge.final" },
+  tbd: { cls: "pc-badge--tbd", key: "badge.tbd" },
 };
 
 export default async function FixturesPage({
@@ -57,9 +58,10 @@ export default async function FixturesPage({
   const { group } = access;
 
   const now = new Date();
+  const lo = await getLocale();
   const tz = await getViewerTz();
-  const dayFormat = dayFormatter(tz);
-  const timeFormat = timeFormatter(tz);
+  const dayFormat = dayFormatter(tz, LOCALE_TAG[lo]);
+  const timeFormat = timeFormatter(tz, LOCALE_TAG[lo]);
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const matches = getAllMatches(db);
@@ -79,24 +81,24 @@ export default async function FixturesPage({
         {openCount > 0 && (
           <span className="pc-badge pc-badge--open">
             <span className="pc-dot" />
-            {openCount} abiertos
+            {t(lo, "f.nOpen", { n: openCount })}
           </span>
         )}
       </Header>
       <main className="page pc-flow" style={{ gap: "var(--space-6)" }}>
         <div>
           <span className="eyebrow">{group.name}</span>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Partidos</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "f.title")}</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
-            Horas en su zona. Puede cambiar su pronóstico hasta el pitazo.
+            {t(lo, "f.hint")}
           </p>
         </div>
 
         {matches.length === 0 && (
           <div className="pc-card pc-empty">
             <span className="pc-empty__art">📅</span>
-            <span className="pc-empty__title">Sin calendario todavía</span>
-            <p className="pc-empty__body">Los partidos aparecen apenas se sincronicen.</p>
+            <span className="pc-empty__title">{t(lo, "f.emptyTitle")}</span>
+            <p className="pc-empty__body">{t(lo, "f.emptyBody")}</p>
           </div>
         )}
 
@@ -109,8 +111,10 @@ export default async function FixturesPage({
               const pred = mine.get(m.id);
               const meta =
                 m.stage === "GROUP_STAGE"
-                  ? `Fase de grupos · Fecha ${m.matchday ?? ""}`
-                  : (STAGE_LABEL[m.stage] ?? m.stage);
+                  ? t(lo, "f.matchday", { n: m.matchday ?? "" })
+                  : STAGE_KEY[m.stage]
+                    ? t(lo, STAGE_KEY[m.stage])
+                    : m.stage;
               const others =
                 state === "locked" || state === "live" || state === "final"
                   ? getGroupPredictionsForMatch(db, group.id, m.id)
@@ -128,7 +132,7 @@ export default async function FixturesPage({
                       <span className="pc-match__time">{timeFormat.format(m.kickoffUtc)}</span>
                       <span className={`pc-badge ${badge.cls}`}>
                         {badge.dot && <span className="pc-dot" />}
-                        {badge.label}
+                        {t(lo, badge.key)}
                       </span>
                     </span>
                   </div>
@@ -139,19 +143,20 @@ export default async function FixturesPage({
                       <input type="hidden" name="matchId" value={m.id} />
                       <div className="pc-match__body">
                         <ScoreInput
-                          homeTeam={m.homeTeam!}
-                          awayTeam={m.awayTeam!}
+                          homeTeam={teamName(m.homeTeam, lo)!}
+                          awayTeam={teamName(m.awayTeam, lo)!}
                           homeCrest={m.homeCrest}
                           awayCrest={m.awayCrest}
                           defaultHome={pred?.predHome ?? null}
                           defaultAway={pred?.predAway ?? null}
+                          aria={{ goals: t(lo, "f.goalsOf", { team: "{team}" }), minus: t(lo, "f.minus", { team: "{team}" }), plus: t(lo, "f.plus", { team: "{team}" }) }}
                         />
                       </div>
                       <div className="pc-match__footer">
                         {preset.joker && (
                           <label className="pc-comodin">
                             <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
-                            Comodín ×2
+                            {t(lo, "comodin")}
                           </label>
                         )}
                         <button
@@ -159,7 +164,7 @@ export default async function FixturesPage({
                           className={`pc-btn ${pred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
                           style={{ marginLeft: "auto" }}
                         >
-                          {pred ? "Actualizar" : "Guardar"}
+                          {pred ? t(lo, "btn.update") : t(lo, "btn.save")}
                         </button>
                       </div>
                     </form>
@@ -171,7 +176,7 @@ export default async function FixturesPage({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={m.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
                           )}
-                          <span className="pc-team__name">{m.homeTeam ?? "Por definir"}</span>
+                          <span className="pc-team__name">{teamName(m.homeTeam, lo) ?? t(lo, "f.tbd")}</span>
                         </span>
                         <span className="pc-result">
                           {state === "tbd" || state === "locked" ? (
@@ -182,7 +187,7 @@ export default async function FixturesPage({
                               {state === "final" ? m.regAway : (m.finalAway ?? 0)}
                               {state === "final" && m.duration !== "REGULAR" && (
                                 <small>
-                                  en los 90 · terminó {m.finalHome}–{m.finalAway}
+                                  {t(lo, "f.reg90", { h: m.finalHome ?? 0, a: m.finalAway ?? 0 })}
                                 </small>
                               )}
                             </>
@@ -193,30 +198,30 @@ export default async function FixturesPage({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={m.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
                           )}
-                          <span className="pc-team__name">{m.awayTeam ?? "Por definir"}</span>
+                          <span className="pc-team__name">{teamName(m.awayTeam, lo) ?? t(lo, "f.tbd")}</span>
                         </span>
                       </div>
 
                       {state !== "tbd" && (
                         <div className="pc-match__pick">
                           <span>
-                            Su pronóstico:{" "}
+                            {t(lo, "f.yourPick")}{" "}
                             {pred ? (
                               <b className="pc-pick">
                                 {pred.predHome}–{pred.predAway}
                               </b>
                             ) : (
-                              "no marcó — pailas"
+                              t(lo, "f.noPickPailas")
                             )}
                             {pred?.joker && (
                               <span className="pc-badge pc-badge--comodin" style={{ marginLeft: 8 }}>
-                                comodín ×2
+                                {t(lo, "comodin").toLowerCase()}
                               </span>
                             )}
                           </span>
                           {earned && (
                             <span className={`pc-badge ${earned.points > 0 ? "pc-badge--points" : "pc-badge--locked"}`}>
-                              +{earned.points} pts
+                              {t(lo, "f.plusPts", { n: earned.points })}
                             </span>
                           )}
                         </div>

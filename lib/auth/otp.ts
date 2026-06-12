@@ -18,7 +18,12 @@ function hashCode(code: string): string {
 
 export class OtpRateLimitError extends Error {}
 
-export async function requestOtp(db: Db, rawEmail: string, now = new Date()) {
+export async function requestOtp(
+  db: Db,
+  rawEmail: string,
+  now = new Date(),
+  locale: "es" | "en" | "de" = "es",
+) {
   const email = normalizeEmail(rawEmail);
   const active = db
     .select({ n: sql<number>`count(*)` })
@@ -39,7 +44,7 @@ export async function requestOtp(db: Db, rawEmail: string, now = new Date()) {
 
   const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
   // send first — a failed delivery must not consume the rate limit
-  await sendOtpEmail(email, code);
+  await sendOtpEmail(email, code, locale);
   db.insert(otpCodes)
     .values({
       email,

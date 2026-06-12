@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
 import { Header } from "@/app/components/shell";
+import { getLocale, t } from "@/lib/i18n";
 import {
   regenerateCodeAction,
   updatePotNoteAction,
@@ -21,6 +22,7 @@ export default async function GroupSettingsPage({
   const access = getGroupForMember(getDb(), user.id, id);
   if (!access || access.role !== "organizer") notFound();
   const { group } = access;
+  const lo = await getLocale();
   const members = getGroupMembers(getDb(), group.id);
 
   return (
@@ -31,24 +33,24 @@ export default async function GroupSettingsPage({
           <Link href={`/g/${group.id}`} className="pc-btn pc-btn--quiet pc-btn--sm" style={{ marginLeft: -8 }}>
             <ArrowLeft size={16} aria-hidden /> {group.name}
           </Link>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Configuración</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "set.title")}</h1>
         </div>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>Enlace de invitación</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.invite")}</h2>
           <p style={{ margin: 0 }}>
             <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
           </p>
           <form action={regenerateCodeAction}>
             <input type="hidden" name="groupId" value={group.id} />
             <button type="submit" className="pc-btn pc-btn--ghost pc-btn--sm">
-              Regenerar enlace (invalida el anterior)
+              {t(lo, "set.regen")}
             </button>
           </form>
         </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>La vaca</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.vaca")}</h2>
           <form action={updatePotNoteAction} className="pc-page-actions">
             <input type="hidden" name="groupId" value={group.id} />
             <input
@@ -57,18 +59,18 @@ export default async function GroupSettingsPage({
               name="potNote"
               maxLength={200}
               defaultValue={group.potNote ?? ""}
-              placeholder="$50.000 por cabeza · 70/20/10"
+              placeholder={t(lo, "set.vacaPh")}
             />
             <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
-              Guardar
+              {t(lo, "set.save")}
             </button>
           </form>
         </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>Cierre de los bonus</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.bonusClose")}</h2>
           <p className="pc-hint" style={{ margin: 0 }}>
-            Hasta cuándo se puede pronosticar campeón, goleador, etc.
+            {t(lo, "set.bonusCloseSub")}
           </p>
           <form action={updateBonusLockAction} className="pc-page-actions">
             <input type="hidden" name="groupId" value={group.id} />
@@ -84,20 +86,20 @@ export default async function GroupSettingsPage({
               }
             />
             <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
-              Guardar
+              {t(lo, "set.save")}
             </button>
           </form>
         </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>El parche ({members.length})</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.crew", { n: members.length })}</h2>
           <div className="pc-picklist" style={{ marginTop: 0 }}>
             {members.map((m) => (
               <span key={m.userId} className="pc-picklist__row">
                 <span className="pc-avatar pc-avatar--sm">{(m.displayName ?? "?").slice(0, 2)}</span>
                 {m.displayName ?? "(sin nombre)"}
                 {m.role === "organizer" && (
-                  <span className="pc-badge pc-badge--organiza">organiza</span>
+                  <span className="pc-badge pc-badge--organiza">{t(lo, "set.organiza")}</span>
                 )}
               </span>
             ))}

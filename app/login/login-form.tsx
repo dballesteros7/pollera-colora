@@ -4,9 +4,22 @@ import { useActionState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { sendCode, checkCode, type LoginState } from "./actions";
 
+export interface LoginLabels {
+  email: string;
+  emailPh: string;
+  send: string;
+  sending: string;
+  codeInfo: string;
+  sentTo: string;
+  code: string;
+  codeMailed: string;
+  enter: string;
+  verifying: string;
+}
+
 const initial: LoginState = { step: "email" };
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, labels }: { next?: string; labels: LoginLabels }) {
   const [state, formAction, pending] = useActionState(
     async (prev: LoginState, formData: FormData) =>
       prev.step === "email" ? sendCode(prev, formData) : checkCode(prev, formData),
@@ -18,14 +31,14 @@ export function LoginForm({ next }: { next?: string }) {
       <form action={formAction} className="pc-card pc-card--pad-lg pc-flow">
         <div className="pc-field">
           <label className="pc-label" htmlFor="login-email">
-            Su correo
+            {labels.email}
           </label>
           <input
             id="login-email"
             className="pc-input"
             type="email"
             name="email"
-            placeholder="nombre@correo.com"
+            placeholder={labels.emailPh}
             required
             autoFocus
           />
@@ -35,7 +48,7 @@ export function LoginForm({ next }: { next?: string }) {
           className="pc-btn pc-btn--primary pc-btn--block"
           disabled={pending}
         >
-          {pending ? "Enviando…" : "Mándeme el código"}
+          {pending ? labels.sending : labels.send}
           {!pending && <ArrowRight size={18} aria-hidden />}
         </button>
         {state.error && (
@@ -44,7 +57,7 @@ export function LoginForm({ next }: { next?: string }) {
           </p>
         )}
         <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
-          Le llega un código de 6 dígitos. Sin contraseñas.
+          {labels.codeInfo}
         </p>
       </form>
     );
@@ -53,13 +66,13 @@ export function LoginForm({ next }: { next?: string }) {
   return (
     <form action={formAction} className="pc-card pc-card--pad-lg pc-flow">
       <p className="pc-hint" style={{ margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
-        <ArrowLeft size={14} aria-hidden /> Código enviado a{" "}
+        <ArrowLeft size={14} aria-hidden /> {labels.sentTo}{" "}
         <strong>{state.email}</strong>
       </p>
       <input type="hidden" name="next" value={next ?? "/"} />
       <div className="pc-field">
         <label className="pc-label" htmlFor="login-code">
-          Código
+          {labels.code}
         </label>
         <input
           id="login-code"
@@ -73,14 +86,14 @@ export function LoginForm({ next }: { next?: string }) {
           required
           autoFocus
         />
-        <span className="pc-hint">Se lo mandamos al correo</span>
+        <span className="pc-hint">{labels.codeMailed}</span>
       </div>
       <button
         type="submit"
         className="pc-btn pc-btn--primary pc-btn--block"
         disabled={pending}
       >
-        {pending ? "Verificando…" : "Entrar"}
+        {pending ? labels.verifying : labels.enter}
       </button>
       {state.error && (
         <p role="alert" className="pc-hint" style={{ color: "var(--danger)", textAlign: "center", margin: 0 }}>

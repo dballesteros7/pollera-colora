@@ -11,8 +11,18 @@ import {
 } from "@/lib/bonus";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
+import { getLocale, t, LOCALE_TAG, type Locale } from "@/lib/i18n";
+import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { saveBonusPicksAction } from "./actions";
+
+const CAT_KEY: Record<string, string> = {
+  champion: "champion",
+  runner_up: "runnerUp",
+  third: "third",
+  top_scorer: "topScorer",
+  best_gk: "bestGk",
+};
 
 export default async function BonusPage({
   params,
@@ -27,7 +37,8 @@ export default async function BonusPage({
   const { group } = access;
 
   const now = new Date();
-  const deadlineFormat = dateTimeFormatter(await getViewerTz());
+  const lo = await getLocale();
+  const deadlineFormat = dateTimeFormatter(await getViewerTz(), LOCALE_TAG[lo]);
   const locked = bonusLocked(group, now);
   const rules = parseScoringRules(group.scoringRules);
   const points = PRESETS[rules.preset].bonusPoints;
@@ -39,32 +50,32 @@ export default async function BonusPage({
       <Header>
         <span className={`pc-badge ${locked ? "pc-badge--locked" : "pc-badge--open"}`}>
           {!locked && <span className="pc-dot" />}
-          {locked ? "cerrado" : "abierto"}
+          {locked ? t(lo, "badge.locked") : t(lo, "badge.open")}
         </span>
       </Header>
       <main className="page pc-flow">
         <div>
           <span className="eyebrow">{group.name}</span>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Bonus del torneo</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "b.title")}</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
             {group.bonusLockAt
               ? locked
-                ? "Ya cerraron — estos son los del parche."
-                : `Cierran el ${deadlineFormat.format(group.bonusLockAt)} (su hora).`
-              : "Quien organiza todavía no ha fijado el cierre."}
+                ? t(lo, "b.closedLine")
+                : t(lo, "b.closesAt", { when: deadlineFormat.format(group.bonusLockAt) })
+              : t(lo, "b.noDeadline")}
           </p>
         </div>
 
         {locked ? (
-          <BonusReveal groupId={group.id} />
+          <BonusReveal groupId={group.id} lo={lo} />
         ) : (
           <form action={saveBonusPicksAction} className="pc-card pc-card--pad-lg pc-flow">
             <input type="hidden" name="groupId" value={group.id} />
             {BONUS_CATEGORIES.map((cat) => (
               <div className="pc-field" key={cat.id}>
                 <label className="pc-label" htmlFor={`pick_${cat.id}`}>
-                  {cat.label}{" "}
-                  <span className="pc-badge pc-badge--points">+{points[cat.id]} pts</span>
+                  {t(lo, `b.${CAT_KEY[cat.id]}`)}{" "}
+                  <span className="pc-badge pc-badge--points">+{t(lo, "s.pts", { n: points[cat.id] })}</span>
                 </label>
                 {cat.team ? (
                   <select
@@ -73,10 +84,10 @@ export default async function BonusPage({
                     className="pc-input"
                     defaultValue={mine.get(cat.id) ?? ""}
                   >
-                    <option value="">— sin pronóstico —</option>
-                    {teams.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    <option value="">{t(lo, "b.none")}</option>
+                    {teams.map((team) => (
+                      <option key={team} value={team}>
+                        {teamName(team, lo)}
                       </option>
                     ))}
                   </select>
@@ -86,17 +97,17 @@ export default async function BonusPage({
                     name={`pick_${cat.id}`}
                     className="pc-input"
                     defaultValue={mine.get(cat.id) ?? ""}
-                    placeholder="Nombre del jugador"
+                    placeholder={t(lo, "b.playerPh")}
                     maxLength={60}
                   />
                 )}
               </div>
             ))}
             <button type="submit" className="pc-btn pc-btn--primary pc-btn--block">
-              Guardar pronósticos
+              {t(lo, "b.save")}
             </button>
             <p className="pc-hint" style={{ textAlign: "center", margin: 0 }}>
-              Puede cambiarlos hasta el cierre.
+              {t(lo, "b.editable")}
             </p>
           </form>
         )}
@@ -106,7 +117,7 @@ export default async function BonusPage({
   );
 }
 
-async function BonusReveal({ groupId }: { groupId: string }) {
+async function BonusReveal({ groupId, lo }: { groupId: string; lo: Locale }) {
   const db = getDb();
   const picks = getGroupBonusPicks(db, groupId);
   const members = new Map(
@@ -122,10 +133,10 @@ async function BonusReveal({ groupId }: { groupId: string }) {
         const rows = byCategory.get(cat.id) ?? [];
         return (
           <section key={cat.id} className="pc-card">
-            <h3 style={{ fontSize: 16, marginBottom: "var(--space-2)" }}>{cat.label}</h3>
+            <h3 style={{ fontSize: 16, marginBottom: "var(--space-2)" }}>{t(lo, `b.${CAT_KEY[cat.id]}`)}</h3>
             {rows.length === 0 ? (
               <p className="pc-hint" style={{ margin: 0 }}>
-                Nadie se le midió.
+                {t(lo, "b.nobody")}
               </p>
             ) : (
               <div className="pc-picklist" style={{ marginTop: 0 }}>
@@ -135,7 +146,7 @@ async function BonusReveal({ groupId }: { groupId: string }) {
                       {(members.get(p.userId) ?? "?").slice(0, 2)}
                     </span>
                     {members.get(p.userId) ?? "(sin nombre)"}
-                    <span className="pc-pick">{p.value}</span>
+                    <span className="pc-pick">{teamName(p.value, lo) ?? p.value}</span>
                   </span>
                 ))}
               </div>
