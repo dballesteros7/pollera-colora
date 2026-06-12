@@ -301,12 +301,12 @@ const M: Record<string, Msg> = {
   },
   "preset.unicoTag": { es: "único acertado", en: "sole-exact bonus", de: "Allein-exakt-Bonus" },
 
-  // ---- email ----
-  "mail.subject": { es: "{code} es su código — Pollera Colorá", en: "{code} is your code — Pollera Colorá", de: "{code} ist dein Code — Pollera Colorá" },
+  // ---- email (Tania from Bucaramanga handles the codes) ----
+  "mail.subject": { es: "{code} — su código, se lo manda Tania", en: "{code} — your code, from Tania", de: "{code} — dein Code, von Tania" },
   "mail.body": {
-    es: "Su código de ingreso es: {code}\n\nVence en 10 minutos. Si usted no lo pidió, ignore este correo.",
-    en: "Your sign-in code is: {code}\n\nIt expires in 10 minutes. If you didn't request it, ignore this email.",
-    de: "Dein Anmeldecode lautet: {code}\n\nEr läuft in 10 Minuten ab. Falls du ihn nicht angefordert hast, ignoriere diese Mail.",
+    es: "¡Quiubo! Le habla Tania, desde Bucaramanga.\n\nSu código para entrar a la polla es: {code}\n\nMétale rápido que eso vence en 10 minutos. Y si usted no pidió ningún código, haga de cuenta que no le escribí — borre este correo y ya.\n\nUn abrazo,\nTania\nPollera Colorá",
+    en: "Hi! Tania here, writing from Bucaramanga, Colombia — I handle the codes around here.\n\nYour code to get into the polla is: {code}\n\nDon't dawdle, it expires in 10 minutes. And if you never asked for a code, just pretend I never wrote — delete this and we're good.\n\nUn abrazo,\nTania\nPollera Colorá",
+    de: "Hallo! Hier ist Tania aus Bucaramanga, Kolumbien — ich bin hier für die Codes zuständig.\n\nDein Code für die Polla: {code}\n\nMach flott, er gilt nur 10 Minuten. Und falls du gar keinen Code wolltest: Tu einfach so, als hätte ich nie geschrieben — Mail löschen, fertig.\n\nUn abrazo,\nTania\nPollera Colorá",
   },
 };
 

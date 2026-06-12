@@ -2,7 +2,7 @@
 // in development so auth works before the Resend account exists.
 import { t, type Locale } from "./i18n";
 
-const FROM = process.env.EMAIL_FROM ?? "Pollera Colorá <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "Tania de Pollera Colorá <onboarding@resend.dev>";
 
 export async function sendOtpEmail(email: string, code: string, locale: Locale = "es") {
   const apiKey = process.env.RESEND_API_KEY;
