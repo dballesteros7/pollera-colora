@@ -70,7 +70,7 @@
 
 /* everyone's picks reveal (locked+) */
 .pc-picklist { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
-.pc-picklist__row { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+.pc-picklist__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); min-width: 0; }
 .pc-picklist__row .pc-pick { margin-left: auto; }
 
 .pc-match__footer { padding: var(--space-3) var(--space-4) var(--space-4); display: flex; gap: var(--space-3); align-items: center; }

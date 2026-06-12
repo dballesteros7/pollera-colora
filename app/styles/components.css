@@ -172,13 +172,16 @@
   align-items: center;
   gap: var(--space-3);
 }
-.pc-score__side { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+.pc-score__side { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); min-width: 0; }
 .pc-score__team { font-size: var(--text-sm); font-weight: var(--w-semibold); color: var(--ink-soft); display: flex; align-items: center; gap: var(--space-2); }
 .pc-score__box {
   display: flex; align-items: center; gap: var(--space-2);
+  max-width: 100%;
 }
 .pc-score__num {
-  width: 72px; height: var(--touch-big);
+  /* shrinks before anything clips — double digits at 412-430px viewports */
+  width: 72px; flex: 0 1 auto; min-width: 44px; padding: 0;
+  height: var(--touch-big);
   text-align: center;
   font-family: var(--font-mono);
   font-size: var(--score-md);
@@ -196,7 +199,7 @@
 .pc-score__num:focus-visible { outline: none; border-color: var(--azul); box-shadow: var(--ring); }
 .pc-score__dash { font-family: var(--font-mono); font-size: var(--score-md); color: var(--ink-faint); padding: 0 var(--space-1); }
 .pc-stepper {
-  width: 36px; height: 36px; border-radius: var(--radius-pill);
+  width: 36px; height: 36px; flex: none; border-radius: var(--radius-pill);
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--paper-deep); border: 1.5px solid var(--line-strong);
   color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer;
