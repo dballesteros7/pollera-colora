@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getLocale, t } from "@/lib/i18n";
+import { HeroLang } from "@/app/components/shell";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
@@ -17,6 +18,7 @@ export default async function LoginPage({
   return (
     <main className="pc-hero-shell">
       <div className="pc-tricolor-rule" />
+      <HeroLang />
       <div className="pc-hero-shell__center">
         <div className="pc-hero-head">
           <Image src="/emblem.svg" alt="Pollera Colorá" width={76} height={76} />

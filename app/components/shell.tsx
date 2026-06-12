@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Trophy, CalendarDays, ListChecks, Star } from "lucide-react";
-import { getLocale, t, LOCALES } from "@/lib/i18n";
+import { getLocale, t, LOCALES, LOCALE_LABEL } from "@/lib/i18n";
+import { LangSelect } from "./lang-select";
 
 export function Brand() {
   return (
@@ -17,16 +18,24 @@ export function Brand() {
 async function LangSwitcher() {
   const locale = await getLocale();
   return (
-    <span className="pc-lang">
-      {LOCALES.map((l) => (
-        <a
-          key={l}
-          href={`/api/lang?l=${l}`}
-          aria-current={l === locale ? "true" : undefined}
-        >
-          {l.toUpperCase()}
-        </a>
-      ))}
+    <LangSelect
+      current={locale}
+      ariaLabel={t(locale, "a11y.language")}
+      options={LOCALES.map((l) => ({ code: l, label: LOCALE_LABEL[l] }))}
+    />
+  );
+}
+
+// floating switcher for header-less hero pages (login/join)
+export async function HeroLang() {
+  const locale = await getLocale();
+  return (
+    <span className="pc-hero-lang">
+      <LangSelect
+        current={locale}
+        ariaLabel={t(locale, "a11y.language")}
+        options={LOCALES.map((l) => ({ code: l, label: LOCALE_LABEL[l] }))}
+      />
     </span>
   );
 }

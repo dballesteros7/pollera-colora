@@ -209,3 +209,27 @@
 .pc-match__head { flex-wrap: wrap; row-gap: var(--space-1); }
 .pc-match__head > :last-child { margin-left: auto; }
 .pc-match__meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- language dropdown ---- */
+.pc-lang-select {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--w-semibold);
+  color: var(--ink-soft);
+  background: var(--paper-tint);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-3);
+  min-height: 36px;
+  cursor: pointer;
+}
+.pc-lang-select:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* floating variant on hero pages (login/join) */
+.pc-hero-lang {
+  position: absolute;
+  top: calc(4px + var(--space-3));
+  right: var(--space-4);
+  z-index: 5;
+}
+.pc-hero-shell { position: relative; }

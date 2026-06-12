@@ -5,6 +5,7 @@ import { getGroupByInviteCode, getGroupMembers } from "@/lib/groups";
 import { getCurrentUser } from "@/lib/auth/session";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getLocale, t } from "@/lib/i18n";
+import { HeroLang } from "@/app/components/shell";
 import { joinGroupAction } from "./actions";
 
 function initials(name: string | null): string {
@@ -53,6 +54,7 @@ export default async function JoinPage({
   return (
     <main className="pc-hero-shell">
       <div className="pc-tricolor-rule" />
+      <HeroLang />
       <div className="pc-hero-shell__center">
         <div
           className="pc-card pc-card--pad-lg"

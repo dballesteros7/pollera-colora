@@ -4,7 +4,7 @@ import { ChevronRight, Plus, LogOut, Crown } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUserGroups } from "@/lib/groups";
-import { Header } from "@/app/components/shell";
+import { Header, HeroLang } from "@/app/components/shell";
 import { getLocale, t } from "@/lib/i18n";
 import { logout } from "./login/actions";
 import { setDisplayName } from "./actions";
@@ -17,6 +17,7 @@ export default async function Home() {
     return (
       <main className="pc-hero-shell">
         <div className="pc-tricolor-rule" />
+        <HeroLang />
         <div className="pc-hero-shell__center">
           <div className="pc-hero-head">
             <Image src="/emblem.svg" alt="Pollera Colorá" width={76} height={76} />
@@ -46,6 +47,7 @@ export default async function Home() {
     return (
       <main className="pc-hero-shell">
         <div className="pc-tricolor-rule" />
+        <HeroLang />
         <div className="pc-hero-shell__center">
           <div className="pc-hero-head">
             <Image src="/emblem.svg" alt="" width={56} height={56} />

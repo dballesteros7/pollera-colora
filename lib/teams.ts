@@ -53,8 +53,8 @@ const ISO: Record<string, string> = {
 };
 
 const MANUAL: Record<string, Record<Locale, string>> = {
-  England: { es: "Inglaterra", en: "England", de: "England" },
-  Scotland: { es: "Escocia", en: "Scotland", de: "Schottland" },
+  England: { es: "Inglaterra", en: "England", de: "England", it: "Inghilterra", pt: "Inglaterra", zh: "英格兰", zht: "英格蘭" },
+  Scotland: { es: "Escocia", en: "Scotland", de: "Schottland", it: "Scozia", pt: "Escócia", zh: "苏格兰", zht: "蘇格蘭" },
 };
 
 const displayCache = new Map<Locale, Intl.DisplayNames>();

@@ -22,7 +22,7 @@ export async function requestOtp(
   db: Db,
   rawEmail: string,
   now = new Date(),
-  locale: "es" | "en" | "de" = "es",
+  locale: import("../i18n").Locale = "es",
 ) {
   const email = normalizeEmail(rawEmail);
   const active = db
