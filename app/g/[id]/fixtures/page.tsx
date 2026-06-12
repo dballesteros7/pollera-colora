@@ -5,14 +5,14 @@ import { requireUser } from "@/lib/auth/require";
 import {
   getAllMatches,
   getUserPredictions,
-  getGroupPredictionsForMatch,
+  getGroupPredictionsForMatches,
   isLocked,
   isPredictable,
 } from "@/lib/predictions";
 import { parseScoringRules, PRESETS } from "@/lib/scoring/presets";
 import { scoreMatch } from "@/lib/scoring/score";
 import { getViewerTz, dayFormatter, timeFormatter } from "@/lib/viewer-tz";
-import { getLocale, t, LOCALE_TAG, type Locale } from "@/lib/i18n";
+import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
@@ -35,7 +35,7 @@ function matchState(m: Match, now: Date): "tbd" | "open" | "locked" | "live" | "
   if (m.status === "IN_PLAY" || m.status === "PAUSED") return "live";
   if (isPredictable(m, now)) return "open";
   if (m.homeTeam === null || m.awayTeam === null) return "tbd";
-  return isLocked(m, now) ? "locked" : "locked";
+  return "locked";
 }
 
 const STATE_BADGE: Record<string, { cls: string; key: string; dot?: boolean }> = {
@@ -70,6 +70,12 @@ export default async function FixturesPage({
   const otherGroups = getUserGroups(db, user.id).filter((m) => m.group.id !== group.id);
 
   const openCount = matches.filter((m) => matchState(m, now) === "open").length;
+
+  // one batch query for everyone's picks on revealed (locked/live/final) matches
+  const revealedIds = matches
+    .filter((m) => ["locked", "live", "final"].includes(matchState(m, now)))
+    .map((m) => m.id);
+  const groupPicks = getGroupPredictionsForMatches(db, group.id, revealedIds);
 
   const byDay = new Map<string, typeof matches>();
   for (const m of matches) {
@@ -153,7 +159,7 @@ export default async function FixturesPage({
                     : m.stage;
               const others =
                 state === "locked" || state === "live" || state === "final"
-                  ? getGroupPredictionsForMatch(db, group.id, m.id)
+                  ? (groupPicks.get(m.id) ?? [])
                   : [];
               const earned =
                 state === "final" && pred && m.regHome !== null && m.regAway !== null

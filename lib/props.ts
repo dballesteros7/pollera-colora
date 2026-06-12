@@ -79,7 +79,7 @@ export function proposeQuestion(
     .returning()
     .get();
   // proposing is an implicit approve vote (a 1-person group self-approves)
-  voteQuestion(db, { questionId: q.id, userId: opts.proposerId, vote: "approve" }, now);
+  voteQuestion(db, { questionId: q.id, groupId: opts.groupId, userId: opts.proposerId, vote: "approve" }, now);
   return db.select().from(propQuestions).where(eq(propQuestions.id, q.id)).get()!;
 }
 
@@ -117,7 +117,7 @@ export function getVoteTally(
 
 export function voteQuestion(
   db: Db,
-  opts: { questionId: string; userId: string; vote: "approve" | "reject" },
+  opts: { questionId: string; groupId: string; userId: string; vote: "approve" | "reject" },
   now = new Date(),
 ) {
   const q = db
@@ -125,7 +125,8 @@ export function voteQuestion(
     .from(propQuestions)
     .where(eq(propQuestions.id, opts.questionId))
     .get();
-  if (!q || q.status !== "proposed") {
+  // the groupId check stops cross-group tampering via form-data questionIds
+  if (!q || q.groupId !== opts.groupId || q.status !== "proposed") {
     throw new PropStateError("La pregunta no está en votación.");
   }
   if (now >= q.lockAt) throw new PropLockedError("La votación ya cerró.");
@@ -170,7 +171,7 @@ export function getUserVotes(db: Db, groupId: string, userId: string) {
 
 export function answerQuestion(
   db: Db,
-  opts: { questionId: string; userId: string; value: string },
+  opts: { questionId: string; groupId: string; userId: string; value: string },
   now = new Date(),
 ) {
   const q = db
@@ -178,7 +179,7 @@ export function answerQuestion(
     .from(propQuestions)
     .where(eq(propQuestions.id, opts.questionId))
     .get();
-  if (!q || q.status !== "approved") {
+  if (!q || q.groupId !== opts.groupId || q.status !== "approved") {
     throw new PropStateError("La pregunta no está abierta.");
   }
   if (now >= q.lockAt) throw new PropLockedError("Esta pregunta ya cerró.");
@@ -218,6 +219,7 @@ export function resolveQuestion(
   db: Db,
   opts: {
     questionId: string;
+    groupId: string;
     correctValue: string;
     resolutionMode?: "exact" | "closest"; // only meaningful for numbers
   },
@@ -228,7 +230,7 @@ export function resolveQuestion(
     .from(propQuestions)
     .where(eq(propQuestions.id, opts.questionId))
     .get();
-  if (!q || q.status !== "approved") {
+  if (!q || q.groupId !== opts.groupId || q.status !== "approved") {
     throw new PropStateError("Solo se resuelven preguntas aprobadas.");
   }
   if (now < q.lockAt) {

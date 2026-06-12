@@ -2,6 +2,7 @@ import {
   sqliteTable,
   text,
   integer,
+  index,
   primaryKey,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
@@ -31,7 +32,7 @@ export const otpCodes = sqliteTable("otp_codes", {
   expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
   attempts: integer("attempts").notNull().default(0),
   consumed: integer("consumed", { mode: "boolean" }).notNull().default(false),
-});
+}, (t) => [index("otp_codes_email").on(t.email)]);
 
 export const groups = sqliteTable("groups", {
   id: text("id").primaryKey(),
@@ -61,7 +62,11 @@ export const memberships = sqliteTable(
       .default("member"),
     joinedAt: integer("joined_at", { mode: "timestamp_ms" }).notNull(),
   },
-  (t) => [primaryKey({ columns: [t.userId, t.groupId] })],
+  (t) => [
+    primaryKey({ columns: [t.userId, t.groupId] }),
+    // member lists, leaderboards, quorum counts query by group
+    index("memberships_group").on(t.groupId),
+  ],
 );
 
 export const matches = sqliteTable("matches", {
@@ -113,6 +118,8 @@ export const predictions = sqliteTable(
       t.groupId,
       t.matchId,
     ),
+    // group-wide reads (fixtures pick lists, score rebuilds)
+    index("predictions_group_match").on(t.groupId, t.matchId),
   ],
 );
 
@@ -138,6 +145,7 @@ export const bonusPicks = sqliteTable(
       t.groupId,
       t.category,
     ),
+    index("bonus_picks_group").on(t.groupId),
   ],
 );
 
@@ -167,7 +175,7 @@ export const propQuestions = sqliteTable("prop_questions", {
   // member count frozen at proposal time — the approval quorum base
   eligibleCount: integer("eligible_count"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-});
+}, (t) => [index("prop_questions_group").on(t.groupId)]);
 
 export const propVotes = sqliteTable(
   "prop_votes",

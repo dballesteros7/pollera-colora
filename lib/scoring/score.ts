@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "../db";
 import {
   groups,
@@ -85,6 +85,11 @@ export function scoreMatch(
 
 export const UNICO_BONUS = 5;
 
+// accent-insensitive comparison for free-text values ("Julián" === "Julian")
+function fold(s: string): string {
+  return s.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+}
+
 // Rebuild the cached scores for every member of one group.
 export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
   const group = db.select().from(groups).where(eq(groups.id, groupId)).get();
@@ -95,7 +100,7 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
   const finished = db
     .select()
     .from(matches)
-    .where(eq(matches.status, "FINISHED"))
+    .where(inArray(matches.status, ["FINISHED", "AWARDED"]))
     .all()
     .filter((m) => m.regHome !== null && m.regAway !== null);
 
@@ -182,13 +187,14 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
           winners.push(a.userId);
         }
       }
+    } else if (q.answerType === "number") {
+      const target = Number(q.correctValue);
+      winners = answers
+        .filter((a) => !isNaN(Number(a.value)) && Number(a.value) === target)
+        .map((a) => a.userId);
     } else {
       winners = answers
-        .filter(
-          (a) =>
-            a.value.trim().toLowerCase() ===
-            q.correctValue!.trim().toLowerCase(),
-        )
+        .filter((a) => fold(a.value) === fold(q.correctValue!))
         .map((a) => a.userId);
     }
     for (const w of winners) {
@@ -203,10 +209,7 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
     for (const pick of getGroupBonusPicks(db, groupId)) {
       if (!totals.has(pick.userId)) continue;
       const real = outcomes.get(pick.category);
-      if (
-        real &&
-        real.trim().toLowerCase() === pick.value.trim().toLowerCase()
-      ) {
+      if (real && fold(real) === fold(pick.value)) {
         bonusByUser.set(
           pick.userId,
           (bonusByUser.get(pick.userId) ?? 0) +

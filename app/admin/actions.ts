@@ -23,9 +23,19 @@ export async function overrideMatchAction(formData: FormData) {
   const clear = formData.get("clear") === "on";
 
   if (clear) {
-    // hand control back to the API; next sync refreshes the row
+    // hand control back to the API. Reset the result fields too: a lingering
+    // FINISHED status would outrank the API's truth and the regression guard
+    // would block the refresh forever.
     db.update(matches)
-      .set({ manualOverride: false, updatedAt: new Date() })
+      .set({
+        manualOverride: false,
+        status: "TIMED",
+        regHome: null,
+        regAway: null,
+        finalHome: null,
+        finalAway: null,
+        updatedAt: new Date(),
+      })
       .where(eq(matches.id, id))
       .run();
   } else {

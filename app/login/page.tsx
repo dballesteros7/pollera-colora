@@ -12,7 +12,7 @@ export default async function LoginPage({
 }) {
   const { next } = await searchParams;
   const user = await getCurrentUser();
-  if (user) redirect(next && next.startsWith("/") ? next : "/");
+  if (user) redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
   const lo = await getLocale();
 
   return (

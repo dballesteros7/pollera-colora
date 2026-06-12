@@ -14,6 +14,8 @@ declare global {
 export function createDb(dbPath: string): Db {
   const sqlite = new Database(dbPath);
   sqlite.pragma("journal_mode = WAL");
+  // standard pairing with WAL: fsync on checkpoint, not on every commit
+  sqlite.pragma("synchronous = NORMAL");
   sqlite.pragma("foreign_keys = ON");
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });

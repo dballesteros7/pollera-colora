@@ -15,8 +15,11 @@ export async function GET() {
     .all();
   const total = byStatus.reduce((s, r) => s + r.n, 0);
 
+  // raw error strings stay in the logs; this endpoint is public
+  const { lastOkAt, lastErrorAt } = getSyncStatus();
+
   return NextResponse.json({
-    sync: getSyncStatus(),
+    sync: { lastOkAt, lastErrorAt, healthy: lastOkAt !== null && (lastErrorAt === null || lastOkAt > lastErrorAt) },
     matches: {
       total,
       byStatus: Object.fromEntries(byStatus.map((r) => [r.status, r.n])),

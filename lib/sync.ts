@@ -16,22 +16,28 @@ const STATUS_RANK: Record<string, number> = {
   AWARDED: 2,
 };
 const GUARD_BYPASS = new Set(["POSTPONED", "CANCELLED", "SUSPENDED"]);
+// statuses that count for scoring (AWARDED = walkover with an official result)
+export const TERMINAL = new Set(["FINISHED", "AWARDED"]);
 
 type ResultFields = {
   status: string;
   regHome?: number | null;
   regAway?: number | null;
+  homeTeam?: string | null;
+  awayTeam?: string | null;
 };
 
 export function isRegression(prev: ResultFields, next: ResultFields): boolean {
+  // never wipe a known score or known team names with nulls — applies even to
+  // POSTPONED/SUSPENDED transitions, which only bypass the rank check
+  if (prev.regHome != null && next.regHome == null) return true;
+  if (prev.regAway != null && next.regAway == null) return true;
+  if (prev.homeTeam != null && next.homeTeam == null) return true;
+  if (prev.awayTeam != null && next.awayTeam == null) return true;
   if (GUARD_BYPASS.has(next.status)) return false;
   const prevRank = STATUS_RANK[prev.status] ?? 0;
   const nextRank = STATUS_RANK[next.status] ?? 0;
-  if (nextRank < prevRank) return true;
-  // never wipe a known score with nulls
-  if (prev.regHome != null && next.regHome == null) return true;
-  if (prev.regAway != null && next.regAway == null) return true;
-  return false;
+  return nextRank < prevRank;
 }
 
 export type MatchRow = typeof matches.$inferInsert;
@@ -119,7 +125,7 @@ export function upsertMatches(
     }
     if (!prev) {
       const inserted = db.insert(matches).values(row).returning().get();
-      if (row.status === "FINISHED") resultsChanged.push(inserted.id);
+      if (TERMINAL.has(row.status ?? "")) resultsChanged.push(inserted.id);
       upserted++;
       continue;
     }
@@ -140,7 +146,9 @@ export function upsertMatches(
       prev.regHome !== row.regHome ||
       prev.regAway !== row.regAway ||
       prev.status !== row.status;
-    if (resultChanged) resultsChanged.push(prev.id);
+    // scoring only counts terminal matches — mid-game goals don't need a rebuild
+    if (resultChanged && (TERMINAL.has(row.status ?? "") || TERMINAL.has(prev.status)))
+      resultsChanged.push(prev.id);
   }
 
   return {
@@ -164,7 +172,7 @@ export function liveWindowMatches(db: Db, now: Date) {
       return (
         diff >= -LIVE_WINDOW_BEFORE_MS &&
         diff <= LIVE_WINDOW_AFTER_MS &&
-        r.status !== "FINISHED"
+        !TERMINAL.has(r.status)
       );
     });
 }
@@ -203,6 +211,6 @@ export function isLiveWindow(db: Db, now: Date): boolean {
     if (r.status === "IN_PLAY" || r.status === "PAUSED") return true;
     const diff = now.getTime() - r.kickoffUtc.getTime();
     return diff >= -LIVE_WINDOW_BEFORE_MS && diff <= LIVE_WINDOW_AFTER_MS &&
-      r.status !== "FINISHED";
+      !TERMINAL.has(r.status);
   });
 }

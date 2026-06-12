@@ -6,6 +6,7 @@ import { getGroupForMember, getGroupMembers } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
 import { Header } from "@/app/components/shell";
 import { getLocale, t } from "@/lib/i18n";
+import { getViewerTz, formatDatetimeLocal } from "@/lib/viewer-tz";
 import { setDisplayName } from "@/app/actions";
 import {
   regenerateCodeAction,
@@ -26,6 +27,7 @@ export default async function GroupSettingsPage({
   const { group } = access;
   const organizer = access.role === "organizer";
   const lo = await getLocale();
+  const tz = await getViewerTz();
   const members = getGroupMembers(getDb(), group.id);
 
   return (
@@ -128,7 +130,7 @@ export default async function GroupSettingsPage({
                   name="bonusLockAt"
                   defaultValue={
                     group.bonusLockAt
-                      ? new Date(group.bonusLockAt).toISOString().slice(0, 16)
+                      ? formatDatetimeLocal(group.bonusLockAt, tz)
                       : ""
                   }
                 />

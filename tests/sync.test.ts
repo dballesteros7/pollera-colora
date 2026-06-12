@@ -185,8 +185,10 @@ describe("regression guard", () => {
     expect(isRegression(live, { status: "PAUSED", regHome: 1, regAway: 0 })).toBe(false);
     expect(isRegression(live, { status: "FINISHED", regHome: 2, regAway: 0 })).toBe(false);
     expect(isRegression({ status: "FINISHED", regHome: 2, regAway: 0 }, { status: "IN_PLAY", regHome: 2, regAway: 0 })).toBe(true);
-    // legitimate backwards transitions pass through
-    expect(isRegression(live, { status: "SUSPENDED", regHome: null, regAway: null })).toBe(false);
+    // legitimate backwards transitions pass through — as long as they keep the score
+    expect(isRegression(live, { status: "SUSPENDED", regHome: 1, regAway: 0 })).toBe(false);
+    // ...but even a bypass status must never null a known score
+    expect(isRegression(live, { status: "SUSPENDED", regHome: null, regAway: null })).toBe(true);
   });
 
   it("upsert rejects stale list snapshots", () => {

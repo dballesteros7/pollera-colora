@@ -38,6 +38,9 @@ export function savePrediction(
     predAway: number;
     joker?: boolean;
     allowJoker?: boolean; // group preset has jokers at all
+    // keep an existing joker on this row when updating the score (used by
+    // "apply to all my pollas", where the checkbox only speaks for the origin)
+    preserveJoker?: boolean;
   },
   now = new Date(),
 ) {
@@ -66,35 +69,53 @@ export function savePrediction(
     throw new MatchNotPredictableError("Marcador inválido.");
   }
 
-  const joker = Boolean(opts.joker && opts.allowJoker);
+  let joker = Boolean(opts.joker && opts.allowJoker);
   if (joker) {
-    // a joker here displaces any other joker in the same round —
-    // but only on matches that haven't locked yet
     const round = roundKey(match);
-    const sameRoundIds = db
-      .select({ id: matches.id, stage: matches.stage, matchday: matches.matchday, kickoffUtc: matches.kickoffUtc })
-      .from(matches)
-      .all()
-      .filter(
-        (m) =>
-          roundKey(m) === round &&
-          m.id !== match.id &&
-          now.getTime() < m.kickoffUtc.getTime(),
+    // a joker already played on a locked match in this round is spent —
+    // it can't move, and a second active joker would double-dip
+    const existingJokers = db
+      .select({
+        matchId: matches.id,
+        stage: matches.stage,
+        matchday: matches.matchday,
+        kickoffUtc: matches.kickoffUtc,
+      })
+      .from(predictions)
+      .innerJoin(matches, eq(predictions.matchId, matches.id))
+      .where(
+        and(
+          eq(predictions.userId, opts.userId),
+          eq(predictions.groupId, opts.groupId),
+          eq(predictions.joker, true),
+        ),
       )
-      .map((m) => m.id);
-    if (sameRoundIds.length > 0) {
+      .all()
+      .filter((m) => roundKey(m) === round && m.matchId !== match.id);
+
+    if (existingJokers.some((m) => now.getTime() >= m.kickoffUtc.getTime())) {
+      joker = false; // spent on a locked match — this save is score-only
+    } else if (existingJokers.length > 0) {
+      // displace the still-open joker(s) in this round
       db.update(predictions)
         .set({ joker: false, updatedAt: now })
         .where(
           and(
             eq(predictions.userId, opts.userId),
             eq(predictions.groupId, opts.groupId),
-            inArray(predictions.matchId, sameRoundIds),
+            inArray(
+              predictions.matchId,
+              existingJokers.map((m) => m.matchId),
+            ),
           ),
         )
         .run();
     }
   }
+
+  const conflictSet = opts.preserveJoker
+    ? { predHome: opts.predHome, predAway: opts.predAway, updatedAt: now }
+    : { predHome: opts.predHome, predAway: opts.predAway, joker, updatedAt: now };
 
   return db
     .insert(predictions)
@@ -109,12 +130,7 @@ export function savePrediction(
     })
     .onConflictDoUpdate({
       target: [predictions.userId, predictions.groupId, predictions.matchId],
-      set: {
-        predHome: opts.predHome,
-        predAway: opts.predAway,
-        joker,
-        updatedAt: now,
-      },
+      set: conflictSet,
     })
     .returning()
     .get();
@@ -129,38 +145,46 @@ export function savePredictionForGroups(
     matchId: number;
     predHome: number;
     predAway: number;
-    groups: { groupId: string; joker: boolean; allowJoker: boolean }[];
+    groups: {
+      groupId: string;
+      joker: boolean;
+      allowJoker: boolean;
+      preserveJoker?: boolean; // non-origin groups: don't touch their joker
+    }[];
   },
   now = new Date(),
 ): number {
-  let saved = 0;
-  for (const g of opts.groups) {
-    try {
-      savePrediction(
-        db,
-        {
-          userId: opts.userId,
-          groupId: g.groupId,
-          matchId: opts.matchId,
-          predHome: opts.predHome,
-          predAway: opts.predAway,
-          joker: g.joker,
-          allowJoker: g.allowJoker,
-        },
-        now,
-      );
-      saved++;
-    } catch (err) {
-      if (
-        err instanceof PredictionLockedError ||
-        err instanceof MatchNotPredictableError
-      ) {
-        continue; // that group misses out — match locked meanwhile
+  return db.transaction(() => {
+    let saved = 0;
+    for (const g of opts.groups) {
+      try {
+        savePrediction(
+          db,
+          {
+            userId: opts.userId,
+            groupId: g.groupId,
+            matchId: opts.matchId,
+            predHome: opts.predHome,
+            predAway: opts.predAway,
+            joker: g.joker,
+            allowJoker: g.allowJoker,
+            preserveJoker: g.preserveJoker,
+          },
+          now,
+        );
+        saved++;
+      } catch (err) {
+        if (
+          err instanceof PredictionLockedError ||
+          err instanceof MatchNotPredictableError
+        ) {
+          continue; // that group misses out — match locked meanwhile
+        }
+        throw err;
       }
-      throw err;
     }
-  }
-  return saved;
+    return saved;
+  });
 }
 
 // bulk-copy scores from one of the user's pollas into another: only matches
@@ -172,35 +196,37 @@ export function copyPredictions(
 ): number {
   const source = getUserPredictions(db, opts.userId, opts.fromGroupId);
   const existing = getUserPredictions(db, opts.userId, opts.toGroupId);
-  let copied = 0;
-  for (const [matchId, pred] of source) {
-    if (existing.has(matchId)) continue;
-    try {
-      savePrediction(
-        db,
-        {
-          userId: opts.userId,
-          groupId: opts.toGroupId,
-          matchId,
-          predHome: pred.predHome,
-          predAway: pred.predAway,
-          joker: false,
-          allowJoker: false,
-        },
-        now,
-      );
-      copied++;
-    } catch (err) {
-      if (
-        err instanceof PredictionLockedError ||
-        err instanceof MatchNotPredictableError
-      ) {
-        continue;
+  return db.transaction(() => {
+    let copied = 0;
+    for (const [matchId, pred] of source) {
+      if (existing.has(matchId)) continue;
+      try {
+        savePrediction(
+          db,
+          {
+            userId: opts.userId,
+            groupId: opts.toGroupId,
+            matchId,
+            predHome: pred.predHome,
+            predAway: pred.predAway,
+            joker: false,
+            allowJoker: false,
+          },
+          now,
+        );
+        copied++;
+      } catch (err) {
+        if (
+          err instanceof PredictionLockedError ||
+          err instanceof MatchNotPredictableError
+        ) {
+          continue;
+        }
+        throw err;
       }
-      throw err;
     }
-  }
-  return copied;
+    return copied;
+  });
 }
 
 export function getUserPredictions(db: Db, userId: string, groupId: string) {
@@ -234,6 +260,40 @@ export function getGroupPredictionsForMatch(
       and(eq(predictions.groupId, groupId), eq(predictions.matchId, matchId)),
     )
     .all();
+}
+
+// batch variant for list pages: one query instead of one per locked match
+export function getGroupPredictionsForMatches(
+  db: Db,
+  groupId: string,
+  matchIds: number[],
+) {
+  if (matchIds.length === 0) {
+    return new Map<number, ReturnType<typeof getGroupPredictionsForMatch>>();
+  }
+  const rows = db
+    .select({
+      matchId: predictions.matchId,
+      userId: predictions.userId,
+      displayName: users.displayName,
+      predHome: predictions.predHome,
+      predAway: predictions.predAway,
+      joker: predictions.joker,
+    })
+    .from(predictions)
+    .innerJoin(users, eq(predictions.userId, users.id))
+    .where(
+      and(
+        eq(predictions.groupId, groupId),
+        inArray(predictions.matchId, matchIds),
+      ),
+    )
+    .all();
+  const byMatch = new Map<number, ReturnType<typeof getGroupPredictionsForMatch>>();
+  for (const { matchId, ...rest } of rows) {
+    byMatch.set(matchId, [...(byMatch.get(matchId) ?? []), rest]);
+  }
+  return byMatch;
 }
 
 export function getAllMatches(db: Db) {

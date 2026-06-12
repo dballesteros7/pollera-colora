@@ -1,5 +1,7 @@
 import cron from "node-cron";
+import { lt } from "drizzle-orm";
 import { getDb } from "./db";
+import { otpCodes, sessions } from "./db/schema";
 import { syncMatches, isLiveWindow } from "./sync";
 import { rebuildAllScores } from "./scoring/score";
 import { appendSnapshot } from "./metrics";
@@ -36,6 +38,7 @@ export function startScheduler() {
   let running = false;
   let runningSince = 0;
   let lastSnapshotHour = -1;
+  let lastCleanupDay = -1;
 
   // tick every minute; the tick decides whether it's time to actually sync
   cron.schedule("* * * * *", async () => {
@@ -60,6 +63,16 @@ export function startScheduler() {
           appendSnapshot(db, now);
         } catch (err) {
           console.warn("[metrics] snapshot failed:", err);
+        }
+      }
+      // daily sweep of expired auth rows — neither table cleans itself up
+      if (now.getUTCDate() !== lastCleanupDay) {
+        lastCleanupDay = now.getUTCDate();
+        try {
+          db.delete(otpCodes).where(lt(otpCodes.expiresAt, now)).run();
+          db.delete(sessions).where(lt(sessions.expiresAt, now)).run();
+        } catch (err) {
+          console.warn("[cleanup] expired-row sweep failed:", err);
         }
       }
       const due =

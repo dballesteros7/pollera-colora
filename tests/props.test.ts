@@ -64,21 +64,21 @@ describe("prop questions", () => {
 
     // answers rejected while still proposed
     expect(() =>
-      answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, NOW),
+      answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "3" }, NOW),
     ).toThrow(PropStateError);
 
-    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
-    answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, NOW);
-    answerQuestion(db, { questionId: q.id, userId: beto, value: "7" }, NOW);
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW);
+    answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "3" }, NOW);
+    answerQuestion(db, { questionId: q.id, groupId, userId: beto, value: "7" }, NOW);
 
     // can't resolve before lock
     expect(() =>
-      resolveQuestion(db, { questionId: q.id, correctValue: "4" }, NOW),
+      resolveQuestion(db, { questionId: q.id, groupId, correctValue: "4" }, NOW),
     ).toThrow(PropStateError);
 
     resolveQuestion(
       db,
-      { questionId: q.id, correctValue: "4", resolutionMode: "closest" },
+      { questionId: q.id, groupId, correctValue: "4", resolutionMode: "closest" },
       AFTER_LOCK,
     );
 
@@ -89,12 +89,12 @@ describe("prop questions", () => {
 
   it("closest mode splits ties", () => {
     const q = propose();
-    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
-    answerQuestion(db, { questionId: q.id, userId: ana, value: "2" }, NOW);
-    answerQuestion(db, { questionId: q.id, userId: beto, value: "6" }, NOW);
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW);
+    answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "2" }, NOW);
+    answerQuestion(db, { questionId: q.id, groupId, userId: beto, value: "6" }, NOW);
     resolveQuestion(
       db,
-      { questionId: q.id, correctValue: "4", resolutionMode: "closest" },
+      { questionId: q.id, groupId, correctValue: "4", resolutionMode: "closest" },
       AFTER_LOCK,
     );
     const rows = db.select().from(scores).all();
@@ -104,9 +104,9 @@ describe("prop questions", () => {
 
   it("locks answers at lockAt", () => {
     const q = propose();
-    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW);
     expect(() =>
-      answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, AFTER_LOCK),
+      answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "3" }, AFTER_LOCK),
     ).toThrow(PropLockedError);
   });
 
@@ -115,12 +115,12 @@ describe("prop questions", () => {
       answerType: "choice",
       options: ["James", "Luis Díaz", "Nadie"],
     });
-    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW);
     expect(() =>
-      answerQuestion(db, { questionId: q.id, userId: ana, value: "Falcao" }, NOW),
+      answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "Falcao" }, NOW),
     ).toThrow(PropStateError);
-    answerQuestion(db, { questionId: q.id, userId: ana, value: "James" }, NOW);
-    resolveQuestion(db, { questionId: q.id, correctValue: "james" }, AFTER_LOCK);
+    answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "James" }, NOW);
+    resolveQuestion(db, { questionId: q.id, groupId, correctValue: "james" }, AFTER_LOCK);
     expect(
       db.select().from(scores).all().find((r) => r.userId === ana)?.pointsProps,
     ).toBe(3);
@@ -129,13 +129,13 @@ describe("prop questions", () => {
   it("majority rejection kills the question", () => {
     // 2-member group: proposer auto-approves (1), ana alone can't reject (needs 2)
     const q = propose();
-    voteQuestion(db, { questionId: q.id, userId: ana, vote: "reject" }, NOW);
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "reject" }, NOW);
     let tally = getVoteTally(db, db.select().from(propQuestions).where(eq(propQuestions.id, q.id)).get()!);
     expect(tally).toMatchObject({ approvals: 1, rejections: 1, eligible: 2, needed: 2 });
     // proposer flips their own vote — rejections reach majority
-    voteQuestion(db, { questionId: q.id, userId: beto, vote: "reject" }, NOW);
+    voteQuestion(db, { questionId: q.id, groupId, userId: beto, vote: "reject" }, NOW);
     expect(() =>
-      answerQuestion(db, { questionId: q.id, userId: ana, value: "3" }, NOW),
+      answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "3" }, NOW),
     ).toThrow(PropStateError);
   });
 
@@ -149,7 +149,7 @@ describe("prop questions", () => {
       .get();
     joinGroup(db, celia.id, groupId, NOW);
     // still only needs 2 of the frozen 2 — ana's approval settles it
-    const tally = voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW);
+    const tally = voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW);
     expect(tally.needed).toBe(2);
     expect(tally.eligible).toBe(2);
     const updated = db.select().from(propQuestions).where(eq(propQuestions.id, q.id)).get()!;
@@ -177,11 +177,11 @@ describe("prop questions", () => {
   it("votes can't be cast after lock or once decided", () => {
     const q = propose();
     expect(() =>
-      voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, AFTER_LOCK),
+      voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, AFTER_LOCK),
     ).toThrow(PropLockedError);
-    voteQuestion(db, { questionId: q.id, userId: ana, vote: "approve" }, NOW); // approved now
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW); // approved now
     expect(() =>
-      voteQuestion(db, { questionId: q.id, userId: ana, vote: "reject" }, NOW),
+      voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "reject" }, NOW),
     ).toThrow(PropStateError);
   });
 

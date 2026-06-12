@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { getGroupForMember } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
+import { getViewerTz, parseDatetimeLocal } from "@/lib/viewer-tz";
 import {
   proposeQuestion,
   voteQuestion,
@@ -30,9 +31,16 @@ function swallowPropErrors(err: unknown) {
 export async function proposeAction(formData: FormData) {
   const groupId = String(formData.get("groupId") ?? "");
   const { user } = await requireMember(groupId);
-  const answerType = String(formData.get("answerType")) as AnswerType;
+  const answerTypeRaw = String(formData.get("answerType"));
+  // SQLite doesn't enforce Drizzle's text enums — reject forged values here
+  if (!["number", "boolean", "choice"].includes(answerTypeRaw)) return;
+  const answerType = answerTypeRaw as AnswerType;
   const matchId = Number(formData.get("matchId"));
   const lockAtRaw = String(formData.get("lockAt") ?? "");
+  // manual deadlines are wall-clock in the proposer's timezone
+  const lockAt = lockAtRaw
+    ? (parseDatetimeLocal(lockAtRaw, await getViewerTz()) ?? undefined)
+    : undefined;
   try {
     proposeQuestion(getDb(), {
       groupId,
@@ -45,7 +53,7 @@ export async function proposeAction(formData: FormData) {
           : undefined,
       points: Number(formData.get("points")) || undefined,
       matchId: matchId > 0 ? matchId : undefined,
-      lockAt: lockAtRaw ? new Date(lockAtRaw) : undefined,
+      lockAt,
     });
   } catch (err) {
     swallowPropErrors(err);
@@ -59,6 +67,7 @@ export async function voteAction(formData: FormData) {
   try {
     voteQuestion(getDb(), {
       questionId: String(formData.get("questionId") ?? ""),
+      groupId,
       userId: user.id,
       vote: formData.get("vote") === "approve" ? "approve" : "reject",
     });
@@ -74,6 +83,7 @@ export async function answerAction(formData: FormData) {
   try {
     answerQuestion(getDb(), {
       questionId: String(formData.get("questionId") ?? ""),
+      groupId,
       userId: user.id,
       value: String(formData.get("value") ?? ""),
     });
@@ -90,6 +100,7 @@ export async function resolveAction(formData: FormData) {
   try {
     resolveQuestion(getDb(), {
       questionId: String(formData.get("questionId") ?? ""),
+      groupId,
       correctValue: String(formData.get("correctValue") ?? ""),
       resolutionMode:
         formData.get("resolutionMode") === "closest" ? "closest" : "exact",

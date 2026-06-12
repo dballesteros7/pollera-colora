@@ -34,6 +34,9 @@ export async function savePredictionAction(formData: FormData) {
           groupId: group.id,
           joker: isOrigin && formData.get("joker") === "on",
           allowJoker: isOrigin && PRESETS[r.preset].joker,
+          // the joker checkbox only speaks for this polla — never clear
+          // a joker the user set in another one
+          preserveJoker: !isOrigin,
         };
       });
       savePredictionForGroups(db, {
