@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { getDb } from "./db";
 import { syncMatches, isLiveWindow } from "./sync";
 import { rebuildAllScores } from "./scoring/score";
+import { appendSnapshot } from "./metrics";
 import { FdConfigError } from "./fd/client";
 
 const IDLE_INTERVAL_MS = 15 * 60 * 1000;
@@ -34,6 +35,7 @@ export function startScheduler() {
   let lastSyncAt = 0;
   let running = false;
   let runningSince = 0;
+  let lastSnapshotHour = -1;
 
   // tick every minute; the tick decides whether it's time to actually sync
   cron.schedule("* * * * *", async () => {
@@ -52,6 +54,14 @@ export function startScheduler() {
     try {
       const db = getDb();
       const now = new Date();
+      if (now.getUTCHours() !== lastSnapshotHour) {
+        lastSnapshotHour = now.getUTCHours();
+        try {
+          appendSnapshot(db, now);
+        } catch (err) {
+          console.warn("[metrics] snapshot failed:", err);
+        }
+      }
       const due =
         isLiveWindow(db, now) ||
         now.getTime() - lastSyncAt >= IDLE_INTERVAL_MS;

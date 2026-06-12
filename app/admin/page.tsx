@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getAllMatches } from "@/lib/predictions";
 import { BONUS_CATEGORIES, getOutcomes, getKnownTeams } from "@/lib/bonus";
+import { collectMetrics, readSnapshots } from "@/lib/metrics";
 import { Header } from "@/app/components/shell";
 import { overrideMatchAction, setOutcomesAction } from "./actions";
 
@@ -14,6 +15,10 @@ export default async function AdminPage() {
   const matches = getAllMatches(db);
   const outcomes = getOutcomes(db);
   const teams = getKnownTeams(db);
+  const now = collectMetrics(db);
+  // one snapshot per day (the midnight-UTC one) for the trend table
+  const daily = readSnapshots(24 * 30).filter((m) => m.ts.includes("T00:"));
+  const trend = [...daily.slice(-14)].reverse();
 
   return (
     <>
@@ -22,6 +27,52 @@ export default async function AdminPage() {
       </Header>
       <main className="page page--wide pc-flow">
         <h1 style={{ fontSize: 26, margin: 0 }}>Admin</h1>
+
+        <section className="pc-card pc-card--pad-lg pc-flow">
+          <h2 style={{ fontSize: 18, margin: 0 }}>Métricas</h2>
+          <table className="pc-board" style={{ boxShadow: "none" }}>
+            <thead>
+              <tr>
+                <th>usuarios</th>
+                <th className="pc-num">DAU</th>
+                <th className="pc-num">WAU</th>
+                <th className="pc-num">pollas</th>
+                <th className="pc-num">miembros</th>
+                <th className="pc-num">pronósticos</th>
+                <th className="pc-num">recocha</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="pc-num">{now.users}</td>
+                <td className="pc-num">{now.dau}</td>
+                <td className="pc-num">{now.wau}</td>
+                <td className="pc-num">{now.groups}</td>
+                <td className="pc-num">{now.memberships}</td>
+                <td className="pc-num">{now.predictions}</td>
+                <td className="pc-num">{now.questions}q/{now.answers}r</td>
+              </tr>
+            </tbody>
+          </table>
+          {trend.length > 0 && (
+            <details className="pc-sheet">
+              <summary>Tendencia diaria (medianoche UTC, {trend.length} días)</summary>
+              <table>
+                <tbody>
+                  {trend.map((m) => (
+                    <tr key={m.ts}>
+                      <td>{m.ts.slice(0, 10)}</td>
+                      <td>{m.users} u · {m.dau} dau · {m.groups} pollas · {m.predictions} pron.</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          )}
+          <p className="pc-hint" style={{ margin: 0 }}>
+            Snapshots por hora en <code>metrics.jsonl</code> junto a la base de datos.
+          </p>
+        </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
           <h2 style={{ fontSize: 18, margin: 0 }}>Resultados del torneo</h2>

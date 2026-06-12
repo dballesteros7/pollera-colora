@@ -76,6 +76,14 @@ export async function getCurrentUser() {
     db.delete(sessions).where(eq(sessions.id, token)).run();
     return null;
   }
+  // throttled activity touch — feeds DAU/WAU metrics
+  const now = new Date();
+  if (
+    !row.user.lastSeenAt ||
+    now.getTime() - row.user.lastSeenAt.getTime() > 3600_000
+  ) {
+    db.update(users).set({ lastSeenAt: now }).where(eq(users.id, row.user.id)).run();
+  }
   // existing sessions pick up ADMIN_EMAILS grants without re-login
   return ensureAdminFlag(row.user);
 }

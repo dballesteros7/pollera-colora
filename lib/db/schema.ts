@@ -12,6 +12,8 @@ export const users = sqliteTable("users", {
   displayName: text("display_name"),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  // touched at most hourly on authenticated requests — feeds DAU/WAU metrics
+  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
 });
 
 export const sessions = sqliteTable("sessions", {
