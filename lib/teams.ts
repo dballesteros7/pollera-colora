@@ -55,6 +55,10 @@ const ISO: Record<string, string> = {
 const MANUAL: Record<string, Record<Locale, string>> = {
   England: { es: "Inglaterra", en: "England", de: "England", it: "Inghilterra", fr: "Angleterre", pt: "Inglaterra", zh: "英格兰", zht: "英格蘭" },
   Scotland: { es: "Escocia", en: "Scotland", de: "Schottland", it: "Scozia", fr: "Écosse", pt: "Escócia", zh: "苏格兰", zht: "蘇格蘭" },
+  // Intl renders these absurdly long ("República Democrática del Congo",
+  // "Congo - Kinshasa") — use the football-media names instead
+  "Congo DR": { es: "RD del Congo", en: "DR Congo", de: "DR Kongo", it: "RD del Congo", fr: "RD Congo", pt: "RD do Congo", zh: "刚果（金）", zht: "剛果（金）" },
+  "Bosnia-Herzegovina": { es: "Bosnia", en: "Bosnia", de: "Bosnien", it: "Bosnia", fr: "Bosnie", pt: "Bósnia", zh: "波黑", zht: "波赫" },
 };
 
 const displayCache = new Map<Locale, Intl.DisplayNames>();

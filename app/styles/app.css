@@ -233,3 +233,27 @@
   z-index: 5;
 }
 .pc-hero-shell { position: relative; }
+
+/* ---- i18n overflow hardening (long team names: Bosnien und Herzegowina,
+   Nouvelle-Zélande, Vereinigte Staaten…) ---- */
+/* grid 1fr defaults to minmax(auto,1fr): long content can blow the track */
+.pc-score { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.pc-match__row { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.pc-score__side { min-width: 0; }
+.pc-score__team {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+  line-height: var(--lh-snug);
+  overflow-wrap: anywhere;
+}
+.pc-team { min-width: 0; }
+/* block buttons may carry long localized CTAs — wrap instead of clipping */
+.pc-btn--block { white-space: normal; line-height: var(--lh-snug); }
+/* "your pick" strip: date + pick + button can exceed one line in de/fr */
+.pc-match__pick { flex-wrap: wrap; }
+/* checkbox labels like "Auch in meinen anderen Pollas" wrap cleanly */
+.pc-match__footer label.pc-hint { align-items: flex-start; min-width: 0; }
+.pc-match__footer label.pc-hint input { margin-top: 2px; flex: none; }
