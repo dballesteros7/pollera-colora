@@ -3,12 +3,25 @@ import { LOCALES, type Locale } from "@/lib/i18n";
 
 export async function GET(req: NextRequest) {
   const lang = req.nextUrl.searchParams.get("l");
-  const back = req.headers.get("referer");
-  const backPath =
-    back && new URL(back).origin === req.nextUrl.origin
-      ? new URL(back).pathname
-      : "/";
-  const res = NextResponse.redirect(new URL(backPath, req.nextUrl.origin));
+
+  // Behind the proxy our own origin reads as localhost, so never build an
+  // absolute URL — extract the path from the referer and redirect relative.
+  let backPath = "/";
+  const referer = req.headers.get("referer");
+  if (referer) {
+    try {
+      const u = new URL(referer);
+      backPath = u.pathname + u.search;
+    } catch {
+      // keep "/"
+    }
+  }
+  if (!backPath.startsWith("/") || backPath.startsWith("//")) backPath = "/";
+
+  const res = new NextResponse(null, {
+    status: 307,
+    headers: { Location: backPath },
+  });
   if (LOCALES.includes(lang as Locale)) {
     res.cookies.set("lang", lang!, {
       path: "/",
