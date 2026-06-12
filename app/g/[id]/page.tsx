@@ -300,6 +300,13 @@ export default async function GroupPage({
           <LinkIcon size={14} aria-hidden /> {t(lo, "g.invite")}{" "}
           <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
         </p>
+
+        <details className="pc-card pc-sheet">
+          <summary>{t(lo, "explain.title")}</summary>
+          <p style={{ margin: "var(--space-2) 0 0", fontSize: "var(--text-sm)", color: "var(--ink-soft)" }}>
+            {t(lo, "explain.body")}
+          </p>
+        </details>
       </main>
       <GroupTabs groupId={group.id} active="home" />
     </>

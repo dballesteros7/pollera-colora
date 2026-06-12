@@ -23,6 +23,16 @@ export async function regenerateCodeAction(formData: FormData) {
   revalidatePath(`/g/${groupId}/settings`);
 }
 
+export async function updateGroupNameAction(formData: FormData) {
+  const groupId = String(formData.get("groupId") ?? "");
+  await requireOrganizer(groupId);
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2 || name.length > 60) return;
+  getDb().update(groups).set({ name }).where(eq(groups.id, groupId)).run();
+  revalidatePath(`/g/${groupId}`);
+  revalidatePath(`/g/${groupId}/settings`);
+}
+
 export async function updatePotNoteAction(formData: FormData) {
   const groupId = String(formData.get("groupId") ?? "");
   await requireOrganizer(groupId);

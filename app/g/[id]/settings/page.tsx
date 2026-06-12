@@ -8,6 +8,7 @@ import { Header } from "@/app/components/shell";
 import { getLocale, t } from "@/lib/i18n";
 import {
   regenerateCodeAction,
+  updateGroupNameAction,
   updatePotNoteAction,
   updateBonusLockAction,
 } from "./actions";
@@ -35,6 +36,25 @@ export default async function GroupSettingsPage({
           </Link>
           <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "set.title")}</h1>
         </div>
+
+        <section className="pc-card pc-card--pad-lg pc-flow">
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "new.name")}</h2>
+          <form action={updateGroupNameAction} className="pc-page-actions">
+            <input type="hidden" name="groupId" value={group.id} />
+            <input
+              className="pc-input"
+              style={{ flex: 1 }}
+              name="name"
+              required
+              minLength={2}
+              maxLength={60}
+              defaultValue={group.name}
+            />
+            <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
+              {t(lo, "set.save")}
+            </button>
+          </form>
+        </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
           <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.invite")}</h2>
@@ -105,6 +125,13 @@ export default async function GroupSettingsPage({
             ))}
           </div>
         </section>
+
+        <details className="pc-card pc-sheet">
+          <summary>{t(lo, "explain.title")}</summary>
+          <p style={{ margin: "var(--space-2) 0 0", fontSize: "var(--text-sm)", color: "var(--ink-soft)" }}>
+            {t(lo, "explain.body")}
+          </p>
+        </details>
       </main>
     </>
   );
