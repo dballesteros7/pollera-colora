@@ -2,6 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -17,4 +18,6 @@ export async function setDisplayName(formData: FormData) {
     .where(eq(users.id, user.id))
     .run();
   revalidatePath("/");
+  const next = String(formData.get("next") ?? "");
+  if (next.startsWith("/") && !next.startsWith("//")) redirect(next);
 }

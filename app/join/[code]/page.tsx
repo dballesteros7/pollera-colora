@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Users, Target } from "lucide-react";
 import { getDb } from "@/lib/db";
-import { getGroupByInviteCode, getGroupMembers } from "@/lib/groups";
+import { getGroupByInviteCode, getGroupMembers, getGroupForMember } from "@/lib/groups";
 import { getCurrentUser } from "@/lib/auth/session";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getLocale, t } from "@/lib/i18n";
@@ -45,6 +46,10 @@ export default async function JoinPage({
   }
 
   const user = await getCurrentUser();
+  // already in this polla? straight to the table
+  if (user && getGroupForMember(db, user.id, group.id)) {
+    redirect(`/g/${group.id}`);
+  }
   const members = getGroupMembers(db, group.id);
   const organizer = members.find((m) => m.role === "organizer");
   const rules = parseScoringRules(group.scoringRules);
