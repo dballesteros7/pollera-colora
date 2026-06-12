@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
+import { isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 import { requireUser } from "@/lib/auth/require";
 import { getAllMatches } from "@/lib/predictions";
 import { BONUS_CATEGORIES, getOutcomes, getKnownTeams } from "@/lib/bonus";
 import { collectMetrics, readSnapshots } from "@/lib/metrics";
 import { Header } from "@/app/components/shell";
-import { overrideMatchAction, setOutcomesAction } from "./actions";
+import { overrideMatchAction, setOutcomesAction, nudgeNamelessAction } from "./actions";
 
 export default async function AdminPage() {
   // logged-out visitors get the login flow instead of a confusing 404
@@ -17,6 +19,11 @@ export default async function AdminPage() {
   const outcomes = getOutcomes(db);
   const teams = getKnownTeams(db);
   const now = collectMetrics(db);
+  const nameless = db
+    .select({ email: users.email })
+    .from(users)
+    .where(isNull(users.displayName))
+    .all();
   // one snapshot per day (the midnight-UTC one) for the trend table
   const daily = readSnapshots(24 * 30).filter((m) => m.ts.includes("T00:"));
   const trend = [...daily.slice(-14)].reverse();
@@ -73,6 +80,28 @@ export default async function AdminPage() {
           <p className="pc-hint" style={{ margin: 0 }}>
             Snapshots por hora en <code>metrics.jsonl</code> junto a la base de datos.
           </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span className="pc-badge">{nameless.length} sin nombre</span>
+            {nameless.length > 0 && (
+              <form action={nudgeNamelessAction}>
+                <button type="submit" className="pc-btn pc-btn--ghost pc-btn--sm">
+                  Mandarles el correo de Tania
+                </button>
+              </form>
+            )}
+          </div>
+          {nameless.length > 0 && (
+            <details className="pc-sheet">
+              <summary>Quiénes son</summary>
+              <ul style={{ margin: "var(--space-2) 0 0", paddingLeft: 20 }}>
+                {nameless.map((u) => (
+                  <li key={u.email} className="num" style={{ fontSize: "var(--text-sm)" }}>
+                    {u.email}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </section>
 
         <section className="pc-card pc-card--pad-lg pc-flow">

@@ -1,13 +1,14 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { matches } from "@/lib/db/schema";
+import { matches, users } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { rebuildAllScores } from "@/lib/scoring/score";
 import { setOutcome, BONUS_CATEGORIES, type BonusCategory } from "@/lib/bonus";
+import { sendNameNudgeEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -45,6 +46,26 @@ export async function overrideMatchAction(formData: FormData) {
       .run();
   }
   rebuildAllScores(db);
+  revalidatePath("/admin");
+}
+
+export async function nudgeNamelessAction() {
+  await requireAdmin();
+  const nameless = getDb()
+    .select({ email: users.email })
+    .from(users)
+    .where(isNull(users.displayName))
+    .all();
+  let sent = 0;
+  for (const { email } of nameless) {
+    try {
+      await sendNameNudgeEmail(email);
+      sent++;
+    } catch (err) {
+      console.error(`[admin] name nudge to ${email} failed:`, err);
+    }
+  }
+  console.log(`[admin] name nudge sent to ${sent}/${nameless.length} users`);
   revalidatePath("/admin");
 }
 

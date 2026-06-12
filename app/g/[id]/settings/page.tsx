@@ -6,6 +6,7 @@ import { getGroupForMember, getGroupMembers } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
 import { Header } from "@/app/components/shell";
 import { getLocale, t } from "@/lib/i18n";
+import { setDisplayName } from "@/app/actions";
 import {
   regenerateCodeAction,
   updateGroupNameAction,
@@ -21,8 +22,9 @@ export default async function GroupSettingsPage({
   const { id } = await params;
   const user = await requireUser(`/g/${id}/settings`);
   const access = getGroupForMember(getDb(), user.id, id);
-  if (!access || access.role !== "organizer") notFound();
+  if (!access) notFound();
   const { group } = access;
+  const organizer = access.role === "organizer";
   const lo = await getLocale();
   const members = getGroupMembers(getDb(), group.id);
 
@@ -38,17 +40,21 @@ export default async function GroupSettingsPage({
         </div>
 
         <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "new.name")}</h2>
-          <form action={updateGroupNameAction} className="pc-page-actions">
-            <input type="hidden" name="groupId" value={group.id} />
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.you")}</h2>
+          <p className="pc-hint" style={{ margin: 0 }}>
+            {t(lo, "set.youHint")}
+          </p>
+          <form action={setDisplayName} className="pc-page-actions">
+            <input type="hidden" name="next" value={`/g/${group.id}/settings`} />
             <input
               className="pc-input"
               style={{ flex: 1 }}
-              name="name"
+              name="displayName"
               required
               minLength={2}
-              maxLength={60}
-              defaultValue={group.name}
+              maxLength={40}
+              defaultValue={user.displayName ?? ""}
+              placeholder={t(lo, "name.placeholder")}
             />
             <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
               {t(lo, "set.save")}
@@ -56,60 +62,83 @@ export default async function GroupSettingsPage({
           </form>
         </section>
 
-        <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.invite")}</h2>
-          <p style={{ margin: 0 }}>
-            <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
-          </p>
-          <form action={regenerateCodeAction}>
-            <input type="hidden" name="groupId" value={group.id} />
-            <button type="submit" className="pc-btn pc-btn--ghost pc-btn--sm">
-              {t(lo, "set.regen")}
-            </button>
-          </form>
-        </section>
+        {organizer && (
+          <>
+            <section className="pc-card pc-card--pad-lg pc-flow">
+              <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "new.name")}</h2>
+              <form action={updateGroupNameAction} className="pc-page-actions">
+                <input type="hidden" name="groupId" value={group.id} />
+                <input
+                  className="pc-input"
+                  style={{ flex: 1 }}
+                  name="name"
+                  required
+                  minLength={2}
+                  maxLength={60}
+                  defaultValue={group.name}
+                />
+                <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
+                  {t(lo, "set.save")}
+                </button>
+              </form>
+            </section>
 
-        <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.vaca")}</h2>
-          <form action={updatePotNoteAction} className="pc-page-actions">
-            <input type="hidden" name="groupId" value={group.id} />
-            <input
-              className="pc-input"
-              style={{ flex: 1 }}
-              name="potNote"
-              maxLength={200}
-              defaultValue={group.potNote ?? ""}
-              placeholder={t(lo, "set.vacaPh")}
-            />
-            <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
-              {t(lo, "set.save")}
-            </button>
-          </form>
-        </section>
+            <section className="pc-card pc-card--pad-lg pc-flow">
+              <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.invite")}</h2>
+              <p style={{ margin: 0 }}>
+                <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
+              </p>
+              <form action={regenerateCodeAction}>
+                <input type="hidden" name="groupId" value={group.id} />
+                <button type="submit" className="pc-btn pc-btn--ghost pc-btn--sm">
+                  {t(lo, "set.regen")}
+                </button>
+              </form>
+            </section>
 
-        <section className="pc-card pc-card--pad-lg pc-flow">
-          <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.bonusClose")}</h2>
-          <p className="pc-hint" style={{ margin: 0 }}>
-            {t(lo, "set.bonusCloseSub")}
-          </p>
-          <form action={updateBonusLockAction} className="pc-page-actions">
-            <input type="hidden" name="groupId" value={group.id} />
-            <input
-              type="datetime-local"
-              className="pc-input"
-              style={{ flex: 1 }}
-              name="bonusLockAt"
-              defaultValue={
-                group.bonusLockAt
-                  ? new Date(group.bonusLockAt).toISOString().slice(0, 16)
-                  : ""
-              }
-            />
-            <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
-              {t(lo, "set.save")}
-            </button>
-          </form>
-        </section>
+            <section className="pc-card pc-card--pad-lg pc-flow">
+              <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.vaca")}</h2>
+              <form action={updatePotNoteAction} className="pc-page-actions">
+                <input type="hidden" name="groupId" value={group.id} />
+                <input
+                  className="pc-input"
+                  style={{ flex: 1 }}
+                  name="potNote"
+                  maxLength={200}
+                  defaultValue={group.potNote ?? ""}
+                  placeholder={t(lo, "set.vacaPh")}
+                />
+                <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
+                  {t(lo, "set.save")}
+                </button>
+              </form>
+            </section>
+
+            <section className="pc-card pc-card--pad-lg pc-flow">
+              <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.bonusClose")}</h2>
+              <p className="pc-hint" style={{ margin: 0 }}>
+                {t(lo, "set.bonusCloseSub")}
+              </p>
+              <form action={updateBonusLockAction} className="pc-page-actions">
+                <input type="hidden" name="groupId" value={group.id} />
+                <input
+                  type="datetime-local"
+                  className="pc-input"
+                  style={{ flex: 1 }}
+                  name="bonusLockAt"
+                  defaultValue={
+                    group.bonusLockAt
+                      ? new Date(group.bonusLockAt).toISOString().slice(0, 16)
+                      : ""
+                  }
+                />
+                <button type="submit" className="pc-btn pc-btn--primary pc-btn--sm">
+                  {t(lo, "set.save")}
+                </button>
+              </form>
+            </section>
+          </>
+        )}
 
         <section className="pc-card pc-card--pad-lg pc-flow">
           <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.crew", { n: members.length })}</h2>

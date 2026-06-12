@@ -331,6 +331,8 @@ const M: Record<string, Msg> = {
   "set.save": { es: "Guardar", en: "Save", de: "Speichern", it: "Salva", pt: "Salvar", fr: "Enregistrer", zh: "保存", zht: "儲存" },
   "set.crew": { es: "El parche ({n})", en: "The crew ({n})", de: "Die Crew ({n})", it: "La combriccola ({n})", pt: "A galera ({n})", fr: "La bande ({n})", zh: "成员（{n}）", zht: "成員（{n}）" },
   "set.organiza": { es: "organiza", en: "organizer", de: "Spielleitung", it: "organizza", pt: "organiza", fr: "organise", zh: "主持人", zht: "主辦人" },
+  "set.you": { es: "Su nombre en las pollas", en: "Your name in the pollas", de: "Dein Name in den Pollas", it: "Il tuo nome nelle pollas", pt: "Seu nome nos bolões", fr: "Ton nom dans les pollas", zh: "你在竞猜中的名字", zht: "你在競猜中的名字" },
+  "set.youHint": { es: "Así lo verá el parche en todas sus pollas.", en: "This is how every crew sees you, in all your pollas.", de: "So sieht dich die Crew in allen deinen Pollas.", it: "Così ti vedrà la combriccola in tutte le tue pollas.", pt: "É assim que a galera te vê em todos os seus bolões.", fr: "C'est comme ça que ta bande te voit dans toutes tes pollas.", zh: "所有竞猜里的朋友都会看到这个名字。", zht: "所有競猜裡的朋友都會看到這個名字。" },
 
   // ---- create group ----
   "new.eyebrow": { es: "Nueva polla", en: "New polla", de: "Neue Polla", it: "Nuova polla", pt: "Novo bolão", fr: "Nouvelle polla", zh: "新竞猜", zht: "新競猜" },

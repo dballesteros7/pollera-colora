@@ -45,7 +45,7 @@ export default async function GroupPage({
   const access = getGroupForMember(db, user.id, id);
   if (!access) notFound();
 
-  const { group, role } = access;
+  const { group } = access;
   const now = new Date();
   const lo = await getLocale();
   const tz = await getViewerTz();
@@ -89,11 +89,9 @@ export default async function GroupPage({
   return (
     <>
       <Header>
-        {role === "organizer" && (
-          <Link href={`/g/${group.id}/settings`} className="pc-iconbtn" aria-label={t(lo, "a11y.settings")}>
-            <Settings size={20} aria-hidden />
-          </Link>
-        )}
+        <Link href={`/g/${group.id}/settings`} className="pc-iconbtn" aria-label={t(lo, "a11y.settings")}>
+          <Settings size={20} aria-hidden />
+        </Link>
       </Header>
       <main className="page pc-flow">
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
