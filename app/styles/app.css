@@ -154,6 +154,9 @@
    ("Chequia") keep their line instead of splitting mid-word */
 @media (max-width: 520px) {
   .pc-result { font-size: var(--score-sm); min-width: 56px; }
+  /* content-sized columns: a one-word name ("Chequia") gets exactly the
+     width it needs and never splits; multi-word names wrap at spaces */
+  .pc-match__row { grid-template-columns: auto auto auto; justify-content: space-between; }
 }
 
 /* ---- narrow phones (Galaxy Z Flip outer ~344px, small Androids) ---- */
