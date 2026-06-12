@@ -18,7 +18,19 @@ import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predictions";
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
 import { bonusLocked } from "@/lib/bonus";
+import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { Header, GroupTabs } from "@/app/components/shell";
+import { ScoreInput } from "@/app/components/score-input";
+import { ScoringSheet } from "@/app/components/scoring-rules";
+import { savePredictionAction } from "./fixtures/actions";
+
+function countdown(ms: number): string {
+  const mins = Math.max(1, Math.round(ms / 60000));
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h} h ${m} min` : `${h} h`;
+}
 
 export default async function GroupPage({
   params,
@@ -33,6 +45,8 @@ export default async function GroupPage({
 
   const { group, role } = access;
   const now = new Date();
+  const tz = await getViewerTz();
+  const fmtDateTime = dateTimeFormatter(tz);
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
@@ -43,6 +57,22 @@ export default async function GroupPage({
   const openUnpredicted = matches.filter(
     (m) => isPredictable(m, now) && !myPredictions.has(m.id),
   ).length;
+
+  // hero: a live match wins; otherwise the next kickoff within 48h
+  const liveMatch = matches.find(
+    (m) => m.status === "IN_PLAY" || m.status === "PAUSED",
+  );
+  const nextMatch =
+    liveMatch ??
+    matches.find(
+      (m) =>
+        m.kickoffUtc > now &&
+        m.kickoffUtc.getTime() - now.getTime() < 48 * 3600_000 &&
+        m.homeTeam !== null,
+    );
+  const heroIsLive = Boolean(liveMatch);
+  const heroPred = nextMatch ? myPredictions.get(nextMatch.id) : undefined;
+  const heroOpen = nextMatch ? isPredictable(nextMatch, now) : false;
 
   const questions = getGroupQuestions(db, group.id);
   const myAnswers = getUserAnswers(db, group.id, user.id);
@@ -73,6 +103,103 @@ export default async function GroupPage({
             </span>
           )}
         </div>
+
+        {nextMatch && (
+          <article
+            className="pc-match pc-hero-match"
+            data-state={heroIsLive ? "live" : heroOpen ? "open" : "locked"}
+          >
+            <div className="pc-match__head">
+              <span className="pc-match__meta">
+                {heroIsLive ? "¡En juego!" : "Próximo partido"}
+              </span>
+              {heroIsLive ? (
+                <span className="pc-badge pc-badge--live">
+                  <span className="pc-dot" />
+                  en juego
+                </span>
+              ) : (
+                <span className="pc-countdown">
+                  arranca en {countdown(nextMatch.kickoffUtc.getTime() - now.getTime())}
+                </span>
+              )}
+            </div>
+            {heroOpen && !heroIsLive ? (
+              <form action={savePredictionAction}>
+                <input type="hidden" name="groupId" value={group.id} />
+                <input type="hidden" name="matchId" value={nextMatch.id} />
+                <div className="pc-match__body">
+                  <ScoreInput
+                    homeTeam={nextMatch.homeTeam!}
+                    awayTeam={nextMatch.awayTeam!}
+                    homeCrest={nextMatch.homeCrest}
+                    awayCrest={nextMatch.awayCrest}
+                    defaultHome={heroPred?.predHome ?? null}
+                    defaultAway={heroPred?.predAway ?? null}
+                  />
+                </div>
+                <div className="pc-match__footer">
+                  {preset.joker && (
+                    <label className="pc-comodin">
+                      <input type="checkbox" name="joker" defaultChecked={heroPred?.joker ?? false} />
+                      Comodín ×2
+                    </label>
+                  )}
+                  <button
+                    type="submit"
+                    className={`pc-btn ${heroPred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
+                    style={{ marginLeft: "auto" }}
+                  >
+                    {heroPred ? "Actualizar" : "Guardar"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="pc-match__body">
+                <div className="pc-match__row">
+                  <span className="pc-team pc-team--home">
+                    {nextMatch.homeCrest && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={nextMatch.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
+                    )}
+                    <span className="pc-team__name">{nextMatch.homeTeam}</span>
+                  </span>
+                  <span className="pc-result">
+                    {heroIsLive ? (
+                      <>
+                        {nextMatch.finalHome ?? 0} – {nextMatch.finalAway ?? 0}
+                      </>
+                    ) : (
+                      <span style={{ color: "var(--ink-faint)" }}>vs</span>
+                    )}
+                  </span>
+                  <span className="pc-team pc-team--away">
+                    {nextMatch.awayCrest && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={nextMatch.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
+                    )}
+                    <span className="pc-team__name">{nextMatch.awayTeam}</span>
+                  </span>
+                </div>
+                <div className="pc-match__pick">
+                  <span>
+                    {fmtDateTime.format(nextMatch.kickoffUtc)} · su pronóstico:{" "}
+                    {heroPred ? (
+                      <b className="pc-pick">
+                        {heroPred.predHome}–{heroPred.predAway}
+                      </b>
+                    ) : (
+                      "no marcó"
+                    )}
+                  </span>
+                  <Link href={`/g/${group.id}/fixtures`} className="pc-btn pc-btn--quiet pc-btn--sm">
+                    Ver partidos
+                  </Link>
+                </div>
+              </div>
+            )}
+          </article>
+        )}
 
         {board.length <= 1 && board.every((r) => r.total === 0) ? (
           <div className="pc-card pc-empty">
@@ -115,14 +242,13 @@ export default async function GroupPage({
           </table>
         )}
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 13, color: "var(--ink-soft)" }}>
-          <span className="pc-badge">{preset.name}{rules.unicoAcertado ? " · único acertado" : ""}</span>
-          {group.potNote && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-              <Trophy size={15} style={{ color: "var(--amarillo-deep)" }} aria-hidden /> Vaca: {group.potNote}
-            </span>
-          )}
-        </div>
+        {group.potNote && (
+          <p style={{ display: "inline-flex", alignItems: "center", gap: 5, margin: 0, fontSize: 13, color: "var(--ink-soft)" }}>
+            <Trophy size={15} style={{ color: "var(--amarillo-deep)" }} aria-hidden /> Vaca: {group.potNote}
+          </p>
+        )}
+
+        <ScoringSheet preset={preset} rules={rules} />
 
         <div className="pc-flow" style={{ gap: "var(--gap-card)" }}>
           <Link href={`/g/${group.id}/fixtures`} className="pc-card pc-quicklink">
@@ -139,8 +265,8 @@ export default async function GroupPage({
           <Link href={`/g/${group.id}/props`} className="pc-card pc-quicklink">
             <span className="pc-quicklink__icon"><ListChecks size={22} aria-hidden /></span>
             <span className="pc-quicklink__text">
-              <span className="pc-quicklink__label">Preguntas del parche</span>
-              <span className="pc-quicklink__sub">Las preguntas que propone el grupo</span>
+              <span className="pc-quicklink__label">La Recocha</span>
+              <span className="pc-quicklink__sub">Las preguntas locas del parche</span>
             </span>
             {openProps > 0 && <span className="pc-badge">{openProps}</span>}
             <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />

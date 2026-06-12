@@ -8,6 +8,7 @@ import {
   getQuestionAnswers,
 } from "@/lib/props";
 import { getAllMatches, isLocked } from "@/lib/predictions";
+import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { Header, GroupTabs } from "@/app/components/shell";
 import {
   proposeAction,
@@ -15,16 +16,6 @@ import {
   answerAction,
   resolveAction,
 } from "./actions";
-
-const lockFormat = new Intl.DateTimeFormat("es-CO", {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  hour12: true,
-  timeZone: "America/Bogota",
-});
 
 export default async function PropsPage({
   params,
@@ -39,6 +30,8 @@ export default async function PropsPage({
   const { group, role } = access;
 
   const now = new Date();
+  const tz = await getViewerTz();
+  const lockFormat = dateTimeFormatter(tz);
   const all = getGroupQuestions(db, group.id);
   const mine = getUserAnswers(db, group.id, user.id);
   const upcoming = getAllMatches(db).filter((m) => !isLocked(m, now) && m.homeTeam);
@@ -61,7 +54,7 @@ export default async function PropsPage({
       <main className="page pc-flow" style={{ gap: "var(--space-6)" }}>
         <div>
           <span className="eyebrow">{group.name}</span>
-          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Preguntas del parche</h1>
+          <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>La Recocha</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
             Las preguntas las propone el grupo y las resuelve quien organiza.
           </p>
@@ -246,7 +239,7 @@ export default async function PropsPage({
                 {upcoming.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.homeTeam} vs {m.awayTeam} (
-                    {m.kickoffUtc.toLocaleDateString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short" })})
+                    {m.kickoffUtc.toLocaleDateString("es-CO", { timeZone: tz, day: "numeric", month: "short" })})
                   </option>
                 ))}
               </select>

@@ -10,18 +10,9 @@ import {
   getKnownTeams,
 } from "@/lib/bonus";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
+import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { saveBonusPicksAction } from "./actions";
-
-const deadlineFormat = new Intl.DateTimeFormat("es-CO", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  hour12: true,
-  timeZone: "America/Bogota",
-});
 
 export default async function BonusPage({
   params,
@@ -36,6 +27,7 @@ export default async function BonusPage({
   const { group } = access;
 
   const now = new Date();
+  const deadlineFormat = dateTimeFormatter(await getViewerTz());
   const locked = bonusLocked(group, now);
   const rules = parseScoringRules(group.scoringRules);
   const points = PRESETS[rules.preset].bonusPoints;
@@ -58,7 +50,7 @@ export default async function BonusPage({
             {group.bonusLockAt
               ? locked
                 ? "Ya cerraron — estos son los del parche."
-                : `Cierran el ${deadlineFormat.format(group.bonusLockAt)} (hora colombiana).`
+                : `Cierran el ${deadlineFormat.format(group.bonusLockAt)} (su hora).`
               : "Quien organiza todavía no ha fijado el cierre."}
           </p>
         </div>

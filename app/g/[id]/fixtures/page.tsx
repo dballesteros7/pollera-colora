@@ -11,22 +11,10 @@ import {
 } from "@/lib/predictions";
 import { parseScoringRules, PRESETS } from "@/lib/scoring/presets";
 import { scoreMatch } from "@/lib/scoring/score";
+import { getViewerTz, dayFormatter, timeFormatter } from "@/lib/viewer-tz";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
 import { savePredictionAction } from "./actions";
-
-const dayFormat = new Intl.DateTimeFormat("es-CO", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  timeZone: "America/Bogota",
-});
-const timeFormat = new Intl.DateTimeFormat("es-CO", {
-  hour: "numeric",
-  minute: "2-digit",
-  hour12: true,
-  timeZone: "America/Bogota",
-});
 
 const STAGE_LABEL: Record<string, string> = {
   GROUP_STAGE: "Fase de grupos",
@@ -69,6 +57,9 @@ export default async function FixturesPage({
   const { group } = access;
 
   const now = new Date();
+  const tz = await getViewerTz();
+  const dayFormat = dayFormatter(tz);
+  const timeFormat = timeFormatter(tz);
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const matches = getAllMatches(db);
@@ -97,7 +88,7 @@ export default async function FixturesPage({
           <span className="eyebrow">{group.name}</span>
           <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>Partidos</h1>
           <p className="pc-hint" style={{ margin: "4px 0 0" }}>
-            Hora colombiana. Puede cambiar su pronóstico hasta el pitazo.
+            Horas en su zona. Puede cambiar su pronóstico hasta el pitazo.
           </p>
         </div>
 
@@ -165,7 +156,7 @@ export default async function FixturesPage({
                         )}
                         <button
                           type="submit"
-                          className="pc-btn pc-btn--primary pc-btn--sm"
+                          className={`pc-btn ${pred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
                           style={{ marginLeft: "auto" }}
                         >
                           {pred ? "Actualizar" : "Guardar"}

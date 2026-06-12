@@ -149,3 +149,45 @@
   color: var(--success);
   font-weight: var(--w-semibold);
 }
+
+/* ---- narrow phones (Galaxy Z Flip outer ~344px, small Androids) ---- */
+@media (max-width: 400px) {
+  .pc-score { gap: var(--space-1); }
+  .pc-score__box { gap: var(--space-1); }
+  .pc-score__num { width: 50px; font-size: var(--score-sm); }
+  .pc-stepper { width: 30px; height: 30px; font-size: 17px; }
+  .pc-score__dash { padding: 0; font-size: var(--score-sm); }
+  .pc-score__team { font-size: var(--text-xs); }
+  .pc-match__footer { flex-wrap: wrap; gap: var(--space-2); }
+  .pc-result { min-width: 72px; font-size: var(--score-sm); }
+}
+
+/* ---- collapsible info sheet (no-JS bottom-sheet stand-in) ---- */
+.pc-sheet { border-radius: var(--radius-lg); }
+.pc-sheet > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--w-semibold);
+  font-size: var(--text-sm);
+  color: var(--brand-ink);
+  min-height: var(--touch-min);
+}
+.pc-sheet > summary::-webkit-details-marker { display: none; }
+.pc-sheet > summary::after { content: "+"; margin-left: auto; font-family: var(--font-mono); color: var(--ink-faint); }
+.pc-sheet[open] > summary::after { content: "−"; }
+.pc-sheet table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.pc-sheet td { padding: var(--space-2) 0; border-bottom: 1px dashed var(--line); vertical-align: top; }
+.pc-sheet tr:last-child td { border-bottom: none; }
+.pc-sheet td:last-child { text-align: right; font-family: var(--font-mono); font-weight: var(--w-semibold); white-space: nowrap; }
+
+/* ---- next-match hero on group home ---- */
+.pc-hero-match { box-shadow: var(--shadow-md); }
+.pc-hero-match .pc-match__head { background: var(--paper-tint); }
+.pc-countdown {
+  font-family: var(--font-mono);
+  font-weight: var(--w-semibold);
+  color: var(--state-open-ink);
+}
