@@ -6,7 +6,7 @@ import { users, matches, scores } from "../lib/db/schema";
 import { createGroup, joinGroup } from "../lib/groups";
 import { savePrediction } from "../lib/predictions";
 import { PRESETS } from "../lib/scoring/presets";
-import { scoreMatch, rebuildGroupScores } from "../lib/scoring/score";
+import { scoreMatch, scoreBreakdown, rebuildGroupScores } from "../lib/scoring/score";
 
 const clasica = PRESETS.clasica;
 const audaz = PRESETS.marcador_o_nada;
@@ -135,6 +135,64 @@ describe("scoreMatch — escalonada", () => {
       scoreMatch({ predHome: 2, predAway: 1, joker: true }, groupStage(2, 1), escalonada)
         .points,
     ).toBe(20);
+  });
+});
+
+describe("scoreBreakdown", () => {
+  const cases = [
+    { pred: { predHome: 2, predAway: 1, joker: false }, res: groupStage(2, 1), preset: clasica },
+    { pred: { predHome: 3, predAway: 2, joker: false }, res: groupStage(2, 1), preset: clasica },
+    { pred: { predHome: 0, predAway: 1, joker: false }, res: groupStage(2, 1), preset: clasica },
+    { pred: { predHome: 1, predAway: 0, joker: false }, res: { regHome: 1, regAway: 0, stage: "FINAL" }, preset: audaz },
+    { pred: { predHome: 2, predAway: 0, joker: false }, res: { regHome: 1, regAway: 0, stage: "LAST_16" }, preset: audaz },
+    { pred: { predHome: 2, predAway: 1, joker: true }, res: groupStage(2, 1), preset: escalonada },
+    { pred: { predHome: 2, predAway: 0, joker: false }, res: groupStage(2, 1), preset: escalonada },
+    { pred: { predHome: 0, predAway: 1, joker: false }, res: groupStage(2, 1), preset: escalonada },
+  ];
+
+  it("total always matches scoreMatch (single source of truth)", () => {
+    for (const c of cases) {
+      const b = scoreBreakdown(c.pred, c.res, c.preset);
+      const m = scoreMatch(c.pred, c.res, c.preset);
+      expect({ points: b.points, exact: b.exact, result: b.result }).toEqual(m);
+    }
+  });
+
+  it("parts sum to base, and base→multiplier→joker reproduces the total", () => {
+    for (const c of cases) {
+      const b = scoreBreakdown(c.pred, c.res, c.preset);
+      expect(b.parts.reduce((s, p) => s + p.points, 0)).toBe(b.base);
+      let expected = Math.round(b.base * b.multiplier);
+      if (b.joker) expected *= 2;
+      expect(b.points).toBe(expected);
+    }
+  });
+
+  it("labels the escalonada tiers it hits", () => {
+    // exact → just the exact tier, no team-goals double count
+    expect(scoreBreakdown({ predHome: 2, predAway: 1, joker: false }, groupStage(2, 1), escalonada).parts)
+      .toEqual([{ key: "exact", points: 10 }]);
+    // winner only + one team's goals right
+    expect(scoreBreakdown({ predHome: 2, predAway: 0, joker: false }, groupStage(2, 1), escalonada).parts)
+      .toEqual([{ key: "tierWinner", points: 2 }, { key: "teamGoals", points: 1 }]);
+    // wrong outcome but a team's goals right → only the team-goals part
+    expect(scoreBreakdown({ predHome: 0, predAway: 1, joker: false }, groupStage(2, 1), escalonada).parts)
+      .toEqual([{ key: "teamGoals", points: 1 }]);
+  });
+
+  it("flags joker and stage multiplier", () => {
+    const j = scoreBreakdown({ predHome: 2, predAway: 1, joker: true }, groupStage(2, 1), escalonada);
+    expect(j.joker).toBe(true);
+    expect(j.points).toBe(20);
+    const mult = scoreBreakdown({ predHome: 1, predAway: 0, joker: false }, { regHome: 1, regAway: 0, stage: "FINAL" }, audaz);
+    expect(mult.multiplier).toBe(3);
+    expect(mult.joker).toBe(false);
+  });
+
+  it("a missed pick has no parts and zero points", () => {
+    const b = scoreBreakdown({ predHome: 0, predAway: 1, joker: false }, groupStage(2, 1), clasica);
+    expect(b.parts).toEqual([]);
+    expect(b.points).toBe(0);
   });
 });
 

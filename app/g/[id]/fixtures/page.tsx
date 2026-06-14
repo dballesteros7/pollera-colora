@@ -17,6 +17,8 @@ import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
 import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
+import { MatchBreakdown } from "@/app/components/match-breakdown";
+import { ScrollToCurrent } from "@/app/components/scroll-to-current";
 import { savePredictionAction, copyPredictionsAction } from "./actions";
 
 const STAGE_KEY: Record<string, string> = {
@@ -82,6 +84,14 @@ export default async function FixturesPage({
     const key = dayFormat.format(m.kickoffUtc);
     byDay.set(key, [...(byDay.get(key) ?? []), m]);
   }
+
+  // land the viewer on the current/next match instead of the top of a long list:
+  // a live game if there is one, otherwise the next kickoff still to come
+  const liveMatch = matches.find(
+    (m) => m.status === "IN_PLAY" || m.status === "PAUSED",
+  );
+  const target =
+    liveMatch ?? matches.find((m) => m.kickoffUtc.getTime() >= now.getTime());
 
   return (
     <>
@@ -167,7 +177,12 @@ export default async function FixturesPage({
                   : null;
 
               return (
-                <article key={m.id} className="pc-match" data-state={state}>
+                <article
+                  key={m.id}
+                  id={`m${m.id}`}
+                  className="pc-match"
+                  data-state={state}
+                >
                   <div className="pc-match__head">
                     <span className="pc-match__meta">{meta}</span>
                     <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -278,22 +293,42 @@ export default async function FixturesPage({
                         </div>
                       )}
 
-                      {others.length > 0 && (
-                        <div className="pc-picklist">
-                          {others.map((o) => (
-                            <span key={o.userId} className="pc-picklist__row">
-                              <span className="pc-avatar pc-avatar--sm">
-                                {(o.displayName ?? "?").slice(0, 2)}
+                      {others.length > 0 &&
+                        (state === "final" &&
+                        m.regHome !== null &&
+                        m.regAway !== null ? (
+                          <MatchBreakdown
+                            locale={lo}
+                            preset={preset}
+                            result={{
+                              regHome: m.regHome,
+                              regAway: m.regAway,
+                              stage: m.stage,
+                            }}
+                            unico={rules.unicoAcertado}
+                            picks={others.map((o) => ({
+                              ...o,
+                              isMe: o.userId === user.id,
+                            }))}
+                          />
+                        ) : (
+                          <div className="pc-picklist">
+                            {others.map((o) => (
+                              <span key={o.userId} className="pc-picklist__row">
+                                <span className="pc-avatar pc-avatar--sm">
+                                  {(o.displayName ?? "?").slice(0, 2)}
+                                </span>
+                                {o.displayName ?? "(sin nombre)"}
+                                {o.joker && (
+                                  <span className="pc-badge pc-badge--comodin">×2</span>
+                                )}
+                                <span className="pc-pick">
+                                  {o.predHome}–{o.predAway}
+                                </span>
                               </span>
-                              {o.displayName ?? "(sin nombre)"}
-                              {o.joker && <span className="pc-badge pc-badge--comodin">×2</span>}
-                              <span className="pc-pick">
-                                {o.predHome}–{o.predAway}
-                              </span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </article>
@@ -302,6 +337,7 @@ export default async function FixturesPage({
           </section>
         ))}
       </main>
+      {target && <ScrollToCurrent targetId={`m${target.id}`} />}
       <GroupTabs groupId={group.id} active="fixtures" />
     </>
   );

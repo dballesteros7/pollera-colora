@@ -30,17 +30,41 @@ export interface MatchScore {
   result: boolean; // outcome (winner/draw) correct
 }
 
+// the additive components that make up a match's base points, each tagged with
+// a stable key the UI maps to a translated label. único is group-context and
+// added by the caller, not here.
+export type ScorePartKey =
+  | "exact"
+  | "winnerDiff" // escalonada tier: right winner + right goal difference
+  | "tierWinner" // escalonada tier: right winner only
+  | "result" // additive presets: right winner/draw
+  | "goalDiff" // additive presets: goal-difference bonus (non-draw)
+  | "teamGoals"; // escalonada: +1 for one team's goals
+
+export interface ScorePart {
+  key: ScorePartKey;
+  points: number;
+}
+
+export interface ScoreBreakdown extends MatchScore {
+  base: number; // sum of `parts` before multiplier/joker
+  parts: ScorePart[];
+  multiplier: number; // stage multiplier (1 when the preset has none)
+  joker: boolean; // joker actually applied (preset allows it AND pred used it)
+}
+
 function outcome(home: number, away: number): -1 | 0 | 1 {
   return home === away ? 0 : home > away ? 1 : -1;
 }
 
-// Core scoring for one prediction vs one regulation-time result.
-// `unicoBonus` (único acertado) is group-context and applied by the rebuild.
-export function scoreMatch(
+// Core scoring for one prediction vs one regulation-time result, broken down
+// into its labelled parts so the UI can show *why* a pick scored what it did.
+// `único acertado` is group-context and applied by the rebuild / the caller.
+export function scoreBreakdown(
   pred: PredictionInput,
   result: MatchResult,
   preset: PresetDef,
-): MatchScore {
+): ScoreBreakdown {
   const exact =
     pred.predHome === result.regHome && pred.predAway === result.regAway;
   const sameOutcome =
@@ -49,38 +73,51 @@ export function scoreMatch(
   const sameGoalDiff =
     pred.predHome - pred.predAway === result.regHome - result.regAway;
 
-  let points = 0;
+  const parts: ScorePart[] = [];
   if (preset.exclusiveTiers) {
     if (exact) {
-      points = preset.exactPoints;
+      parts.push({ key: "exact", points: preset.exactPoints });
     } else {
-      if (sameOutcome && sameGoalDiff) points = preset.tierWinnerGoalDiff;
-      else if (sameOutcome) points = preset.resultPoints;
+      if (sameOutcome && sameGoalDiff)
+        parts.push({ key: "winnerDiff", points: preset.tierWinnerGoalDiff });
+      else if (sameOutcome)
+        parts.push({ key: "tierWinner", points: preset.resultPoints });
       if (
         pred.predHome === result.regHome ||
         pred.predAway === result.regAway
       ) {
-        points += preset.teamGoalsBonus;
+        parts.push({ key: "teamGoals", points: preset.teamGoalsBonus });
       }
     }
   } else {
     if (exact) {
-      points = preset.exactPoints;
+      parts.push({ key: "exact", points: preset.exactPoints });
     } else if (sameOutcome) {
-      points = preset.resultPoints;
+      parts.push({ key: "result", points: preset.resultPoints });
       // goal-diff bonus only for non-draws (a correct draw outcome already
       // implies the goal difference)
       if (sameGoalDiff && outcome(result.regHome, result.regAway) !== 0) {
-        points += preset.goalDiffBonus;
+        parts.push({ key: "goalDiff", points: preset.goalDiffBonus });
       }
     }
   }
 
+  const base = parts.reduce((sum, p) => sum + p.points, 0);
   const multiplier = preset.stageMultipliers[result.stage] ?? 1;
-  points = Math.round(points * multiplier);
-  if (pred.joker && preset.joker) points *= 2;
+  const joker = pred.joker && preset.joker;
+  let points = Math.round(base * multiplier);
+  if (joker) points *= 2;
 
-  return { points, exact, result: sameOutcome };
+  return { points, exact, result: sameOutcome, base, parts, multiplier, joker };
+}
+
+export function scoreMatch(
+  pred: PredictionInput,
+  result: MatchResult,
+  preset: PresetDef,
+): MatchScore {
+  const { points, exact, result: res } = scoreBreakdown(pred, result, preset);
+  return { points, exact, result: res };
 }
 
 export const UNICO_BONUS = 5;
