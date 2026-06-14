@@ -182,8 +182,9 @@
   background: var(--brand-soft);
   box-shadow: inset 3px 0 0 var(--magenta);
 }
-.pc-board tbody tr.is-you .pc-player__name::after {
-  content: "← tú"; margin-left: var(--space-2);
+/* localized "← tú/du/you" marker — text comes from JSX so it translates */
+.pc-player__you {
+  margin-left: var(--space-2); white-space: nowrap;
   font-family: var(--font-sans); font-size: var(--text-2xs); font-weight: var(--w-bold);
   color: var(--magenta-deep); letter-spacing: var(--ls-wide); vertical-align: 1px;
 }

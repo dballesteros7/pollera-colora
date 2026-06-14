@@ -245,6 +245,9 @@ export default async function GroupPage({
                   <td>
                     <span className="pc-player">
                       <span className="pc-player__name">{row.displayName ?? "(sin nombre)"}</span>
+                      {row.userId === user.id && (
+                        <span className="pc-player__you">← {t(lo, "f.youTag")}</span>
+                      )}
                     </span>
                   </td>
                   <td className="pc-num pc-points">{row.total}</td>
