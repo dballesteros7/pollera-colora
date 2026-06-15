@@ -73,12 +73,9 @@ fixture, web-search and **anchor the pick to the market**:
 Cross-check against the in-tournament form table; when they disagree, say which
 you trust and why.
 
-**Leakage guard (important).** When re-running on a day when some slate matches
-may already have kicked off, you must not look up results. Set WebSearch
-`blocked_domains` to the major result/report outlets (espn, bbc, theguardian,
-aljazeera, fifa, flashscore, sofascore, goal, reuters, apnews, foxsports, yahoo,
-si, cbssports, marca, as, skysports, wikipedia) and query odds/lineups/injuries
-— never "<teams> result/score/highlights". If a result appears, ignore it.
+> The real predictor runs on **future** fixtures, so it researches freely — no
+> domain blocking needed. (Locked matches are skipped by `claude-apply` anyway.)
+> The result-domain block is an **eval-only** guard — see Evaluation below.
 
 ## Inputs
 
