@@ -80,10 +80,14 @@
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: var(--space-3);
 }
-/* the toggles (comodín + "copy to my other pollas") grouped to the left */
-.pc-match__opts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); min-width: 0; }
+/* the toggles (comodín + "copy to my other pollas") grouped to the left.
+   top-aligned so the copy checkbox lines up with the pill, not the vertical
+   middle of the taller pill+caption block */
+.pc-match__opts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3) var(--space-4); min-width: 0; }
+/* drop the copy toggle down to sit level with the pill's label text */
+.pc-match__opts > label.pc-hint { padding-top: var(--space-2); }
 /* comodín pill with its rule hint as a caption beneath it */
-.pc-comodin-wrap { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.pc-comodin-wrap { display: inline-flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
 
 /* per-match scoring breakdown — full transparency on how each pick scored */
 .pc-calc { margin-top: var(--space-3); border-top: 1px dashed var(--line-strong); }
