@@ -215,10 +215,13 @@ export default async function FixturesPage({
                       </div>
                       <div className="pc-match__footer">
                         {preset.joker && (
-                          <label className="pc-comodin">
-                            <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
-                            {t(lo, "comodin")}
-                          </label>
+                          <>
+                            <label className="pc-comodin">
+                              <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
+                              {t(lo, "comodin")}
+                            </label>
+                            <span className="pc-comodin-hint">{t(lo, "f.jokerHint")}</span>
+                          </>
                         )}
                         {otherGroups.length > 0 && (
                           <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
