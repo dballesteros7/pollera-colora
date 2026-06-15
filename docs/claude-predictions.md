@@ -115,3 +115,24 @@ Rules for the output:
 - Team/player names for bonus should match the team names used in the fixtures
   (for `champion`/`runner_up`/`third`); player names are free text.
 - `notes` is for your reasoning; `claude-apply.ts` ignores it.
+
+---
+
+## Evaluation (back-test)
+
+Method: take matches already played, predict them BLIND with this prompt (fan one
+agent per match), score against actuals with `scoreBreakdown` (lib/scoring) under
+both presets. **Web search MUST be off for back-tests** — for already-played
+matches agents will otherwise look up the real result (leakage). Web search
+stays **on for real future picks**, where no result exists.
+
+Findings from the matchday-1 back-test (12 openers, priors only, no web):
+- Baseline prompt: ~42% result accuracy, 1/12 exact, ~23/120 escalonada.
+- A "force a draw when no clear favorite" rule **hurt** (25% result): the model
+  can shift to draws but can't identify *which* games draw, so it traded
+  favorite-win points for missed-draw zeros. **Rejected — not in the prompt.**
+- With web search on, accuracy jumped (≈58%, ≈57/120) — but partly from looking
+  up played results, so that number overstates skill for past matches. For
+  *future* fixtures the same web research (odds, injuries, lineups) is the real,
+  legitimate edge. **Conclusion: the per-match web-research fan-out is where
+  Claudio's strength comes from; blind heuristics add little.**
