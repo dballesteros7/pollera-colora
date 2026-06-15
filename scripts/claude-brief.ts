@@ -33,17 +33,41 @@ const upcoming = all
     awayTeam: m.awayTeam,
   }));
 
-const recentResults = all
-  .filter((m) => (m.status === "FINISHED" || m.status === "AWARDED") && m.regHome !== null)
-  .slice(-40)
-  .map((m) => ({
-    stage: m.stage,
-    matchday: m.matchday,
-    homeTeam: m.homeTeam,
-    awayTeam: m.awayTeam,
-    regHome: m.regHome,
-    regAway: m.regAway,
-  }));
+const finished = all.filter(
+  (m) => (m.status === "FINISHED" || m.status === "AWARDED") && m.regHome !== null && m.regAway !== null,
+);
+
+const recentResults = finished.slice(-40).map((m) => ({
+  stage: m.stage,
+  matchday: m.matchday,
+  homeTeam: m.homeTeam,
+  awayTeam: m.awayTeam,
+  regHome: m.regHome,
+  regAway: m.regAway,
+}));
+
+// per-team form derived from results so far — this tournament's *actual* reality,
+// which calibrates priors that may not match pre-tournament expectations
+type Form = { team: string; played: number; w: number; d: number; l: number; gf: number; ga: number; pts: number; results: string[] };
+const form = new Map<string, Form>();
+const bump = (team: string | null) => {
+  if (!team) return null;
+  let f = form.get(team);
+  if (!f) { f = { team, played: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, results: [] }; form.set(team, f); }
+  return f;
+};
+for (const m of finished) {
+  const h = bump(m.homeTeam), a = bump(m.awayTeam);
+  const hs = m.regHome!, as = m.regAway!;
+  if (h) { h.played++; h.gf += hs; h.ga += as; h.results.push(`${hs}-${as} v ${m.awayTeam}`); }
+  if (a) { a.played++; a.gf += as; a.ga += hs; a.results.push(`${as}-${hs} v ${m.homeTeam}`); }
+  if (hs > as) { if (h) { h.w++; h.pts += 3; } if (a) a.l++; }
+  else if (hs < as) { if (a) { a.w++; a.pts += 3; } if (h) h.l++; }
+  else { if (h) { h.d++; h.pts++; } if (a) { a.d++; a.pts++; } }
+}
+const teamForm = [...form.values()].sort(
+  (x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf,
+);
 
 // what the bot already picked (one representative group; scorelines are shared)
 const ref = escalonada ?? botGroups[0];
@@ -83,6 +107,7 @@ console.log(
       presets,
       upcoming,
       recentResults,
+      teamForm,
       alreadyPicked,
       jokerRoundsSpent,
       bonus,
