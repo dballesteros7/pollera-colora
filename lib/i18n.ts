@@ -64,6 +64,7 @@ const M: Record<string, Msg> = {
   "a11y.logout": { es: "Salir", en: "Sign out", de: "Abmelden", it: "Esci", pt: "Sair", fr: "Déconnexion", zh: "退出", zht: "登出", nl: "Uitloggen" },
   "a11y.settings": { es: "Configuración", en: "Settings", de: "Einstellungen", it: "Impostazioni", pt: "Configurações", fr: "Paramètres", zh: "设置", zht: "設定", nl: "Instellingen" },
   "a11y.language": { es: "Idioma", en: "Language", de: "Sprache", it: "Lingua", pt: "Idioma", fr: "Langue", zh: "语言", zht: "語言", nl: "Taal" },
+  "a11y.bot": { es: "jugador IA", en: "AI player", de: "KI-Spieler", it: "giocatore IA", pt: "jogador IA", fr: "joueur IA", zh: "AI 玩家", zht: "AI 玩家", nl: "AI-speler" },
   "badge.open": { es: "abierto", en: "open", de: "offen", it: "aperto", pt: "aberto", fr: "ouvert", zh: "开放", zht: "開放", nl: "open" },
   "badge.locked": { es: "cerrado", en: "locked", de: "gesperrt", it: "chiuso", pt: "fechado", fr: "verrouillé", zh: "已锁定", zht: "已鎖定", nl: "gesloten" },
   "badge.live": { es: "en juego", en: "live", de: "läuft", it: "in corso", pt: "ao vivo", fr: "en direct", zh: "进行中", zht: "進行中", nl: "live" },

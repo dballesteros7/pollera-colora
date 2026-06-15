@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "./db";
 import { groups, memberships, users } from "./db/schema";
 import type { ScoringRules } from "./scoring/presets";
+import { addClaudeToGroup } from "./claude-bot";
 
 // unambiguous alphabet (no 0/O, 1/I/L) for invite codes read out loud at asados
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -41,6 +42,8 @@ export function createGroup(
       joinedAt: now,
     })
     .run();
+  // every polla gets the Claude bot player (no-op until the bot is seeded)
+  addClaudeToGroup(db, group.id, now);
   return group;
 }
 

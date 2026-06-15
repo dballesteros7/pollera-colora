@@ -12,6 +12,7 @@ import {
   regenerateInviteCode,
   generateInviteCode,
 } from "../lib/groups";
+import { ensureClaudeBot, CLAUDE_BOT_ID } from "../lib/claude-bot";
 
 const NOW = new Date("2026-06-11T20:00:00Z");
 
@@ -84,5 +85,26 @@ describe("groups", () => {
     for (let i = 0; i < 20; i++) {
       expect(generateInviteCode()).toMatch(/^[A-HJKMNP-Z2-9]{10}$/);
     }
+  });
+
+  it("new groups auto-add the Claude bot once it's seeded", () => {
+    const u = makeUser(db, "a@b.co");
+    ensureClaudeBot(db, NOW);
+    const g = createGroup(db, u.id, {
+      name: "Con Claudio",
+      scoringRules: { preset: "escalonada", unicoAcertado: true },
+    });
+    const members = getGroupMembers(db, g.id);
+    expect(members.map((m) => m.userId)).toContain(CLAUDE_BOT_ID);
+    expect(getGroupForMember(db, CLAUDE_BOT_ID, g.id)?.role).toBe("member");
+  });
+
+  it("createGroup is a no-op for the bot when it isn't seeded", () => {
+    const u = makeUser(db, "a@b.co");
+    const g = createGroup(db, u.id, {
+      name: "Sin Claudio",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    });
+    expect(getGroupMembers(db, g.id)).toHaveLength(1); // organizer only
   });
 });

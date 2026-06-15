@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Bot } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getUserGroups } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
@@ -323,6 +324,9 @@ export default async function FixturesPage({
                                   {(o.displayName ?? "?").slice(0, 2)}
                                 </span>
                                 {o.displayName ?? "(sin nombre)"}
+                                {o.isBot && (
+                                  <Bot size={14} className="pc-bot-badge" aria-label={t(lo, "a11y.bot")} />
+                                )}
                                 {o.joker && (
                                   <span className="pc-badge pc-badge--comodin">×2</span>
                                 )}

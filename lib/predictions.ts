@@ -250,6 +250,7 @@ export function getGroupPredictionsForMatch(
     .select({
       userId: predictions.userId,
       displayName: users.displayName,
+      isBot: users.isBot,
       predHome: predictions.predHome,
       predAway: predictions.predAway,
       joker: predictions.joker,
@@ -276,6 +277,7 @@ export function getGroupPredictionsForMatches(
       matchId: predictions.matchId,
       userId: predictions.userId,
       displayName: users.displayName,
+      isBot: users.isBot,
       predHome: predictions.predHome,
       predAway: predictions.predAway,
       joker: predictions.joker,

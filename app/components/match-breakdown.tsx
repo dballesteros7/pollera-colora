@@ -1,3 +1,4 @@
+import { Bot } from "lucide-react";
 import type { PresetDef } from "@/lib/scoring/presets";
 import {
   scoreBreakdown,
@@ -20,6 +21,7 @@ const PART_KEY: Record<ScorePartKey, string> = {
 export interface BreakdownPick {
   userId: string;
   displayName: string | null;
+  isBot: boolean;
   predHome: number;
   predAway: number;
   joker: boolean;
@@ -75,6 +77,9 @@ export function MatchBreakdown({
                   {(pick.displayName ?? "?").slice(0, 2)}
                 </span>
                 {pick.displayName ?? "(sin nombre)"}
+                {pick.isBot && (
+                  <Bot size={14} className="pc-bot-badge" aria-label={t(lo, "a11y.bot")} />
+                )}
                 {pick.isMe && (
                   <span className="pc-calc__you">{t(lo, "f.youTag")}</span>
                 )}

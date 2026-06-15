@@ -8,6 +8,7 @@ export function getLeaderboard(db: Db, groupId: string) {
     .select({
       userId: memberships.userId,
       displayName: users.displayName,
+      isBot: users.isBot,
       joinedAt: memberships.joinedAt,
       pointsMatches: scores.pointsMatches,
       pointsBonus: scores.pointsBonus,

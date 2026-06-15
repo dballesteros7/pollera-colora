@@ -233,4 +233,6 @@
   border: 2px solid var(--card);
 }
 .pc-avatar--sm { width: 28px; height: 28px; font-size: var(--text-xs); }
+/* AI player marker (Claudio di María) */
+.pc-bot-badge { color: var(--magenta); flex: none; vertical-align: -2px; }
 .pc-avatar--lg { width: 48px; height: 48px; font-size: var(--text-lg); }

@@ -12,6 +12,8 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   displayName: text("display_name"),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  // the Claude bot player ("Claudio di María") — drives the UI bot badge
+  isBot: integer("is_bot", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   // touched at most hourly on authenticated requests — feeds DAU/WAU metrics
   lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),

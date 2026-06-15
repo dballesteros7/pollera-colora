@@ -9,6 +9,7 @@ import {
   Trophy,
   Settings,
   Link as LinkIcon,
+  Bot,
 } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers, getUserGroups } from "@/lib/groups";
@@ -245,6 +246,9 @@ export default async function GroupPage({
                   <td>
                     <span className="pc-player">
                       <span className="pc-player__name">{row.displayName ?? "(sin nombre)"}</span>
+                      {row.isBot && (
+                        <Bot size={15} className="pc-bot-badge" aria-label={t(lo, "a11y.bot")} />
+                      )}
                       {row.userId === user.id && (
                         <span className="pc-player__you">← {t(lo, "f.youTag")}</span>
                       )}
