@@ -56,18 +56,29 @@ tournament** and may diverge sharply from pre-tournament expectations. Trust the
 - Read goals-for/against: who's scoring freely, who's leaking, who's tight.
 Weigh recent in-tournament form **above** reputation when they conflict.
 
-## Collect external sources (make Claudio worthy)
+## Collect external sources — odds-anchored (the back-tested winner)
 
-Use web search/fetch to enrich each call — don't predict from memory alone:
-- **FIFA rankings** and pre-tournament power ratings for the teams in play.
-- **Current form, injuries, suspensions, likely XI** for the upcoming fixtures
-  (especially key absences that swing a scoreline).
-- **Bookmaker odds / model probabilities** (e.g. 1X2 and most-likely-scoreline
-  markets) as a sanity check on your picks — they're a strong prior.
-- Anything tournament-specific: group permutations, must-win situations (a team
-  needing a result may chase goals → higher-scoring game).
-Cross-check external sources against the in-tournament form table; when they
-disagree, explain to yourself which you trust and why.
+Per-match pre-match research is Claudio's single biggest lever — in the
+matchday-1 back-test it raised escalonada points ~48% over blind priors
+(34/120 vs ~23) with no leakage. Don't predict from memory alone. For each
+fixture, web-search and **anchor the pick to the market**:
+- **Bookmaker 1X2** (who's favoured, by how much) → sets the winner.
+- **Correct-score / most-likely-scoreline market** → set your exact to the modal
+  scoreline it implies. This is the anchor; reason around it, don't override it
+  without a reason.
+- **Confirmed lineups, injuries, suspensions** for THIS match — a key absence
+  (striker out, keeper out) shifts the scoreline; adjust for it.
+- **FIFA rankings / power ratings** and tournament-specific context (must-win,
+  rotation) as secondary signals.
+Cross-check against the in-tournament form table; when they disagree, say which
+you trust and why.
+
+**Leakage guard (important).** When re-running on a day when some slate matches
+may already have kicked off, you must not look up results. Set WebSearch
+`blocked_domains` to the major result/report outlets (espn, bbc, theguardian,
+aljazeera, fifa, flashscore, sofascore, goal, reuters, apnews, foxsports, yahoo,
+si, cbssports, marca, as, skysports, wikipedia) and query odds/lineups/injuries
+— never "<teams> result/score/highlights". If a result appears, ignore it.
 
 ## Inputs
 
@@ -126,13 +137,20 @@ both presets. **Web search MUST be off for back-tests** — for already-played
 matches agents will otherwise look up the real result (leakage). Web search
 stays **on for real future picks**, where no result exists.
 
-Findings from the matchday-1 back-test (12 openers, priors only, no web):
-- Baseline prompt: ~42% result accuracy, 1/12 exact, ~23/120 escalonada.
-- A "force a draw when no clear favorite" rule **hurt** (25% result): the model
-  can shift to draws but can't identify *which* games draw, so it traded
-  favorite-win points for missed-draw zeros. **Rejected — not in the prompt.**
-- With web search on, accuracy jumped (≈58%, ≈57/120) — but partly from looking
-  up played results, so that number overstates skill for past matches. For
-  *future* fixtures the same web research (odds, injuries, lineups) is the real,
-  legitimate edge. **Conclusion: the per-match web-research fan-out is where
-  Claudio's strength comes from; blind heuristics add little.**
+Strategy matrix from the matchday-1 back-test (12 openers, scored vs actuals):
+
+| Strategy | Result | Exact | Escalonada |
+|---|---|---|---|
+| A — baseline priors, no web | 42% | 1 | 23/120 |
+| B — decisive favorite, no web | 42% | 1 | 22/120 |
+| force-a-draw rule, no web | 25% | 1 | 22/120 — **rejected** |
+| **C — filtered web, odds-anchored** | **50%** | **2** | **34/120** ← adopted |
+| (unfiltered web) | 58% | 5 | 57 — **invalid: leaked played results** |
+
+Conclusions:
+- Blind heuristics plateau ~23/120; forcing draws *hurts* (the model can't pick
+  *which* games draw).
+- **Odds-anchored research with a result-domain filter is the strategy** — a real
+  ~48% lift, leakage-safe (picks diverged from actuals; no result lookup).
+- Web search must be off (or result-domains blocked) for back-tests; on for
+  future picks. Re-run this matrix as new matchdays complete to keep tuning.
