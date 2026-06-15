@@ -214,26 +214,27 @@ export default async function FixturesPage({
                         />
                       </div>
                       <div className="pc-match__footer">
-                        {preset.joker && (
-                          <>
-                            <label className="pc-comodin">
-                              <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
-                              {t(lo, "comodin")}
+                        <div className="pc-match__opts">
+                          {preset.joker && (
+                            <span className="pc-comodin-wrap">
+                              <label className="pc-comodin">
+                                <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
+                                {t(lo, "comodin")}
+                              </label>
+                              <span className="pc-comodin-hint">{t(lo, "f.jokerHint")}</span>
+                            </span>
+                          )}
+                          {otherGroups.length > 0 && (
+                            <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                              <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
+                              {t(lo, "f.alsoAll")}
                             </label>
-                            <span className="pc-comodin-hint">{t(lo, "f.jokerHint")}</span>
-                          </>
-                        )}
-                        {otherGroups.length > 0 && (
-                          <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                            <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
-                            {t(lo, "f.alsoAll")}
-                          </label>
-                        )}
+                          )}
+                        </div>
                         <PendingButton
                           label={pred ? t(lo, "btn.update") : t(lo, "btn.save")}
                           pendingLabel={t(lo, "ui.saving")}
                           className={`pc-btn ${pred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
-                          style={{ marginLeft: "auto" }}
                         />
                       </div>
                     </FeedbackForm>

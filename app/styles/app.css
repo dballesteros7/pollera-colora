@@ -159,6 +159,10 @@
   /* content-sized columns: a one-word name ("Chequia") gets exactly the
      width it needs and never splits; multi-word names wrap at spaces */
   .pc-match__row { grid-template-columns: auto auto auto; justify-content: space-between; }
+  /* roomier open-match footer: toggles take their own row, the CTA goes
+     full-width beneath them instead of all three jostling on one line */
+  .pc-match__opts { flex: 1 1 100%; }
+  .pc-match__footer > .pc-btn { flex: 1 1 100%; }
 }
 
 /* ---- narrow phones (Galaxy Z Flip outer ~344px, small Androids) ---- */

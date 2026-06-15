@@ -75,7 +75,15 @@
 .pc-picklist__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); min-width: 0; }
 .pc-picklist__row .pc-pick { margin-left: auto; }
 
-.pc-match__footer { padding: var(--space-3) var(--space-4) var(--space-4); display: flex; gap: var(--space-3); align-items: center; }
+.pc-match__footer {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--space-3);
+}
+/* the toggles (comodín + "copy to my other pollas") grouped to the left */
+.pc-match__opts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); min-width: 0; }
+/* comodín pill with its rule hint as a caption beneath it */
+.pc-comodin-wrap { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 
 /* per-match scoring breakdown — full transparency on how each pick scored */
 .pc-calc { margin-top: var(--space-3); border-top: 1px dashed var(--line-strong); }
