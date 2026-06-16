@@ -111,8 +111,10 @@ console.log(
   JSON.stringify(
     {
       now: now.toISOString(),
+      cutoff: cutoff.toISOString(),
       groups: botGroups.map((g) => ({ id: g.id, name: g.name, preset: parseScoringRules(g.scoringRules).preset })),
       presets,
+      slate,
       upcoming,
       recentResults,
       teamForm,
