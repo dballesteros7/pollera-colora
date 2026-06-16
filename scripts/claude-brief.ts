@@ -37,12 +37,14 @@ const finished = all.filter(
   (m) => (m.status === "FINISHED" || m.status === "AWARDED") && m.regHome !== null && m.regAway !== null,
 );
 
-// Daily slate: the run happens ~midday Europe and must cover every match up to
-// ~05:00 Europe the next day (≈03:00 UTC). Default cutoff = tomorrow 03:00 UTC;
-// override with SLATE_CUTOFF_UTC (ISO) for a different window.
+// Daily slate: the run happens ~midday Europe and must cover every match that
+// kicks off before the NEXT daily run — otherwise an early-morning match (e.g.
+// Austria–Jordan at 04:00 UTC) falls between the old 05:00-Europe cutoff and the
+// next midday run and never gets predicted. Default cutoff = tomorrow 12:00 UTC
+// (~14:00 CEST, just past the next midday run). Override with SLATE_CUTOFF_UTC.
 const cutoff = process.env.SLATE_CUTOFF_UTC
   ? new Date(process.env.SLATE_CUTOFF_UTC)
-  : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 3, 0, 0));
+  : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 12, 0, 0));
 const slate = upcoming.filter((m) => new Date(m.kickoffUtc) < cutoff);
 
 const recentResults = finished.slice(-40).map((m) => ({
