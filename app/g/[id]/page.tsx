@@ -10,6 +10,7 @@ import {
   Settings,
   Link as LinkIcon,
   Bot,
+  Sparkles,
 } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers, getUserGroups } from "@/lib/groups";
@@ -19,6 +20,7 @@ import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predictions";
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
 import { bonusLocked } from "@/lib/bonus";
+import { featuredRecapRound } from "@/lib/recap";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
@@ -87,6 +89,9 @@ export default async function GroupPage({
   ).length;
 
   const bonusClosed = bonusLocked(group, now);
+  // a just-finished round gets a loud banner for ~2 days; the bottom-bar
+  // "Resumen" tab handles general access once recaps go live
+  const featuredRecap = featuredRecapRound(matches, now);
 
   return (
     <>
@@ -107,6 +112,29 @@ export default async function GroupPage({
             </span>
           )}
         </div>
+
+        {featuredRecap && (
+          <Link
+            href={`/g/${group.id}/recap/${featuredRecap.key}`}
+            className="pc-card pc-quicklink"
+            style={{
+              borderColor: "var(--magenta)",
+              background: "color-mix(in srgb, var(--magenta) 8%, transparent)",
+            }}
+          >
+            <span className="pc-quicklink__icon" style={{ color: "var(--magenta)" }}>
+              <Sparkles size={24} aria-hidden />
+            </span>
+            <span className="pc-quicklink__text">
+              <span className="pc-quicklink__label" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {t(lo, "g.recapTitle")}
+                <span className="pc-badge pc-badge--open"><span className="pc-dot" />{t(lo, "g.recapReadyBadge")}</span>
+              </span>
+              <span className="pc-quicklink__sub">{t(lo, "g.recapReady")}</span>
+            </span>
+            <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
+          </Link>
+        )}
 
         {nextMatch && (
           <article

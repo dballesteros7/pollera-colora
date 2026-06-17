@@ -1,7 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Trophy, CalendarDays, ListChecks, Star } from "lucide-react";
+import { Trophy, CalendarDays, ListChecks, Star, Sparkles } from "lucide-react";
 import { getLocale, t, LOCALES, LOCALE_LABEL } from "@/lib/i18n";
+import { recapTabAvailable } from "@/lib/recap";
+import { getDb } from "@/lib/db";
+import { getAllMatches } from "@/lib/predictions";
 import { LangSelect } from "./lang-select";
 
 export function Brand() {
@@ -60,15 +63,24 @@ export async function GroupTabs({
   active,
 }: {
   groupId: string;
-  active: "home" | "fixtures" | "props" | "bonus";
+  active: "home" | "fixtures" | "props" | "bonus" | "recap";
 }) {
   const locale = await getLocale();
-  const tabs = [
+  const tabs: {
+    id: string;
+    href: string;
+    icon: typeof Trophy;
+    label: string;
+  }[] = [
     { id: "home", href: "", icon: Trophy, label: t(locale, "tab.table") },
     { id: "fixtures", href: "/fixtures", icon: CalendarDays, label: t(locale, "tab.matches") },
     { id: "props", href: "/props", icon: ListChecks, label: t(locale, "tab.recocha") },
     { id: "bonus", href: "/bonus", icon: Star, label: t(locale, "tab.bonus") },
-  ] as const;
+  ];
+  // recaps join the bottom bar on Jun 18, once matchday 1 is over
+  if (recapTabAvailable(getAllMatches(getDb()))) {
+    tabs.push({ id: "recap", href: "/recap", icon: Sparkles, label: t(locale, "tab.recap") });
+  }
   return (
     <nav className="pc-tabbar">
       {tabs.map((tab) => {
