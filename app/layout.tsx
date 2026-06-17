@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { TzSync } from "./components/tz-sync";
+import { Attribution } from "./components/shell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,6 +64,7 @@ export default function RootLayout({
       <body>
         <TzSync />
         {children}
+        <Attribution />
       </body>
     </html>
   );

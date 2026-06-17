@@ -406,6 +406,7 @@ const M: Record<string, Msg> = {
 
   // ---- matchday recap ----
   "tab.recap": { es: "Resumen", en: "Recap", de: "Rückblick", it: "Riepilogo", pt: "Resumo", fr: "Récap", zh: "回顾", zht: "回顧", nl: "Overzicht" },
+  "footer.fdAttribution": { es: "Datos de fútbol por la API de football-data.org", en: "Football data provided by the football-data.org API", de: "Fußballdaten von der football-data.org-API", it: "Dati calcistici dall'API di football-data.org", pt: "Dados de futebol pela API football-data.org", fr: "Données football fournies par l'API football-data.org", zh: "足球数据来自 football-data.org API", zht: "足球資料來自 football-data.org API", nl: "Voetbaldata via de football-data.org-API" },
   "recap.eyebrow": { es: "Resumen", en: "Recap", de: "Rückblick", it: "Riepilogo", pt: "Resumo", fr: "Récap", zh: "回顾", zht: "回顧", nl: "Overzicht" },
   "recap.title": { es: "¿Cómo le fue?", en: "How'd you do?", de: "Wie lief's?", it: "Com'è andata?", pt: "Como você foi?", fr: "Alors, ce résultat ?", zh: "你表现如何？", zht: "你表現如何？", nl: "Hoe ging het?" },
   "recap.provisional": { es: "En curso · resultados parciales", en: "In progress · partial results", de: "Läuft · Zwischenstand", it: "In corso · risultati parziali", pt: "Em andamento · resultados parciais", fr: "En cours · résultats partiels", zh: "进行中 · 部分结果", zht: "進行中 · 部分結果", nl: "Bezig · tussenstand" },

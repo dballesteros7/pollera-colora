@@ -82,7 +82,10 @@ export async function GroupTabs({
     tabs.push({ id: "recap", href: "/recap", icon: Sparkles, label: t(locale, "tab.recap") });
   }
   return (
-    <nav className="pc-tabbar">
+    <nav
+      className="pc-tabbar"
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
+    >
       {tabs.map((tab) => {
         const Icon = tab.icon;
         return (
@@ -98,5 +101,22 @@ export async function GroupTabs({
         );
       })}
     </nav>
+  );
+}
+
+// Site-wide attribution footer — football-data.org's free tier asks for a
+// visible credit. Rendered once in the root layout, after every page.
+export async function Attribution() {
+  const locale = await getLocale();
+  return (
+    <footer className="pc-credit">
+      <a
+        href="https://www.football-data.org"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {t(locale, "footer.fdAttribution")}
+      </a>
+    </footer>
   );
 }

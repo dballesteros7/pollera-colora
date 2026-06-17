@@ -35,6 +35,22 @@
   font-weight: var(--w-bold);
 }
 
+/* site-wide attribution credit (football-data.org) */
+.pc-credit {
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: var(--space-4) var(--page-pad)
+    calc(var(--space-6) + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: var(--text-2xs);
+  color: var(--ink-faint);
+}
+.pc-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* quick-link card rows on group home */
 .pc-quicklink {
   display: flex;
