@@ -1,5 +1,5 @@
 /* Pollera Colorá design system — vendored from the Claude Design handoff.
-   Fonts load via next/font in layout.tsx (self-hosted), not Google @import. */
+   Fonts load via next/font in layout.tsx (fetched at build, not @import). */
 @import "./styles/colors.css";
 @import "./styles/typography.css";
 @import "./styles/spacing.css";

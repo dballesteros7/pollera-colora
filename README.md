@@ -36,3 +36,11 @@ Useful scripts:
 `fly launch` once (creates the `polla_data` volume per `fly.toml`), then
 `fly deploy`. Set secrets: `FOOTBALL_DATA_TOKEN`, `RESEND_API_KEY`,
 `EMAIL_FROM`. The machine must not scale to zero — the poller lives in-process.
+
+## Credits & license
+
+Fixtures, results, and team crests come from the
+[football-data.org](https://www.football-data.org) API. Fonts (Geist, Bricolage
+Grotesque) are OFL-licensed and fetched at build via `next/font`.
+
+Code is MIT licensed — see [`LICENSE`](LICENSE).
