@@ -147,7 +147,7 @@ export default async function RecapPage({
 
   const recap = getRoundRecapForUser(db, user.id, group.id, round);
   const global = getGlobalRoundStanding(db, user.id, round);
-  const buddies = getPredictionBuddies(db, user.id);
+  const buddies = getPredictionBuddies(db, user.id, group.id);
 
   const showBest = recap.best && recap.best.points > 0;
   const nm = recap.nearMiss;
@@ -259,8 +259,8 @@ export default async function RecapPage({
           </div>
         )}
 
-        {buddies.same && buddies.polla ? (
-          <BuddyCard buddy={buddies.polla} title={t(lo, "recap.buddyBoth")} lo={lo} />
+        {buddies.same && buddies.global ? (
+          <BuddyCard buddy={buddies.global} title={t(lo, "recap.buddyBoth")} lo={lo} />
         ) : (
           <>
             {buddies.polla && (

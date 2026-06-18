@@ -355,8 +355,9 @@ describe("getPredictionBuddy", () => {
     predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]);
     predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 3, 0], [m3.id, 0, 0]]); // matches ana on m1, m3 → 2
     predict(carlos.id, g2.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]); // matches all 3 → 3
+    [m1, m2, m3].forEach((m) => finish(m.id, 0, 0));
 
-    const buddy = getPredictionBuddy(db, ana.id)!;
+    const buddy = getPredictionBuddy(db, ana.id, g1.id)!;
     expect(buddy.userId).toBe(carlos.id); // 3 beats beto's 2
     expect(buddy.shared).toBe(3);
     // carlos shares no polla with ana → anonymized as a famous alias
@@ -372,8 +373,9 @@ describe("getPredictionBuddy", () => {
     const m1 = makeMatch(1, new Date("2030-01-01T00:00:00Z"));
     predict(ana.id, g1.id, [[m1.id, 2, 1]]);
     predict(beto.id, g1.id, [[m1.id, 2, 1]]);
+    finish(m1.id, 0, 0);
 
-    const buddy = getPredictionBuddy(db, ana.id)!;
+    const buddy = getPredictionBuddy(db, ana.id, g1.id)!;
     expect(buddy.userId).toBe(beto.id);
     expect(buddy.displayName).toBe("Beto");
     expect(buddy.alias).toBeNull();
@@ -390,8 +392,53 @@ describe("getPredictionBuddy", () => {
     predict(ana.id, g1.id, [[m1.id, 2, 1]]);
     predict(bot.id, g1.id, [[m1.id, 2, 1]]); // identical, but it's the bot
     predict(beto.id, g1.id, [[m1.id, 0, 3]]); // different
+    finish(m1.id, 0, 0);
 
-    expect(getPredictionBuddy(db, ana.id)).toBeNull(); // bot excluded, beto doesn't match
+    expect(getPredictionBuddy(db, ana.id, g1.id)).toBeNull(); // bot excluded, beto doesn't match
+  });
+
+  it("ignores open/future predictions — only settled matches count", () => {
+    const ana = makeUser("ana@b.co", { name: "Ana" });
+    const beto = makeUser("beto@b.co", { name: "Beto" });
+    const g1 = group(ana.id, { preset: "clasica", unicoAcertado: false });
+    joinGroup(db, beto.id, g1.id, NOW);
+    const m1 = makeMatch(1, new Date("2030-01-01T00:00:00Z"));
+    const m2 = makeMatch(1, new Date("2030-01-02T00:00:00Z")); // stays open
+
+    predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]);
+    predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]); // identical on both
+    finish(m1.id, 0, 0); // only m1 is settled
+
+    const b = getPredictionBuddies(db, ana.id, g1.id);
+    expect(b.polla?.userId).toBe(beto.id);
+    expect(b.polla?.shared).toBe(1); // not 2 — m2 is still open
+    expect(b.polla?.total).toBe(1);
+  });
+
+  it("scopes the polla buddy to the recap's polla, not every shared polla", () => {
+    const ana = makeUser("ana@b.co", { name: "Ana" });
+    const beto = makeUser("beto@b.co", { name: "Beto" });
+    const tom = makeUser("tom@b.co", { name: "Tom" });
+    const g1 = group(ana.id, { preset: "clasica", unicoAcertado: false }); // ana + beto
+    joinGroup(db, beto.id, g1.id, NOW);
+    const g3 = group(ana.id, { preset: "clasica", unicoAcertado: false }); // ana + tom
+    joinGroup(db, tom.id, g3.id, NOW);
+
+    const m1 = makeMatch(1, new Date("2030-01-01T00:00:00Z"));
+    const m2 = makeMatch(1, new Date("2030-01-02T00:00:00Z"));
+
+    predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]);
+    predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 3, 0]]); // g1 mate → 1 of 2
+    predict(ana.id, g3.id, [[m1.id, 2, 1], [m2.id, 1, 1]]);
+    predict(tom.id, g3.id, [[m1.id, 2, 1], [m2.id, 1, 1]]); // g3 mate → 2 of 2
+    [m1, m2].forEach((m) => finish(m.id, 0, 0));
+
+    // opening g1's recap: the polla buddy must be beto (g1), never tom (g3)
+    const b = getPredictionBuddies(db, ana.id, g1.id);
+    expect(b.polla?.userId).toBe(beto.id);
+    expect(b.global?.userId).toBe(tom.id); // tom still wins globally
+    expect(b.global?.displayName).toBe("Tom"); // a mate via g3 → real name
+    expect(b.same).toBe(false);
   });
 
   it("splits the polla buddy from the global buddy", () => {
@@ -409,8 +456,9 @@ describe("getPredictionBuddy", () => {
     predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]);
     predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 3, 0], [m3.id, 0, 0]]); // mate → 2 of 3
     predict(carlos.id, g2.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]); // outsider → 3 of 3
+    [m1, m2, m3].forEach((m) => finish(m.id, 0, 0));
 
-    const b = getPredictionBuddies(db, ana.id);
+    const b = getPredictionBuddies(db, ana.id, g1.id);
     expect(b.polla?.userId).toBe(beto.id); // closest within the polla
     expect(b.polla?.displayName).toBe("Beto");
     expect(b.polla?.shared).toBe(2);
@@ -435,8 +483,9 @@ describe("getPredictionBuddy", () => {
     predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]);
     predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]); // mate → 2 of 2
     predict(carlos.id, g2.id, [[m1.id, 2, 1], [m2.id, 0, 0]]); // outsider → 1 of 2
+    [m1, m2].forEach((m) => finish(m.id, 0, 0));
 
-    const b = getPredictionBuddies(db, ana.id);
+    const b = getPredictionBuddies(db, ana.id, g1.id);
     expect(b.same).toBe(true);
     expect(b.polla?.userId).toBe(beto.id);
     expect(b.global?.userId).toBe(beto.id);

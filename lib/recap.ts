@@ -590,43 +590,98 @@ export interface Buddies {
   same: boolean; // the two are the same person → render a single combined card
 }
 
+type BuddyPred = {
+  userId: string;
+  matchId: number;
+  predHome: number;
+  predAway: number;
+};
+
+// distinct matches each other player both predicted (the comparable set) and the
+// subset where their scoreline agrees with one of mine — then the closest among
+// an allowed candidate pool.
+function closestBuddy(
+  mineByMatch: Map<number, Set<string>>,
+  others: BuddyPred[],
+  allow: (uid: string) => boolean,
+): { userId: string; shared: number; total: number } | null {
+  const agree = new Map<string, Set<number>>();
+  const both = new Map<string, Set<number>>();
+  for (const p of others) {
+    if (!allow(p.userId) || !mineByMatch.has(p.matchId)) continue;
+    const bs = both.get(p.userId) ?? new Set<number>();
+    bs.add(p.matchId);
+    both.set(p.userId, bs);
+    if (mineByMatch.get(p.matchId)!.has(`${p.predHome}-${p.predAway}`)) {
+      const s = agree.get(p.userId) ?? new Set<number>();
+      s.add(p.matchId);
+      agree.set(p.userId, s);
+    }
+  }
+  return (
+    [...agree.entries()]
+      .map(([userId, set]) => ({
+        userId,
+        shared: set.size,
+        total: both.get(userId)?.size ?? set.size,
+      }))
+      .sort((a, b) => b.shared - a.shared || a.userId.localeCompare(b.userId))[0] ?? null
+  );
+}
+
 // Your prediction soulmate(s): the (human) players whose exact scorelines match
-// yours on the most matches. Returns two — your closest within your own pollas,
-// and your closest across everyone — flagged `same` when they coincide. All-time,
-// not per-round.
-export function getPredictionBuddies(db: Db, viewerId: string): Buddies {
+// yours on the most *finished* matches. Returns two — your closest inside the
+// polla the recap is for, and your closest across every polla — flagged `same`
+// when they coincide. Only settled matches count; open/future picks are ignored.
+export function getPredictionBuddies(
+  db: Db,
+  viewerId: string,
+  groupId: string,
+): Buddies {
   const none: Buddies = { polla: null, global: null, same: false };
 
+  // only matches with a regulation result — open/future picks don't count
+  const finishedIds = db
+    .select()
+    .from(matches)
+    .all()
+    .filter(isFinished)
+    .map((m) => m.id);
+  if (finishedIds.length === 0) return none;
+
+  // viewer's settled picks, everywhere and in this polla
   const mine = db
     .select({
+      groupId: predictions.groupId,
       matchId: predictions.matchId,
       predHome: predictions.predHome,
       predAway: predictions.predAway,
     })
     .from(predictions)
-    .where(eq(predictions.userId, viewerId))
+    .where(
+      and(
+        eq(predictions.userId, viewerId),
+        inArray(predictions.matchId, finishedIds),
+      ),
+    )
     .all();
   if (mine.length === 0) return none;
 
-  // every scoreline the viewer predicted per match (may differ across pollas)
-  const mineByMatch = new Map<number, Set<string>>();
+  // scorelines per match — global may hold several (one per polla); the polla
+  // map is restricted to the recap's group
+  const mineGlobal = new Map<number, Set<string>>();
+  const minePolla = new Map<number, Set<string>>();
   for (const p of mine) {
-    const set = mineByMatch.get(p.matchId) ?? new Set<string>();
-    set.add(`${p.predHome}-${p.predAway}`);
-    mineByMatch.set(p.matchId, set);
+    const score = `${p.predHome}-${p.predAway}`;
+    const g = mineGlobal.get(p.matchId) ?? new Set<string>();
+    g.add(score);
+    mineGlobal.set(p.matchId, g);
+    if (p.groupId === groupId) {
+      const pl = minePolla.get(p.matchId) ?? new Set<string>();
+      pl.add(score);
+      minePolla.set(p.matchId, pl);
+    }
   }
-  const matchIds = [...mineByMatch.keys()];
-
-  const others = db
-    .select({
-      userId: predictions.userId,
-      matchId: predictions.matchId,
-      predHome: predictions.predHome,
-      predAway: predictions.predAway,
-    })
-    .from(predictions)
-    .where(inArray(predictions.matchId, matchIds))
-    .all();
 
   const userRows = db
     .select({ id: users.id, isBot: users.isBot, displayName: users.displayName })
@@ -634,26 +689,9 @@ export function getPredictionBuddies(db: Db, viewerId: string): Buddies {
     .all();
   const isBot = new Map(userRows.map((u) => [u.id, u.isBot]));
   const nameById = new Map(userRows.map((u) => [u.id, u.displayName]));
+  const human = (uid: string) => uid !== viewerId && !isBot.get(uid);
 
-  // per other player: distinct matches you both predicted (the comparable set),
-  // and the subset where a scoreline agrees with one of mine
-  const agree = new Map<string, Set<number>>();
-  const both = new Map<string, Set<number>>();
-  for (const p of others) {
-    if (p.userId === viewerId || isBot.get(p.userId)) continue;
-    const bs = both.get(p.userId) ?? new Set<number>();
-    bs.add(p.matchId);
-    both.set(p.userId, bs);
-    if (mineByMatch.get(p.matchId)?.has(`${p.predHome}-${p.predAway}`)) {
-      const s = agree.get(p.userId) ?? new Set<number>();
-      s.add(p.matchId);
-      agree.set(p.userId, s);
-    }
-  }
-  if (agree.size === 0) return none;
-
-  // who shares a polla with the viewer — keeps their real name, and defines the
-  // "within polla" candidate pool
+  // who shares a polla with the viewer — keeps their real name (privacy rule)
   const myGroupIds = db
     .select({ groupId: memberships.groupId })
     .from(memberships)
@@ -671,16 +709,38 @@ export function getPredictionBuddies(db: Db, viewerId: string): Buddies {
     }
   }
 
-  // best agreement among a candidate set (most shared scorelines wins)
-  const winnerAmong = (allow: (uid: string) => boolean) =>
-    [...agree.entries()]
-      .filter(([uid]) => allow(uid))
-      .map(([uid, set]) => ({
-        userId: uid,
-        shared: set.size,
-        total: both.get(uid)?.size ?? set.size,
-      }))
-      .sort((a, b) => b.shared - a.shared || a.userId.localeCompare(b.userId))[0] ?? null;
+  // global pool: everyone's settled picks on matches the viewer also played
+  const othersGlobal = db
+    .select({
+      userId: predictions.userId,
+      matchId: predictions.matchId,
+      predHome: predictions.predHome,
+      predAway: predictions.predAway,
+    })
+    .from(predictions)
+    .where(inArray(predictions.matchId, [...mineGlobal.keys()]))
+    .all();
+  // polla pool: only picks made inside the recap's group, on matches the viewer
+  // also played there
+  const pollaIds = [...minePolla.keys()];
+  const othersPolla =
+    pollaIds.length === 0
+      ? []
+      : db
+          .select({
+            userId: predictions.userId,
+            matchId: predictions.matchId,
+            predHome: predictions.predHome,
+            predAway: predictions.predAway,
+          })
+          .from(predictions)
+          .where(
+            and(
+              eq(predictions.groupId, groupId),
+              inArray(predictions.matchId, pollaIds),
+            ),
+          )
+          .all();
 
   const toBuddy = (
     w: { userId: string; shared: number; total: number } | null,
@@ -698,13 +758,17 @@ export function getPredictionBuddies(db: Db, viewerId: string): Buddies {
     };
   };
 
-  const polla = toBuddy(winnerAmong((uid) => mates.has(uid)), "polla");
-  const global = toBuddy(winnerAmong(() => true), "global");
+  const polla = toBuddy(closestBuddy(minePolla, othersPolla, human), "polla");
+  const global = toBuddy(closestBuddy(mineGlobal, othersGlobal, human), "global");
   const same = !!polla && !!global && polla.userId === global.userId;
   return { polla, global, same };
 }
 
 // Back-compat: the single, cross-polla buddy.
-export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
-  return getPredictionBuddies(db, viewerId).global;
+export function getPredictionBuddy(
+  db: Db,
+  viewerId: string,
+  groupId = "",
+): Buddy | null {
+  return getPredictionBuddies(db, viewerId, groupId).global;
 }
