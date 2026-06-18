@@ -9,9 +9,10 @@ import {
   getRound,
   getRoundRecapForUser,
   getGlobalRoundStanding,
-  getPredictionBuddy,
+  getPredictionBuddies,
   type Round,
   type GlobalEntry,
+  type Buddy,
 } from "@/lib/recap";
 import { getLocale, t, type Locale } from "@/lib/i18n";
 import { teamName } from "@/lib/teams";
@@ -79,6 +80,30 @@ function GlobalRow({ e, lo }: { e: GlobalEntry; lo: Locale }) {
   );
 }
 
+function BuddyCard({ buddy, title, lo }: { buddy: Buddy; title: string; lo: Locale }) {
+  const aliased = !buddy.displayName && !!buddy.alias;
+  return (
+    <div className="pc-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <Users size={20} style={{ color: "var(--azul-deep)" }} aria-hidden />
+      <span style={{ flex: 1 }}>
+        <b>{title}</b>{" "}
+        <span
+          className="pc-player__name"
+          style={{ fontWeight: 700, ...(aliased ? { fontStyle: "italic" } : {}) }}
+        >
+          {buddy.displayName ?? buddy.alias}
+        </span>
+        {aliased && <> <AliasMark lo={lo} /></>}
+        <br />
+        <span className="pc-hint">
+          {t(lo, "recap.buddyLine", { n: buddy.shared, total: buddy.total })}
+        </span>
+      </span>
+      <span className="pc-badge pc-badge--points" aria-hidden>🤝</span>
+    </div>
+  );
+}
+
 export default async function RecapPage({
   params,
 }: {
@@ -122,7 +147,7 @@ export default async function RecapPage({
 
   const recap = getRoundRecapForUser(db, user.id, group.id, round);
   const global = getGlobalRoundStanding(db, user.id, round);
-  const buddy = getPredictionBuddy(db, user.id);
+  const buddies = getPredictionBuddies(db, user.id);
 
   const showBest = recap.best && recap.best.points > 0;
   const nm = recap.nearMiss;
@@ -234,32 +259,32 @@ export default async function RecapPage({
           </div>
         )}
 
-        {buddy && (
-          <div className="pc-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Users size={20} style={{ color: "var(--azul-deep)" }} aria-hidden />
-            <span style={{ flex: 1 }}>
-              <b>{t(lo, "recap.buddy")}</b>{" "}
-              <span
-                className="pc-player__name"
-                style={{
-                  fontWeight: 700,
-                  ...(buddy.displayName ? {} : { fontStyle: "italic" }),
-                }}
-              >
-                {buddy.displayName ?? buddy.alias}
-              </span>
-              {!buddy.displayName && buddy.alias && <> <AliasMark lo={lo} /></>}
-              <br />
-              <span className="pc-hint">{t(lo, "recap.buddyLine", { n: buddy.shared, total: buddy.total })}</span>
-            </span>
-            <span className="pc-badge pc-badge--points" aria-hidden>🤝</span>
-          </div>
+        {buddies.same && buddies.polla ? (
+          <BuddyCard buddy={buddies.polla} title={t(lo, "recap.buddyBoth")} lo={lo} />
+        ) : (
+          <>
+            {buddies.polla && (
+              <BuddyCard buddy={buddies.polla} title={t(lo, "recap.buddyPolla")} lo={lo} />
+            )}
+            {buddies.global && (
+              <BuddyCard buddy={buddies.global} title={t(lo, "recap.buddyGlobal")} lo={lo} />
+            )}
+          </>
         )}
 
         {/* cross-polla glimpse */}
         <div className="pc-flow" style={{ gap: 6 }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>{t(lo, "recap.global")}</h2>
           <p className="pc-hint" style={{ margin: 0 }}>{t(lo, "recap.globalSub")}</p>
+          {global.eligible && (
+            <p
+              className="pc-hint"
+              style={{ margin: 0, display: "flex", alignItems: "baseline", gap: 6 }}
+            >
+              <span aria-hidden>🎭</span>
+              <span>{t(lo, "recap.aliasDisclaimer")}</span>
+            </p>
+          )}
         </div>
         {global.eligible ? (
           <>

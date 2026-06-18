@@ -12,6 +12,7 @@ import {
   getRoundRecapForUser,
   getGlobalRoundStanding,
   getPredictionBuddy,
+  getPredictionBuddies,
   featuredRecapRound,
   recapTabAvailable,
   FAMOUS_ALIASES,
@@ -391,5 +392,53 @@ describe("getPredictionBuddy", () => {
     predict(beto.id, g1.id, [[m1.id, 0, 3]]); // different
 
     expect(getPredictionBuddy(db, ana.id)).toBeNull(); // bot excluded, beto doesn't match
+  });
+
+  it("splits the polla buddy from the global buddy", () => {
+    const ana = makeUser("ana@b.co", { name: "Ana" });
+    const beto = makeUser("beto@b.co", { name: "Beto" });
+    const carlos = makeUser("carlos@b.co", { name: "Carlos" });
+    const g1 = group(ana.id, { preset: "clasica", unicoAcertado: false });
+    joinGroup(db, beto.id, g1.id, NOW);
+    const g2 = group(carlos.id, { preset: "clasica", unicoAcertado: false });
+
+    const m1 = makeMatch(1, new Date("2030-01-01T00:00:00Z"));
+    const m2 = makeMatch(1, new Date("2030-01-02T00:00:00Z"));
+    const m3 = makeMatch(1, new Date("2030-01-03T00:00:00Z"));
+
+    predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]);
+    predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 3, 0], [m3.id, 0, 0]]); // mate → 2 of 3
+    predict(carlos.id, g2.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]); // outsider → 3 of 3
+
+    const b = getPredictionBuddies(db, ana.id);
+    expect(b.polla?.userId).toBe(beto.id); // closest within the polla
+    expect(b.polla?.displayName).toBe("Beto");
+    expect(b.polla?.shared).toBe(2);
+    expect(b.polla?.total).toBe(3);
+    expect(b.global?.userId).toBe(carlos.id); // closest overall (anonymized)
+    expect(b.global?.displayName).toBeNull();
+    expect(FAMOUS_ALIASES).toContain(b.global?.alias);
+    expect(b.same).toBe(false);
+  });
+
+  it("collapses when the polla buddy is also the global buddy", () => {
+    const ana = makeUser("ana@b.co", { name: "Ana" });
+    const beto = makeUser("beto@b.co", { name: "Beto" });
+    const carlos = makeUser("carlos@b.co", { name: "Carlos" });
+    const g1 = group(ana.id, { preset: "clasica", unicoAcertado: false });
+    joinGroup(db, beto.id, g1.id, NOW);
+    const g2 = group(carlos.id, { preset: "clasica", unicoAcertado: false });
+
+    const m1 = makeMatch(1, new Date("2030-01-01T00:00:00Z"));
+    const m2 = makeMatch(1, new Date("2030-01-02T00:00:00Z"));
+
+    predict(ana.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]);
+    predict(beto.id, g1.id, [[m1.id, 2, 1], [m2.id, 1, 1]]); // mate → 2 of 2
+    predict(carlos.id, g2.id, [[m1.id, 2, 1], [m2.id, 0, 0]]); // outsider → 1 of 2
+
+    const b = getPredictionBuddies(db, ana.id);
+    expect(b.same).toBe(true);
+    expect(b.polla?.userId).toBe(beto.id);
+    expect(b.global?.userId).toBe(beto.id);
   });
 });

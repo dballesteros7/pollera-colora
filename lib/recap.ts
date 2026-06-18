@@ -373,7 +373,8 @@ export interface GlobalStanding {
 
 // Famous footballers, with a wink. Used to mask players from pollas the viewer
 // isn't in: recognizable but clearly a gag, so nobody mistakes it for a leak of
-// a real name — and a few Colombian legends for the home crowd.
+// a real name. Kept to household names only — with a small group, a short list
+// of universally known players is enough and reads more clearly as a joke.
 export const FAMOUS_ALIASES = [
   "Lionel Messías",
   "Cristiano Ronaldoh",
@@ -382,35 +383,13 @@ export const FAMOUS_ALIASES = [
   "Ronaldinha Gaúcho",
   "Kylian Mbappémonos",
   "Andrés Iniestá",
-  "Luka Modríguez",
+  "David Beckhambre",
+  "Johan Cruyffío",
   "Robert Lewandifícil",
   "Sergio Ramirámos",
   "Gianluigi Bufón",
   "Manuel Neuerón",
-  "Carles Puyolito",
-  "Xavi Hernándalo",
-  "Gabriel Batigol",
-  "Roberto Carlitos",
-  "Thierry Enrique",
-  "David Beckhambre",
-  "Frank Lamparita",
-  "Steven Gerrardo",
-  "Francesco Tottico",
-  "Paolo Maldicini",
-  "Johan Cruyffío",
-  "Franz Beckenbailar",
-  "Gerd Müllercito",
-  "Iker Casillitas",
-  "James Bond-ríguez",
-  "El Pibe Valderramen",
-  "René Higüita Escorpión",
-  "Tino Asprillita",
-  "Radamel Falcaorazón",
-  "Wayne Rooneymás",
-  "Eric Cantón",
-  "Oliver Kahnaval",
-  "Hristo Stoichkito",
-  "Sergio Agüerito",
+  "Luka Modríguez",
 ] as const;
 
 // deterministic (no Math.random) — FNV-1a, so a viewer always sees the same
@@ -602,11 +581,22 @@ export interface Buddy {
   alias: string | null; // famous alias otherwise — same privacy rule as the board
   shared: number; // matches where you both called the exact same scoreline
   total: number; // matches you both predicted (the comparable set) — shared ≤ total
+  scope: "polla" | "global"; // restricted to your pollas, or across everyone
 }
 
-// Across every polla, the (human) player whose exact scorelines match yours on
-// the most matches — your prediction soulmate. All-time, not per-round.
-export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
+export interface Buddies {
+  polla: Buddy | null; // closest match among players who share a polla with you
+  global: Buddy | null; // closest match across everyone
+  same: boolean; // the two are the same person → render a single combined card
+}
+
+// Your prediction soulmate(s): the (human) players whose exact scorelines match
+// yours on the most matches. Returns two — your closest within your own pollas,
+// and your closest across everyone — flagged `same` when they coincide. All-time,
+// not per-round.
+export function getPredictionBuddies(db: Db, viewerId: string): Buddies {
+  const none: Buddies = { polla: null, global: null, same: false };
+
   const mine = db
     .select({
       matchId: predictions.matchId,
@@ -616,7 +606,7 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
     .from(predictions)
     .where(eq(predictions.userId, viewerId))
     .all();
-  if (mine.length === 0) return null;
+  if (mine.length === 0) return none;
 
   // every scoreline the viewer predicted per match (may differ across pollas)
   const mineByMatch = new Map<number, Set<string>>();
@@ -638,9 +628,12 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
     .where(inArray(predictions.matchId, matchIds))
     .all();
 
-  const isBot = new Map(
-    db.select({ id: users.id, isBot: users.isBot }).from(users).all().map((u) => [u.id, u.isBot]),
-  );
+  const userRows = db
+    .select({ id: users.id, isBot: users.isBot, displayName: users.displayName })
+    .from(users)
+    .all();
+  const isBot = new Map(userRows.map((u) => [u.id, u.isBot]));
+  const nameById = new Map(userRows.map((u) => [u.id, u.displayName]));
 
   // per other player: distinct matches you both predicted (the comparable set),
   // and the subset where a scoreline agrees with one of mine
@@ -657,13 +650,10 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
       agree.set(p.userId, s);
     }
   }
-  if (agree.size === 0) return null;
+  if (agree.size === 0) return none;
 
-  const winner = [...agree.entries()]
-    .map(([userId, set]) => ({ userId, shared: set.size, total: both.get(userId)?.size ?? set.size }))
-    .sort((a, b) => b.shared - a.shared || a.userId.localeCompare(b.userId))[0];
-
-  // name vs famous alias — same rule as the cross-polla board
+  // who shares a polla with the viewer — keeps their real name, and defines the
+  // "within polla" candidate pool
   const myGroupIds = db
     .select({ groupId: memberships.groupId })
     .from(memberships)
@@ -680,16 +670,41 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
       mates.add(r.userId);
     }
   }
-  const name =
-    db.select({ displayName: users.displayName }).from(users).where(eq(users.id, winner.userId)).get()
-      ?.displayName ?? null;
-  const known = mates.has(winner.userId);
 
-  return {
-    userId: winner.userId,
-    displayName: known ? name : null,
-    alias: known ? null : famousAlias(viewerId, winner.userId),
-    shared: winner.shared,
-    total: winner.total,
+  // best agreement among a candidate set (most shared scorelines wins)
+  const winnerAmong = (allow: (uid: string) => boolean) =>
+    [...agree.entries()]
+      .filter(([uid]) => allow(uid))
+      .map(([uid, set]) => ({
+        userId: uid,
+        shared: set.size,
+        total: both.get(uid)?.size ?? set.size,
+      }))
+      .sort((a, b) => b.shared - a.shared || a.userId.localeCompare(b.userId))[0] ?? null;
+
+  const toBuddy = (
+    w: { userId: string; shared: number; total: number } | null,
+    scope: "polla" | "global",
+  ): Buddy | null => {
+    if (!w) return null;
+    const known = mates.has(w.userId);
+    return {
+      userId: w.userId,
+      displayName: known ? (nameById.get(w.userId) ?? null) : null,
+      alias: known ? null : famousAlias(viewerId, w.userId),
+      shared: w.shared,
+      total: w.total,
+      scope,
+    };
   };
+
+  const polla = toBuddy(winnerAmong((uid) => mates.has(uid)), "polla");
+  const global = toBuddy(winnerAmong(() => true), "global");
+  const same = !!polla && !!global && polla.userId === global.userId;
+  return { polla, global, same };
+}
+
+// Back-compat: the single, cross-polla buddy.
+export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
+  return getPredictionBuddies(db, viewerId).global;
 }
