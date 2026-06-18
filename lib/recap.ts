@@ -356,6 +356,7 @@ export function getRoundRecapForUser(
 export interface GlobalEntry {
   rank: number;
   isMe: boolean;
+  isBot: boolean; // Claudio — gets the bot icon
   points: number;
   displayName: string | null; // set only when the viewer may see the real name
   alias: string | null; // set only when anonymized
@@ -558,6 +559,7 @@ export function getGlobalRoundStanding(
     return {
       rank,
       isMe,
+      isBot: isBot.get(r.userId) ?? false,
       points: r.points,
       displayName: known ? (nameById.get(r.userId) ?? null) : null,
       alias: known ? null : (aliasByUser.get(r.userId) ?? null),
@@ -599,6 +601,7 @@ export interface Buddy {
   displayName: string | null; // when they share a polla with the viewer
   alias: string | null; // famous alias otherwise — same privacy rule as the board
   shared: number; // matches where you both called the exact same scoreline
+  total: number; // matches you both predicted (the comparable set) — shared ≤ total
 }
 
 // Across every polla, the (human) player whose exact scorelines match yours on
@@ -639,10 +642,15 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
     db.select({ id: users.id, isBot: users.isBot }).from(users).all().map((u) => [u.id, u.isBot]),
   );
 
-  // distinct matches per other player where a scoreline agrees with one of mine
+  // per other player: distinct matches you both predicted (the comparable set),
+  // and the subset where a scoreline agrees with one of mine
   const agree = new Map<string, Set<number>>();
+  const both = new Map<string, Set<number>>();
   for (const p of others) {
     if (p.userId === viewerId || isBot.get(p.userId)) continue;
+    const bs = both.get(p.userId) ?? new Set<number>();
+    bs.add(p.matchId);
+    both.set(p.userId, bs);
     if (mineByMatch.get(p.matchId)?.has(`${p.predHome}-${p.predAway}`)) {
       const s = agree.get(p.userId) ?? new Set<number>();
       s.add(p.matchId);
@@ -652,7 +660,7 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
   if (agree.size === 0) return null;
 
   const winner = [...agree.entries()]
-    .map(([userId, set]) => ({ userId, shared: set.size }))
+    .map(([userId, set]) => ({ userId, shared: set.size, total: both.get(userId)?.size ?? set.size }))
     .sort((a, b) => b.shared - a.shared || a.userId.localeCompare(b.userId))[0];
 
   // name vs famous alias — same rule as the cross-polla board
@@ -682,5 +690,6 @@ export function getPredictionBuddy(db: Db, viewerId: string): Buddy | null {
     displayName: known ? name : null,
     alias: known ? null : famousAlias(viewerId, winner.userId),
     shared: winner.shared,
+    total: winner.total,
   };
 }

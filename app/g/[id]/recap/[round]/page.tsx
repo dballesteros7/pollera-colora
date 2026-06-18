@@ -63,6 +63,13 @@ function GlobalRow({ e, lo }: { e: GlobalEntry; lo: Locale }) {
           >
             {e.displayName ?? e.alias ?? "—"}
           </span>
+          {e.isBot && (
+            <Bot
+              size={15}
+              style={{ flex: "none", color: "var(--ink-soft)" }}
+              aria-label={t(lo, "recap.botTag")}
+            />
+          )}
           {aliased && <AliasMark lo={lo} />}
           {e.isMe && <span className="pc-player__you">← {t(lo, "f.youTag")}</span>}
         </span>
@@ -243,7 +250,7 @@ export default async function RecapPage({
               </span>
               {!buddy.displayName && buddy.alias && <> <AliasMark lo={lo} /></>}
               <br />
-              <span className="pc-hint">{t(lo, "recap.buddyLine", { n: buddy.shared })}</span>
+              <span className="pc-hint">{t(lo, "recap.buddyLine", { n: buddy.shared, total: buddy.total })}</span>
             </span>
             <span className="pc-badge pc-badge--points" aria-hidden>🤝</span>
           </div>
