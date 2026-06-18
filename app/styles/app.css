@@ -74,7 +74,7 @@
 }
 .pc-quicklink__text { flex: 1; min-width: 0; }
 .pc-quicklink__label { font-weight: var(--w-bold); display: block; }
-.pc-quicklink__sub { font-size: var(--text-sm); color: var(--ink-soft); }
+.pc-quicklink__sub { display: block; font-size: var(--text-sm); color: var(--ink-soft); }
 .pc-quicklink__chev { color: var(--ink-faint); flex: none; }
 
 /* page-level vertical rhythm */

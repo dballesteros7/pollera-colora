@@ -32,7 +32,20 @@ function roundLabel(lo: Locale, round: Round): string {
     : t(lo, STAGE_KEY[round.stage] ?? "f.final");
 }
 
+function AliasMark({ lo }: { lo: Locale }) {
+  return (
+    <span
+      className="pc-player__alias"
+      title={t(lo, "recap.aliasHint")}
+      aria-label={t(lo, "recap.aliasHint")}
+    >
+      🎭
+    </span>
+  );
+}
+
 function GlobalRow({ e, lo }: { e: GlobalEntry; lo: Locale }) {
+  const aliased = !e.displayName && !!e.alias;
   return (
     <tr className={e.isMe ? "is-you" : undefined}>
       <td>
@@ -44,9 +57,13 @@ function GlobalRow({ e, lo }: { e: GlobalEntry; lo: Locale }) {
       </td>
       <td>
         <span className="pc-player">
-          <span className="pc-player__name">
+          <span
+            className="pc-player__name"
+            style={aliased ? { fontStyle: "italic" } : undefined}
+          >
             {e.displayName ?? e.alias ?? "—"}
           </span>
+          {aliased && <AliasMark lo={lo} />}
           {e.isMe && <span className="pc-player__you">← {t(lo, "f.youTag")}</span>}
         </span>
       </td>
@@ -166,6 +183,13 @@ export default async function RecapPage({
               <br />
               {teamName(recap.best!.match.homeTeam, lo)} {recap.best!.match.regHome}–
               {recap.best!.match.regAway} {teamName(recap.best!.match.awayTeam, lo)}
+              <br />
+              <span className="pc-hint">
+                {t(lo, "recap.yourScore")}:{" "}
+                <span className="pc-pick">
+                  {recap.best!.pred!.predHome}–{recap.best!.pred!.predAway}
+                </span>
+              </span>
             </span>
             <span className="pc-badge pc-badge--points">
               {t(lo, "f.plusPts", { n: recap.best!.points })}
@@ -208,9 +232,16 @@ export default async function RecapPage({
             <Users size={20} style={{ color: "var(--azul-deep)" }} aria-hidden />
             <span style={{ flex: 1 }}>
               <b>{t(lo, "recap.buddy")}</b>{" "}
-              <span className="pc-player__name" style={{ fontWeight: 700 }}>
+              <span
+                className="pc-player__name"
+                style={{
+                  fontWeight: 700,
+                  ...(buddy.displayName ? {} : { fontStyle: "italic" }),
+                }}
+              >
                 {buddy.displayName ?? buddy.alias}
               </span>
+              {!buddy.displayName && buddy.alias && <> <AliasMark lo={lo} /></>}
               <br />
               <span className="pc-hint">{t(lo, "recap.buddyLine", { n: buddy.shared })}</span>
             </span>

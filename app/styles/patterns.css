@@ -175,6 +175,7 @@
 .pc-player { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
 .pc-player__name { font-weight: var(--w-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-player__sub { font-size: var(--text-xs); color: var(--ink-soft); }
+.pc-player__alias { font-size: 0.85em; flex: none; cursor: help; }
 
 /* total points — the hero number */
 .pc-board .pc-points {
