@@ -14,7 +14,7 @@ import { parseScoringRules, PRESETS } from "@/lib/scoring/presets";
 import { scoreMatch } from "@/lib/scoring/score";
 import { getViewerTz, dayFormatter, timeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
-import { teamName, patriotSides } from "@/lib/teams";
+import { teamName } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
 import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
@@ -200,7 +200,7 @@ export default async function FixturesPage({
                       action={savePredictionAction}
                       doneMsg={t(lo, "ui.saved")}
                       errMsg={t(lo, "ui.lockedErr")}
-                      invalidMsg={t(lo, patriotSides(m.homeTeam, m.awayTeam).some((p) => p.team === "Australia") ? "ui.scoreErrAus" : "ui.scoreErr")}
+                      invalidMsg={t(lo, "ui.scoreErr")}
                     >
                       <input type="hidden" name="groupId" value={group.id} />
                       <input type="hidden" name="matchId" value={m.id} />
@@ -212,7 +212,6 @@ export default async function FixturesPage({
                           awayCrest={m.awayCrest}
                           defaultHome={pred?.predHome ?? null}
                           defaultAway={pred?.predAway ?? null}
-                          patriots={patriotSides(m.homeTeam, m.awayTeam)}
                           aria={{ goals: t(lo, "f.goalsOf", { team: "{team}" }), minus: t(lo, "f.minus", { team: "{team}" }), plus: t(lo, "f.plus", { team: "{team}" }) }}
                         />
                       </div>
