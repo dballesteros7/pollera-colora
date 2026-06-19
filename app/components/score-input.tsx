@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export interface ScoreAria {
   goals: string; // "{team}" placeholder
@@ -18,22 +19,10 @@ function fill(tpl: string, team: string) {
   return tpl.replaceAll("{team}", team);
 }
 
-function Side({
-  team,
-  crest,
-  name,
-  defaultValue,
-  aria,
-}: {
-  team: string;
-  crest: string | null;
-  name: string;
-  defaultValue: number | null;
-  aria: ScoreAria;
-}) {
-  // track the saved value so a revalidation (copy, apply-to-all) refreshes
-  // the box, while plain typing is left alone. No pick yet shows as 0 so the
-  // steppers work from a real number instead of an empty box.
+// One score box's value, kept in sync with the server-side default: a
+// revalidation (copy, apply-to-all, save) refreshes the box, while plain typing
+// is left alone. No pick yet shows as 0 so the steppers start from a real number.
+function useScoreValue(defaultValue: number | null) {
   const init = defaultValue === null ? "0" : String(defaultValue);
   const [state, setState] = useState({ seen: defaultValue, value: init });
   if (state.seen !== defaultValue) {
@@ -41,8 +30,25 @@ function Side({
   }
   const value = state.seen !== defaultValue ? init : state.value;
   const setValue = (v: string) => setState((s) => ({ ...s, value: v }));
-  const num = value === "" ? null : Number(value);
+  return [value, setValue] as const;
+}
 
+function Side({
+  team,
+  crest,
+  name,
+  value,
+  setValue,
+  aria,
+}: {
+  team: string;
+  crest: string | null;
+  name: string;
+  value: string;
+  setValue: (v: string) => void;
+  aria: ScoreAria;
+}) {
+  const num = value === "" ? null : Number(value);
   const step = (d: number) => {
     const next = Math.min(99, Math.max(0, (num ?? 0) + d));
     setValue(String(next));
@@ -66,7 +72,9 @@ function Side({
           type="number"
           name={name}
           min={0}
-          max={99}
+          // no max: the 99 cap is enforced server-side, so an over-cap score
+          // (the 1776–0 Easter egg) submits and comes back with a clear toast
+          // instead of being silently blocked by a native validation bubble
           required
           inputMode="numeric"
           value={value}
@@ -81,6 +89,58 @@ function Side({
   );
 }
 
+// 🦅🎆 The freedom unleashed: eagles soar, fireworks pop, the crowd chants.
+// Full-viewport, non-interactive, self-dismissing. Portaled to <body> so no card
+// overflow can clip America's glory.
+function Fanfare({ onDone }: { onDone: () => void }) {
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    const id = setTimeout(() => done.current(), 4000);
+    return () => clearTimeout(id);
+  }, []);
+
+  if (typeof document === "undefined") return null;
+
+  const eagles = Array.from({ length: 8 });
+  const fireworks = ["🎆", "🎇", "🎆", "✨", "🎇", "🎆", "✨", "🎇", "🎆", "🎇"];
+
+  return createPortal(
+    <div className="pc-fanfare" aria-hidden>
+      {fireworks.map((fw, i) => (
+        <span
+          key={`f${i}`}
+          className="pc-fanfare__firework"
+          style={{
+            left: `${6 + ((i * 97) % 88)}%`,
+            top: `${10 + ((i * 53) % 70)}%`,
+            fontSize: `${34 + ((i * 13) % 30)}px`,
+            animationDelay: `${(i % 6) * 0.28}s`,
+          }}
+        >
+          {fw}
+        </span>
+      ))}
+      {eagles.map((_, i) => (
+        <span
+          key={`e${i}`}
+          className="pc-fanfare__eagle"
+          style={{
+            top: `${6 + i * 11}%`,
+            fontSize: `${30 + (i % 3) * 14}px`,
+            animationDelay: `${i * 0.2}s`,
+            animationDuration: `${2.6 + (i % 3) * 0.6}s`,
+          }}
+        >
+          🦅
+        </span>
+      ))}
+      <span className="pc-fanfare__chant">🇺🇸 USA! USA! USA! 🇺🇸</span>
+    </div>,
+    document.body,
+  );
+}
+
 export function ScoreInput({
   homeTeam,
   awayTeam,
@@ -88,6 +148,7 @@ export function ScoreInput({
   awayCrest,
   defaultHome,
   defaultAway,
+  usaSide = null,
   aria = DEFAULT_ARIA,
 }: {
   homeTeam: string;
@@ -96,15 +157,42 @@ export function ScoreInput({
   awayCrest: string | null;
   defaultHome: number | null;
   defaultAway: number | null;
+  usaSide?: "home" | "away" | null;
   aria?: ScoreAria;
 }) {
+  const [homeValue, setHomeValue] = useScoreValue(defaultHome);
+  const [awayValue, setAwayValue] = useScoreValue(defaultAway);
+  const [fanfare, setFanfare] = useState(false);
+
+  // The friend who couldn't enter 1776–0 gets his moment: USA buries the
+  // opponent, eagles fly, fireworks pop. (The 99 cap still blocks the save —
+  // the running joke survives.)
+  const unleashFreedom = () => {
+    if (usaSide === "home") {
+      setHomeValue("1776");
+      setAwayValue("0");
+    } else {
+      setAwayValue("1776");
+      setHomeValue("0");
+    }
+    setFanfare(true);
+  };
+
   return (
-    <div className="pc-score">
-      <Side team={homeTeam} crest={homeCrest} name="predHome" defaultValue={defaultHome} aria={aria} />
-      <span className="pc-score__dash" aria-hidden>
-        –
-      </span>
-      <Side team={awayTeam} crest={awayCrest} name="predAway" defaultValue={defaultAway} aria={aria} />
-    </div>
+    <>
+      <div className="pc-score">
+        <Side team={homeTeam} crest={homeCrest} name="predHome" value={homeValue} setValue={setHomeValue} aria={aria} />
+        <span className="pc-score__dash" aria-hidden>
+          –
+        </span>
+        <Side team={awayTeam} crest={awayCrest} name="predAway" value={awayValue} setValue={setAwayValue} aria={aria} />
+      </div>
+      {usaSide && (
+        <button type="button" className="pc-usa-btn" onClick={unleashFreedom}>
+          🇺🇸 USA! USA! USA! 🇺🇸
+        </button>
+      )}
+      {fanfare && <Fanfare onDone={() => setFanfare(false)} />}
+    </>
   );
 }

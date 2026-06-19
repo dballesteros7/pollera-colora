@@ -317,3 +317,84 @@
   .pc-toast { animation: pc-toast-rm 2.6s steps(1) forwards; }
   @keyframes pc-toast-rm { 0% { opacity: 1; } 100% { opacity: 0; } }
 }
+
+/* ── USA! USA! USA! Easter egg (USA matches only) ───────────────────────────
+   A patriotic button that buries the opponent 1776–0 and unleashes eagles +
+   fireworks. The 99 cap still blocks the actual save — that's the joke. */
+.pc-usa-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3, 8px);
+  padding: 8px 12px;
+  border: 2px solid #b22234; /* Old Glory red */
+  border-radius: var(--r-md, 10px);
+  background: linear-gradient(180deg, #3c3b6e, #23234a); /* Old Glory blue */
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transition: filter 0.12s ease, transform 0.06s ease;
+}
+.pc-usa-btn:hover { filter: brightness(1.08); }
+.pc-usa-btn:active { transform: translateY(1px); }
+
+.pc-fanfare {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pc-fanfare__eagle {
+  position: absolute;
+  left: -14vw;
+  will-change: transform;
+  animation-name: pc-eagle-fly;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes pc-eagle-fly {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(64vw, -22px); }
+  100% { transform: translate(130vw, 10px); }
+}
+.pc-fanfare__firework {
+  position: absolute;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: pc-firework 1.5s ease-out infinite;
+}
+@keyframes pc-firework {
+  0% { opacity: 0; transform: scale(0.3); }
+  30% { opacity: 1; transform: scale(1.18); }
+  70% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+.pc-fanfare__chant {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-size: clamp(26px, 8vw, 68px);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #fff;
+  text-shadow: 0 2px 0 #b22234, 0 0 26px rgba(60, 59, 110, 0.95);
+  animation: pc-chant 4s ease-out forwards;
+}
+@keyframes pc-chant {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  22% { transform: translate(-50%, -50%) scale(1); }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* keep the gag, drop the motion: no flight, gentle fade, static bursts */
+  .pc-fanfare__eagle { animation: none; left: auto; right: 8%; }
+  .pc-fanfare__firework { animation: pc-firework-rm 4s steps(1) forwards; }
+  @keyframes pc-firework-rm { 0% { opacity: 1; } 100% { opacity: 0; } }
+  .pc-fanfare__chant { animation: pc-firework-rm 4s steps(1) forwards; }
+}

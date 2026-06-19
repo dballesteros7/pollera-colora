@@ -5,7 +5,9 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-export type ActionResult = { err?: boolean; copied?: number } | void;
+export type ActionResult =
+  | { err?: boolean; invalid?: boolean; copied?: number }
+  | void;
 
 export function FeedbackForm({
   action,
@@ -13,6 +15,7 @@ export function FeedbackForm({
   copiedMsg,
   zeroMsg,
   errMsg,
+  invalidMsg,
   className,
   style,
   children,
@@ -22,6 +25,7 @@ export function FeedbackForm({
   copiedMsg?: string; // "{n}" placeholder, used when the action reports a count
   zeroMsg?: string; // count of 0
   errMsg?: string;
+  invalidMsg?: string; // invalid input (e.g. score over the 99 cap), distinct from a lock
   className?: string;
   style?: React.CSSProperties;
   children: React.ReactNode;
@@ -31,7 +35,7 @@ export function FeedbackForm({
       const res = await action(formData);
       let msg = doneMsg;
       if (res?.err) {
-        msg = errMsg ?? doneMsg;
+        msg = (res.invalid ? invalidMsg : errMsg) ?? errMsg ?? doneMsg;
       } else if (typeof res?.copied === "number") {
         msg =
           res.copied === 0

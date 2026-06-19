@@ -65,7 +65,9 @@ export async function savePredictionAction(formData: FormData) {
       // form re-renders against current state; the lock shows itself
       revalidatePath(`/g/${groupId}/fixtures`);
       revalidatePath(`/g/${groupId}`);
-      return { err: true };
+      // an invalid score (e.g. the 1776–0 Easter egg, over the 99 cap) gets a
+      // distinct toast — "locked" would be the wrong story
+      return { err: true, invalid: err instanceof MatchNotPredictableError };
     }
     throw err;
   }

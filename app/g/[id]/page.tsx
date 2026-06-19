@@ -23,7 +23,7 @@ import { bonusLocked } from "@/lib/bonus";
 import { featuredRecapRound } from "@/lib/recap";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
-import { teamName } from "@/lib/teams";
+import { teamName, usaSide } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
 import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
@@ -161,6 +161,7 @@ export default async function GroupPage({
                 action={savePredictionAction}
                 doneMsg={t(lo, "ui.saved")}
                 errMsg={t(lo, "ui.lockedErr")}
+                invalidMsg={t(lo, "ui.scoreErr")}
               >
                 <input type="hidden" name="groupId" value={group.id} />
                 <input type="hidden" name="matchId" value={nextMatch.id} />
@@ -172,6 +173,7 @@ export default async function GroupPage({
                     awayCrest={nextMatch.awayCrest}
                     defaultHome={heroPred?.predHome ?? null}
                     defaultAway={heroPred?.predAway ?? null}
+                    usaSide={usaSide(nextMatch.homeTeam, nextMatch.awayTeam)}
                     aria={{ goals: t(lo, "f.goalsOf", { team: "{team}" }), minus: t(lo, "f.minus", { team: "{team}" }), plus: t(lo, "f.plus", { team: "{team}" }) }}
                   />
                 </div>

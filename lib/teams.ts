@@ -61,6 +61,17 @@ const MANUAL: Record<string, Record<Locale, string>> = {
   "Bosnia-Herzegovina": { es: "Bosnia", en: "Bosnia", de: "Bosnien", it: "Bosnia", fr: "Bosnie", nl: "Bosnië", pt: "Bósnia", zh: "波黑", zht: "波赫" },
 };
 
+// Which side (if any) is the USA, by raw football-data team name — drives the
+// "USA! USA! USA!" Easter egg on the score input. 🦅
+export function usaSide(
+  homeTeam: string | null,
+  awayTeam: string | null,
+): "home" | "away" | null {
+  if (homeTeam === "United States") return "home";
+  if (awayTeam === "United States") return "away";
+  return null;
+}
+
 const displayCache = new Map<Locale, Intl.DisplayNames>();
 
 export function teamName(name: string | null, locale: Locale): string | null {
