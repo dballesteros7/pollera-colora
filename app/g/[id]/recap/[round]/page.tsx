@@ -209,7 +209,7 @@ export default async function RecapPage({
         {/* best / worst highlights */}
         {showBest && (
           <div className="pc-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Sparkles size={20} style={{ color: "var(--verde)" }} aria-hidden />
+            <Sparkles size={20} style={{ color: "var(--success)" }} aria-hidden />
             <span style={{ flex: 1 }}>
               <b>{t(lo, "recap.best")}</b>
               <br />

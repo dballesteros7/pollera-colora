@@ -11,7 +11,6 @@ import {
   getRound,
   getRoundRecapForUser,
   getGlobalRoundStanding,
-  getPredictionBuddy,
   getPredictionBuddies,
   featuredRecapRound,
   recapTabAvailable,
@@ -357,7 +356,7 @@ describe("getPredictionBuddy", () => {
     predict(carlos.id, g2.id, [[m1.id, 2, 1], [m2.id, 1, 1], [m3.id, 0, 0]]); // matches all 3 → 3
     [m1, m2, m3].forEach((m) => finish(m.id, 0, 0));
 
-    const buddy = getPredictionBuddy(db, ana.id, g1.id)!;
+    const buddy = getPredictionBuddies(db, ana.id, g1.id).global!;
     expect(buddy.userId).toBe(carlos.id); // 3 beats beto's 2
     expect(buddy.shared).toBe(3);
     // carlos shares no polla with ana → anonymized as a famous alias
@@ -375,7 +374,7 @@ describe("getPredictionBuddy", () => {
     predict(beto.id, g1.id, [[m1.id, 2, 1]]);
     finish(m1.id, 0, 0);
 
-    const buddy = getPredictionBuddy(db, ana.id, g1.id)!;
+    const buddy = getPredictionBuddies(db, ana.id, g1.id).global!;
     expect(buddy.userId).toBe(beto.id);
     expect(buddy.displayName).toBe("Beto");
     expect(buddy.alias).toBeNull();
@@ -394,7 +393,7 @@ describe("getPredictionBuddy", () => {
     predict(beto.id, g1.id, [[m1.id, 0, 3]]); // different
     finish(m1.id, 0, 0);
 
-    expect(getPredictionBuddy(db, ana.id, g1.id)).toBeNull(); // bot excluded, beto doesn't match
+    expect(getPredictionBuddies(db, ana.id, g1.id).global).toBeNull(); // bot excluded, beto doesn't match
   });
 
   it("ignores open/future predictions — only settled matches count", () => {

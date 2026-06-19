@@ -224,17 +224,6 @@
 }
 
 /* ---- language switcher ---- */
-.pc-lang { display: inline-flex; gap: 2px; }
-.pc-lang a {
-  font-size: var(--text-2xs);
-  font-weight: var(--w-bold);
-  letter-spacing: var(--ls-wide);
-  color: var(--ink-faint);
-  text-decoration: none;
-  padding: 6px 5px;
-  border-radius: var(--radius-sm);
-}
-.pc-lang a[aria-current="true"] { color: var(--magenta); background: var(--brand-soft); }
 
 /* ---- decramp match-card header: let meta and time/badge wrap ---- */
 .pc-match__head { flex-wrap: wrap; row-gap: var(--space-1); }

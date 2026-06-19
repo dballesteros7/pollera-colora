@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { TzSync } from "./components/tz-sync";
 import { Attribution } from "./components/shell";
+import { getLocale, LOCALE_TAG } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,14 +52,15 @@ export const viewport: Viewport = {
   themeColor: "#FBF3E2",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = LOCALE_TAG[await getLocale()];
   return (
     <html
-      lang="es"
+      lang={lang}
       className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable}`}
     >
       <body>

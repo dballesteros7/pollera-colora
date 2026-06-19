@@ -763,12 +763,3 @@ export function getPredictionBuddies(
   const same = !!polla && !!global && polla.userId === global.userId;
   return { polla, global, same };
 }
-
-// Back-compat: the single, cross-polla buddy.
-export function getPredictionBuddy(
-  db: Db,
-  viewerId: string,
-  groupId = "",
-): Buddy | null {
-  return getPredictionBuddies(db, viewerId, groupId).global;
-}
