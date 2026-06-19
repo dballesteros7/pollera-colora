@@ -398,3 +398,64 @@
   @keyframes pc-firework-rm { 0% { opacity: 1; } 100% { opacity: 0; } }
   .pc-fanfare__chant { animation: pc-firework-rm 4s steps(1) forwards; }
 }
+
+/* ── Aussie! Aussie! Aussie! Oi! Oi! Oi! (Australia matches) ─────────────────
+   Australia's mode: green & gold, hopping kangaroos, and a chant rendered
+   upside down — because down under. Buries the opponent 1901–0 (Federation). */
+.pc-aus-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3, 8px);
+  padding: 8px 12px;
+  border: 2px solid #00843d; /* Aussie green */
+  border-radius: var(--r-md, 10px);
+  background: linear-gradient(180deg, #00843d, #006b31);
+  color: #ffcd00; /* Aussie gold */
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  transition: filter 0.12s ease, transform 0.06s ease;
+}
+.pc-aus-btn:hover { filter: brightness(1.08); }
+.pc-aus-btn:active { transform: translateY(1px); }
+
+/* a kangaroo bounding across the screen */
+.pc-fanfare__roo {
+  position: absolute;
+  left: -14vw;
+  will-change: transform;
+  animation-name: pc-roo-hop;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes pc-roo-hop {
+  0%   { transform: translate(0, 0); }
+  10%  { transform: translate(13vw, -42px); }
+  20%  { transform: translate(26vw, 0); }
+  30%  { transform: translate(39vw, -42px); }
+  40%  { transform: translate(52vw, 0); }
+  50%  { transform: translate(65vw, -42px); }
+  60%  { transform: translate(78vw, 0); }
+  70%  { transform: translate(91vw, -42px); }
+  80%  { transform: translate(104vw, 0); }
+  100% { transform: translate(130vw, -22px); }
+}
+
+/* green & gold chant — the page flip (below) makes it read upside down */
+.pc-fanfare__chant--aus {
+  color: #ffcd00;
+  text-shadow: 0 2px 0 #00843d, 0 0 26px rgba(0, 132, 61, 0.95);
+}
+
+/* down under: turn the entire page upside down while the fanfare plays. The
+   transition lives on <html> so it animates both into and out of the flip. */
+html { transition: transform 0.9s ease; }
+/* transform-origin is set inline (viewport center) so the flip stays in place */
+html.pc-flip { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* keep the gag, drop the motion (the JS also skips the page flip entirely) */
+  .pc-fanfare__roo { animation: none; left: 8%; }
+  html { transition: none; }
+}

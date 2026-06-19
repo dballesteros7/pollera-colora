@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { PatriotSide, PatriotTeam } from "@/lib/teams";
 
 export interface ScoreAria {
   goals: string; // "{team}" placeholder
@@ -18,6 +19,46 @@ const DEFAULT_ARIA: ScoreAria = {
 function fill(tpl: string, team: string) {
   return tpl.replaceAll("{team}", team);
 }
+
+// ── Patriotic Easter eggs ───────────────────────────────────────────────────
+// Each patriot team buries the opponent by its founding year and throws a party.
+// The cap is 99 (server-side), so the score can be *set* and celebrated but not
+// saved — the running joke, with a clear toast on the failed save.
+interface PatriotTheme {
+  year: number; // the scoreline: this team `year`, opponent 0
+  btnClass: string; // patriotic button styling
+  label: string; // button text
+  chant: string; // big center chant
+  chantClass: string; // base chant + theme color
+  flyer: string; // creature that crosses the screen
+  flyerClass: string; // flight style (eagle glide / kangaroo hop)
+  bursts: string[]; // the "fireworks"
+  flipPage?: boolean; // turn the whole page upside down (Australia → down under)
+}
+
+const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
+  "United States": {
+    year: 1776,
+    btnClass: "pc-usa-btn",
+    label: "🇺🇸 USA! USA! USA! 🇺🇸",
+    chant: "🇺🇸 USA! USA! USA! 🇺🇸",
+    chantClass: "pc-fanfare__chant",
+    flyer: "🦅",
+    flyerClass: "pc-fanfare__eagle",
+    bursts: ["🎆", "🎇", "🎆", "✨", "🎇", "🎆", "✨", "🎇", "🎆", "🎇"],
+  },
+  Australia: {
+    year: 1901,
+    btnClass: "pc-aus-btn",
+    label: "🇦🇺 Aussie! Aussie! Aussie! Oi! Oi! Oi! 🦘",
+    chant: "🇦🇺 Aussie! Aussie! Aussie! Oi! Oi! Oi!",
+    chantClass: "pc-fanfare__chant pc-fanfare__chant--aus",
+    flyer: "🦘",
+    flyerClass: "pc-fanfare__roo",
+    bursts: ["🦘", "🐨", "🪃", "⭐", "🦘", "🐨", "🪃", "⭐", "🦘", "🐨"],
+    flipPage: true, // down under: the whole page turns upside down
+  },
+};
 
 // One score box's value, kept in sync with the server-side default: a
 // revalidation (copy, apply-to-all, save) refreshes the box, while plain typing
@@ -73,7 +114,7 @@ function Side({
           name={name}
           min={0}
           // no max: the 99 cap is enforced server-side, so an over-cap score
-          // (the 1776–0 Easter egg) submits and comes back with a clear toast
+          // (the patriotic Easter eggs) submits and comes back with a clear toast
           // instead of being silently blocked by a native validation bubble
           required
           inputMode="numeric"
@@ -89,27 +130,41 @@ function Side({
   );
 }
 
-// 🦅🎆 The freedom unleashed: eagles soar, fireworks pop, the crowd chants.
-// Full-viewport, non-interactive, self-dismissing. Portaled to <body> so no card
-// overflow can clip America's glory.
-function Fanfare({ onDone }: { onDone: () => void }) {
+// 🦅🦘🎆 The freedom unleashed: creatures soar/hop, fireworks pop, the crowd
+// chants. Full-viewport, non-interactive, self-dismissing. Portaled to <body> so
+// no card overflow can clip the glory.
+function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void }) {
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
     const id = setTimeout(() => done.current(), 4000);
-    return () => clearTimeout(id);
-  }, []);
+    // down under: flip the whole document — but not on users who asked for less
+    // motion (a spinning page is exactly what they're avoiding)
+    const flip =
+      theme.flipPage &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const root = document.documentElement;
+    if (flip) {
+      // pivot on the center of what's on screen, so the visible area flips in
+      // place even when the page is scrolled down a long fixtures list
+      root.style.transformOrigin = `50% ${window.scrollY + window.innerHeight / 2}px`;
+      root.classList.add("pc-flip");
+    }
+    return () => {
+      clearTimeout(id);
+      if (flip) root.classList.remove("pc-flip");
+    };
+  }, [theme.flipPage]);
 
   if (typeof document === "undefined") return null;
 
-  const eagles = Array.from({ length: 8 });
-  const fireworks = ["🎆", "🎇", "🎆", "✨", "🎇", "🎆", "✨", "🎇", "🎆", "🎇"];
+  const flyers = Array.from({ length: 8 });
 
   return createPortal(
     <div className="pc-fanfare" aria-hidden>
-      {fireworks.map((fw, i) => (
+      {theme.bursts.map((b, i) => (
         <span
-          key={`f${i}`}
+          key={`b${i}`}
           className="pc-fanfare__firework"
           style={{
             left: `${6 + ((i * 97) % 88)}%`,
@@ -118,13 +173,13 @@ function Fanfare({ onDone }: { onDone: () => void }) {
             animationDelay: `${(i % 6) * 0.28}s`,
           }}
         >
-          {fw}
+          {b}
         </span>
       ))}
-      {eagles.map((_, i) => (
+      {flyers.map((_, i) => (
         <span
-          key={`e${i}`}
-          className="pc-fanfare__eagle"
+          key={`y${i}`}
+          className={theme.flyerClass}
           style={{
             top: `${6 + i * 11}%`,
             fontSize: `${30 + (i % 3) * 14}px`,
@@ -132,10 +187,10 @@ function Fanfare({ onDone }: { onDone: () => void }) {
             animationDuration: `${2.6 + (i % 3) * 0.6}s`,
           }}
         >
-          🦅
+          {theme.flyer}
         </span>
       ))}
-      <span className="pc-fanfare__chant">🇺🇸 USA! USA! USA! 🇺🇸</span>
+      <span className={theme.chantClass}>{theme.chant}</span>
     </div>,
     document.body,
   );
@@ -148,7 +203,7 @@ export function ScoreInput({
   awayCrest,
   defaultHome,
   defaultAway,
-  usaSide = null,
+  patriots = [],
   aria = DEFAULT_ARIA,
 }: {
   homeTeam: string;
@@ -157,25 +212,26 @@ export function ScoreInput({
   awayCrest: string | null;
   defaultHome: number | null;
   defaultAway: number | null;
-  usaSide?: "home" | "away" | null;
+  patriots?: PatriotSide[];
   aria?: ScoreAria;
 }) {
   const [homeValue, setHomeValue] = useScoreValue(defaultHome);
   const [awayValue, setAwayValue] = useScoreValue(defaultAway);
-  const [fanfare, setFanfare] = useState(false);
+  const [fanfare, setFanfare] = useState<PatriotTheme | null>(null);
 
-  // The friend who couldn't enter 1776–0 gets his moment: USA buries the
-  // opponent, eagles fly, fireworks pop. (The 99 cap still blocks the save —
-  // the running joke survives.)
-  const unleashFreedom = () => {
-    if (usaSide === "home") {
-      setHomeValue("1776");
+  // bury the opponent by the founding year, set the other side to 0, party.
+  // (The 99 cap still blocks the save — the running joke survives.)
+  const unleash = (p: PatriotSide) => {
+    const theme = PATRIOTS[p.team];
+    const year = String(theme.year);
+    if (p.side === "home") {
+      setHomeValue(year);
       setAwayValue("0");
     } else {
-      setAwayValue("1776");
+      setAwayValue(year);
       setHomeValue("0");
     }
-    setFanfare(true);
+    setFanfare(theme);
   };
 
   return (
@@ -187,12 +243,12 @@ export function ScoreInput({
         </span>
         <Side team={awayTeam} crest={awayCrest} name="predAway" value={awayValue} setValue={setAwayValue} aria={aria} />
       </div>
-      {usaSide && (
-        <button type="button" className="pc-usa-btn" onClick={unleashFreedom}>
-          🇺🇸 USA! USA! USA! 🇺🇸
+      {patriots.map((p) => (
+        <button key={p.team} type="button" className={PATRIOTS[p.team].btnClass} onClick={() => unleash(p)}>
+          {PATRIOTS[p.team].label}
         </button>
-      )}
-      {fanfare && <Fanfare onDone={() => setFanfare(false)} />}
+      ))}
+      {fanfare && <Fanfare theme={fanfare} onDone={() => setFanfare(null)} />}
     </>
   );
 }

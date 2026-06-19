@@ -61,15 +61,26 @@ const MANUAL: Record<string, Record<Locale, string>> = {
   "Bosnia-Herzegovina": { es: "Bosnia", en: "Bosnia", de: "Bosnien", it: "Bosnia", fr: "Bosnie", nl: "Bosnië", pt: "Bósnia", zh: "波黑", zht: "波赫" },
 };
 
-// Which side (if any) is the USA, by raw football-data team name — drives the
-// "USA! USA! USA!" Easter egg on the score input. 🦅
-export function usaSide(
+// Teams with a patriotic Easter egg on the score input, by raw football-data
+// name. 🦅 USA buries you 1776–0; 🦘 Australia 1901–0 (Federation), upside down.
+export type PatriotTeam = "United States" | "Australia";
+export interface PatriotSide {
+  team: PatriotTeam;
+  side: "home" | "away";
+}
+
+// Which patriot team(s) are in this match, and on which side — a USA-vs-Australia
+// match (yes, it happens) returns both, so both buttons show.
+export function patriotSides(
   homeTeam: string | null,
   awayTeam: string | null,
-): "home" | "away" | null {
-  if (homeTeam === "United States") return "home";
-  if (awayTeam === "United States") return "away";
-  return null;
+): PatriotSide[] {
+  const out: PatriotSide[] = [];
+  for (const team of ["United States", "Australia"] as const) {
+    if (homeTeam === team) out.push({ team, side: "home" });
+    else if (awayTeam === team) out.push({ team, side: "away" });
+  }
+  return out;
 }
 
 const displayCache = new Map<Locale, Intl.DisplayNames>();
