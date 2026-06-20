@@ -6,6 +6,17 @@ import { rebuildGroupScores } from "./scoring/score";
 
 export const DEFAULT_PROP_POINTS = 3;
 
+// La Recocha shuts for the whole tournament at the end of this weekend — far
+// earlier than the final. Every question's effective close is capped here, and
+// no new ones can be proposed after it. (End of Sunday 2026-06-21 in Colombia,
+// UTC-5 → Monday 00:00 COT.)
+export const RECOCHA_CLOSE = new Date("2026-06-22T05:00:00Z");
+
+// A question's real close: the earlier of its own lock and the weekend cutoff.
+export function recochaLock(lockAt: Date): Date {
+  return lockAt.getTime() < RECOCHA_CLOSE.getTime() ? lockAt : RECOCHA_CLOSE;
+}
+
 export class PropLockedError extends Error {}
 export class PropStateError extends Error {}
 
@@ -28,6 +39,9 @@ export function proposeQuestion(
   const question = opts.question.trim();
   if (question.length < 5 || question.length > 200) {
     throw new PropStateError("La pregunta debe tener entre 5 y 200 caracteres.");
+  }
+  if (now >= RECOCHA_CLOSE) {
+    throw new PropLockedError("La Recocha ya cerró.");
   }
 
   let lockAt = opts.lockAt ?? null;
@@ -129,7 +143,7 @@ export function voteQuestion(
   if (!q || q.groupId !== opts.groupId || q.status !== "proposed") {
     throw new PropStateError("La pregunta no está en votación.");
   }
-  if (now >= q.lockAt) throw new PropLockedError("La votación ya cerró.");
+  if (now >= recochaLock(q.lockAt)) throw new PropLockedError("La votación ya cerró.");
 
   db.insert(propVotes)
     .values({
@@ -182,7 +196,7 @@ export function answerQuestion(
   if (!q || q.groupId !== opts.groupId || q.status !== "approved") {
     throw new PropStateError("La pregunta no está abierta.");
   }
-  if (now >= q.lockAt) throw new PropLockedError("Esta pregunta ya cerró.");
+  if (now >= recochaLock(q.lockAt)) throw new PropLockedError("Esta pregunta ya cerró.");
 
   const value = opts.value.trim();
   if (!value) throw new PropStateError("Respuesta vacía.");
@@ -233,7 +247,7 @@ export function resolveQuestion(
   if (!q || q.groupId !== opts.groupId || q.status !== "approved") {
     throw new PropStateError("Solo se resuelven preguntas aprobadas.");
   }
-  if (now < q.lockAt) {
+  if (now < recochaLock(q.lockAt)) {
     throw new PropStateError("La pregunta aún no cierra.");
   }
   const updated = db

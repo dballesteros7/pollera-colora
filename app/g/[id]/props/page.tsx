@@ -8,6 +8,8 @@ import {
   getQuestionAnswers,
   getVoteTally,
   getUserVotes,
+  RECOCHA_CLOSE,
+  recochaLock,
 } from "@/lib/props";
 import { getAllMatches, isLocked } from "@/lib/predictions";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
@@ -42,9 +44,10 @@ export default async function PropsPage({
   const myVotes = getUserVotes(db, group.id, user.id);
   const upcoming = getAllMatches(db).filter((m) => !isLocked(m, now) && m.homeTeam);
 
+  const recochaClosed = now >= RECOCHA_CLOSE;
   const proposed = all.filter((r) => r.q.status === "proposed");
-  const open = all.filter((r) => r.q.status === "approved" && now < r.q.lockAt);
-  const awaiting = all.filter((r) => r.q.status === "approved" && now >= r.q.lockAt);
+  const open = all.filter((r) => r.q.status === "approved" && now < recochaLock(r.q.lockAt));
+  const awaiting = all.filter((r) => r.q.status === "approved" && now >= recochaLock(r.q.lockAt));
   const resolved = all.filter((r) => r.q.status === "resolved");
 
   return (
@@ -66,6 +69,23 @@ export default async function PropsPage({
           </p>
         </div>
 
+        <div
+          className="pc-card"
+          style={{
+            padding: "var(--space-3) var(--space-4)",
+            borderColor: recochaClosed ? "var(--line-strong)" : "var(--amarillo-deep)",
+            background: recochaClosed
+              ? undefined
+              : "color-mix(in srgb, var(--amarillo) 14%, transparent)",
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 700 }}>
+            {recochaClosed
+              ? t(lo, "r.closedAll")
+              : t(lo, "r.closesWeekend", { when: lockFormat.format(RECOCHA_CLOSE) })}
+          </p>
+        </div>
+
         <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
           <h2 style={{ margin: "0 2px", fontSize: 18 }}>{t(lo, "r.open")}</h2>
           {open.length === 0 && (
@@ -81,7 +101,7 @@ export default async function PropsPage({
                 <span className="pc-match__meta">
                   {t(lo, "r.proposedBy", { name: proposerName ?? "?", n: q.points })}
                 </span>
-                <span className="pc-match__time">{t(lo, "r.closes", { when: lockFormat.format(q.lockAt) })}</span>
+                <span className="pc-match__time">{t(lo, "r.closes", { when: lockFormat.format(recochaLock(q.lockAt)) })}</span>
               </div>
               <div className="pc-match__body pc-flow" style={{ gap: "var(--space-3)" }}>
                 <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
@@ -182,7 +202,7 @@ export default async function PropsPage({
                 <article key={q.id} className="pc-card pc-flow" style={{ gap: "var(--space-3)" }}>
                   <h3 style={{ fontSize: 17, margin: 0 }}>{q.question}</h3>
                   <p className="pc-hint" style={{ margin: 0 }}>
-                    {t(lo, "r.proposes", { name: proposerName ?? "?", type: q.answerType, when: lockFormat.format(q.lockAt) })}
+                    {t(lo, "r.proposes", { name: proposerName ?? "?", type: q.answerType, when: lockFormat.format(recochaLock(q.lockAt)) })}
                   </p>
                   <p className="pc-hint" style={{ margin: 0 }}>
                     <strong>{t(lo, "r.tally", { a: tally.approvals, r: tally.rejections, needed: tally.needed, eligible: tally.eligible })}</strong>
@@ -221,9 +241,10 @@ export default async function PropsPage({
           <div>
             <h2 style={{ fontSize: 18, marginBottom: 4 }}>{t(lo, "r.proposeH")}</h2>
             <p className="pc-hint" style={{ margin: 0 }}>
-              {t(lo, "r.proposeSub")}
+              {recochaClosed ? t(lo, "r.proposeClosed") : t(lo, "r.proposeSub")}
             </p>
           </div>
+          {!recochaClosed && (
           <form action={proposeAction} className="pc-flow">
             <input type="hidden" name="groupId" value={group.id} />
             <div className="pc-field">
@@ -270,6 +291,7 @@ export default async function PropsPage({
               {t(lo, "r.propose")}
             </button>
           </form>
+          )}
         </section>
       </main>
       <GroupTabs groupId={group.id} active="props" />

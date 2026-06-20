@@ -3,9 +3,21 @@ import Image from "next/image";
 import { Trophy, CalendarDays, ListChecks, Star, Sparkles } from "lucide-react";
 import { getLocale, t, LOCALES, LOCALE_LABEL } from "@/lib/i18n";
 import { recapTabAvailable } from "@/lib/recap";
+import { RECOCHA_CLOSE } from "@/lib/props";
 import { getDb } from "@/lib/db";
 import { getAllMatches } from "@/lib/predictions";
 import { LangSelect } from "./lang-select";
+
+// compact time-left for the tab sub-label: "1d 5h" / "5h 20m" / "20m"
+function tabCountdown(ms: number): string {
+  const min = Math.max(1, Math.round(ms / 60000));
+  const d = Math.floor(min / 1440);
+  const h = Math.floor((min % 1440) / 60);
+  const m = min % 60;
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  return `${m}m`;
+}
 
 export function Brand() {
   return (
@@ -66,15 +78,24 @@ export async function GroupTabs({
   active: "home" | "fixtures" | "props" | "bonus" | "recap";
 }) {
   const locale = await getLocale();
+  // countdown to the Recocha weekend close, shown under its tab while it's open
+  const recochaMsLeft = RECOCHA_CLOSE.getTime() - Date.now();
   const tabs: {
     id: string;
     href: string;
     icon: typeof Trophy;
     label: string;
+    sub?: string;
   }[] = [
     { id: "home", href: "", icon: Trophy, label: t(locale, "tab.table") },
     { id: "fixtures", href: "/fixtures", icon: CalendarDays, label: t(locale, "tab.matches") },
-    { id: "props", href: "/props", icon: ListChecks, label: t(locale, "tab.recocha") },
+    {
+      id: "props",
+      href: "/props",
+      icon: ListChecks,
+      label: t(locale, "tab.recocha"),
+      sub: recochaMsLeft > 0 ? tabCountdown(recochaMsLeft) : undefined,
+    },
     { id: "bonus", href: "/bonus", icon: Star, label: t(locale, "tab.bonus") },
   ];
   // recaps join the bottom bar on Jun 18, once matchday 1 is over
@@ -97,6 +118,7 @@ export async function GroupTabs({
           >
             <Icon size={22} aria-hidden />
             {tab.label}
+            {tab.sub && <span className="pc-tabbar__sub">{tab.sub}</span>}
           </Link>
         );
       })}

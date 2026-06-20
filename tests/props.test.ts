@@ -12,11 +12,16 @@ import {
   resolveQuestion,
   PropLockedError,
   PropStateError,
+  RECOCHA_CLOSE,
 } from "../lib/props";
 
 const NOW = new Date("2026-06-11T20:00:00Z");
 const LOCK = new Date("2026-06-12T19:00:00Z");
 const AFTER_LOCK = new Date("2026-06-12T21:00:00Z");
+// the whole feature shuts at the end of this weekend, ahead of any late lock
+const BEFORE_CLOSE = new Date(RECOCHA_CLOSE.getTime() - 3_600_000);
+const AFTER_CLOSE = new Date(RECOCHA_CLOSE.getTime() + 3_600_000);
+const LATE_LOCK = new Date(RECOCHA_CLOSE.getTime() + 7 * 24 * 3_600_000);
 
 describe("prop questions", () => {
   let db: Db;
@@ -193,5 +198,31 @@ describe("prop questions", () => {
     expect(() =>
       propose({ answerType: "choice", options: ["solo una"] }),
     ).toThrow(PropStateError);
+  });
+
+  it("blocks proposing once the weekend cutoff has passed", () => {
+    expect(() =>
+      proposeQuestion(
+        db,
+        { groupId, proposerId: beto, question: "¿Pregunta tardía de prueba?", answerType: "number", lockAt: LATE_LOCK },
+        AFTER_CLOSE,
+      ),
+    ).toThrow(PropLockedError);
+  });
+
+  it("caps the answer window at the weekend cutoff, even if the question locks later", () => {
+    // proposed with a lock a week out, but La Recocha shuts this weekend
+    const q = proposeQuestion(
+      db,
+      { groupId, proposerId: beto, question: "¿Pregunta de fin de torneo?", answerType: "number", lockAt: LATE_LOCK },
+      NOW,
+    );
+    voteQuestion(db, { questionId: q.id, groupId, userId: ana, vote: "approve" }, NOW);
+    // still open just before the cutoff
+    answerQuestion(db, { questionId: q.id, groupId, userId: ana, value: "3" }, BEFORE_CLOSE);
+    // locked once the cutoff passes, despite lockAt being days away
+    expect(() =>
+      answerQuestion(db, { questionId: q.id, groupId, userId: beto, value: "5" }, AFTER_CLOSE),
+    ).toThrow(PropLockedError);
   });
 });
