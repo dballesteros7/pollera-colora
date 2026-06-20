@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
 import { Header } from "@/app/components/shell";
+import { CopyButton } from "@/app/components/copy-button";
 import { getLocale, t } from "@/lib/i18n";
 import { getViewerTz, formatDatetimeLocal } from "@/lib/viewer-tz";
 import { setDisplayName } from "@/app/actions";
@@ -87,9 +88,16 @@ export default async function GroupSettingsPage({
 
             <section className="pc-card pc-card--pad-lg pc-flow">
               <h2 style={{ fontSize: 18, margin: 0 }}>{t(lo, "set.invite")}</h2>
-              <p style={{ margin: 0 }}>
-                <code className="num">{process.env.APP_URL ?? ""}/join/{group.inviteCode}</code>
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
+                <code className="num" style={{ flex: 1, minWidth: 0, wordBreak: "break-all" }}>
+                  {`${process.env.APP_URL ?? ""}/join/${group.inviteCode}`}
+                </code>
+                <CopyButton
+                  text={`${process.env.APP_URL ?? ""}/join/${group.inviteCode}`}
+                  label={t(lo, "set.copy")}
+                  copiedLabel={t(lo, "set.copied")}
+                />
+              </div>
               <form action={regenerateCodeAction}>
                 <input type="hidden" name="groupId" value={group.id} />
                 <button type="submit" className="pc-btn pc-btn--ghost pc-btn--sm">

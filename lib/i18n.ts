@@ -333,6 +333,8 @@ const M: Record<string, Msg> = {
   // ---- settings ----
   "set.title": { es: "Configuración", en: "Settings", de: "Einstellungen", it: "Impostazioni", pt: "Configurações", fr: "Paramètres", zh: "设置", zht: "設定", nl: "Instellingen" },
   "set.invite": { es: "Enlace de invitación", en: "Invite link", de: "Einladungslink", it: "Link d'invito", pt: "Link de convite", fr: "Lien d'invitation", zh: "邀请链接", zht: "邀請連結", nl: "Uitnodigingslink" },
+  "set.copy": { es: "Copiar", en: "Copy", de: "Kopieren", it: "Copia", pt: "Copiar", fr: "Copier", zh: "复制", zht: "複製", nl: "Kopiëren" },
+  "set.copied": { es: "¡Copiado!", en: "Copied!", de: "Kopiert!", it: "Copiato!", pt: "Copiado!", fr: "Copié !", zh: "已复制！", zht: "已複製！", nl: "Gekopieerd!" },
   "set.regen": { es: "Regenerar enlace (invalida el anterior)", en: "Regenerate link (invalidates the old one)", de: "Link erneuern (der alte wird ungültig)", it: "Rigenera link (invalida il precedente)", pt: "Gerar novo link (invalida o anterior)", fr: "Régénérer le lien (invalide l'ancien)", zh: "重新生成链接（旧链接失效）", zht: "重新產生連結（舊連結失效）", nl: "Nieuwe link maken (de oude vervalt)" },
   "set.vaca": { es: "La vaca", en: "The pot", de: "Der Pott", it: "La cassa", pt: "A caixinha", fr: "La cagnotte", zh: "奖池", zht: "獎池", nl: "De pot" },
   "set.vacaPh": { es: "$50.000 por cabeza · 70/20/10", en: "$10 each · 70/20/10", de: "10 € pro Kopf · 70/20/10", it: "10 € a testa · 70/20/10", pt: "R$ 50 por cabeça · 70/20/10", fr: "10 € par tête · 70/20/10", zh: "每人 ¥50 · 70/20/10", zht: "每人 NT$200 · 70/20/10", nl: "€ 10 p.p. · 70/20/10" },
