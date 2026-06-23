@@ -575,9 +575,6 @@ function unleash(theme, scoreEl, hintEl) {
     const audio = new Audio(theme.soundSrc);
     audio.volume = 0.85;
     audio.play().catch(() => {});
-  } else if (theme.playSound) {
-    const ctx = openAudio();
-    if (ctx) { theme.playSound(ctx); setTimeout(() => ctx.close && ctx.close(), 3000); }
   }
 }
 
