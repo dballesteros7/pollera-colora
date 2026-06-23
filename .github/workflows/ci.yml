@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Public repo → GitHub-hosted runners are free with unlimited minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  # cancel superseded PR runs, but never cancel a main run mid-deploy
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Typecheck · unit · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # lockfile is written by npm 11; npm 10 (bundled with node 22) misreads its
+      # optional deps — same workaround as the Dockerfile
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: Docker build (deploy parity)
+    runs-on: ubuntu-latest
+    # Builds the production image exactly like `fly deploy` does — this is what
+    # would have caught the test-config import breaking `next build` in-image.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  visual:
+    name: Visual regression (5 form factors)
+    runs-on: ubuntu-latest
+    # Same Playwright image used to generate the committed *-linux.png baselines,
+    # so rendering matches exactly.
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Fly
+    # only on a push to main, and only once everything above is green
+    needs: [test, docker, visual]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
