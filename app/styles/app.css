@@ -520,14 +520,24 @@ html.pc-flip { transform: rotate(180deg); }
   width: 100%;
   margin-top: var(--space-3, 8px);
   padding: 8px 12px;
-  border: 2px solid #ce1126; /* Colombian red */
+  border: 2px solid #003893; /* Colombian blue */
   border-radius: var(--r-md, 10px);
-  background: linear-gradient(180deg, #fcd116 0%, #fcd116 50%, #003893 50%, #00257a 100%);
-  color: #00257a; /* reads on the gold top half */
+  /* yellow field (flag is 2:1:1) so the label always sits on yellow, with blue +
+     red as a bottom stripe — the old 50/50 split hid the text on the blue half */
+  background: linear-gradient(
+    180deg,
+    #fcd116 0%,
+    #fcd116 70%,
+    #003893 70%,
+    #003893 85%,
+    #ce1126 85%,
+    #ce1126 100%
+  );
+  color: #00205b; /* navy on bright yellow — high contrast */
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   transition: filter 0.12s ease, transform 0.06s ease;
 }
 .pc-co-btn:hover { filter: brightness(1.06); }
