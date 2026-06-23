@@ -20,58 +20,6 @@ function fill(tpl: string, team: string) {
   return tpl.replaceAll("{team}", team);
 }
 
-// ── Web Audio: a tiny synth so the musical eggs ship no audio files ──────────
-// Built on the click gesture, so autoplay policies are happy; the caller closes
-// the context once the jingle is done so we don't leak AudioContexts.
-function openAudio(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const AC =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
-  if (!AC) return null;
-  try {
-    const ctx = new AC();
-    void ctx.resume?.();
-    return ctx;
-  } catch {
-    return null;
-  }
-}
-
-// one note with a soft pluck envelope
-// Switzerland: a yodel — chest-to-falsetto octave leaps that glide up and snap
-// back, the classic "yodel-ay-ee-oo".
-function playSwissYodel(ctx: AudioContext) {
-  const t0 = ctx.currentTime + 0.03;
-  const master = ctx.createGain();
-  master.gain.value = 0.85;
-  master.connect(ctx.destination);
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = "sine";
-  o.connect(g).connect(master);
-  const leaps: [number, number, number][] = [
-    [440.0, 880.0, 0.0], // A4 → A5
-    [523.3, 1046.5, 0.45], // C5 → C6
-    [392.0, 784.0, 0.9], // G4 → G5
-    [440.0, 880.0, 1.3], // A4 → A5 (tag)
-  ];
-  g.gain.setValueAtTime(0.0001, t0);
-  o.frequency.setValueAtTime(leaps[0][0], t0);
-  for (const [low, high, at] of leaps) {
-    const a = t0 + at;
-    o.frequency.setValueAtTime(low, a);
-    o.frequency.exponentialRampToValueAtTime(high, a + 0.12);
-    o.frequency.exponentialRampToValueAtTime(low, a + 0.34);
-    g.gain.exponentialRampToValueAtTime(0.22, a + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.05, a + 0.4);
-  }
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.8);
-  o.start(t0);
-  o.stop(t0 + 1.9);
-}
-
 // very Canadian apologies, sprinkled across the screen during the Canada egg
 const SORRIES = [
   "Sorry!",
@@ -100,8 +48,8 @@ interface PatriotTheme {
   flipPage?: boolean; // turn the whole page upside down (Australia → down under)
   graben?: boolean; // Switzerland: draw the Röstigraben across the screen
   apology?: boolean; // Canada: floating sorries + a maple-syrup drip
-  playSound?: (ctx: AudioContext) => void; // synth sting (Swiss yodel)
-  soundSrc?: string; // path to an audio asset to play instead (Colombia jingle)
+  soundSrc?: string; // audio asset played on the click gesture (the jingles)
+  durationMs?: number; // fanfare lifetime; defaults to 4000, matched to the clip
 }
 
 const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
@@ -136,6 +84,7 @@ const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
     flyerClass: "pc-fanfare__mariposa",
     bursts: ["🟡", "🔵", "🔴", "🦋", "⚽", "🟡", "🔵", "🔴", "🦋", "☕"],
     soundSrc: "/eggs/colombia-jingle.mp3",
+    durationMs: 10000, // run the party for the full jingle
   },
   Switzerland: {
     year: 1291, // Bundesbrief — the founding pact
@@ -147,7 +96,8 @@ const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
     flyerClass: "pc-fanfare__cow",
     bursts: ["🧀", "🍫", "🏔️", "🐮", "⛰️", "🧀", "🍫", "🏔️", "🐮", "⛰️"],
     graben: true, // the Röstigraben splits the screen in two
-    playSound: playSwissYodel,
+    soundSrc: "/eggs/switzerland-yodel.mp3",
+    durationMs: 7100, // match the clip
   },
   Canada: {
     year: 1867, // Confederation
@@ -239,7 +189,7 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
-    const id = setTimeout(() => done.current(), 4000);
+    const id = setTimeout(() => done.current(), theme.durationMs ?? 4000);
     // down under: flip the whole document — but not on users who asked for less
     // motion (a spinning page is exactly what they're avoiding)
     const flip =
@@ -256,7 +206,7 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
       clearTimeout(id);
       if (flip) root.classList.remove("pc-flip");
     };
-  }, [theme.flipPage]);
+  }, [theme.flipPage, theme.durationMs]);
 
   if (typeof document === "undefined") return null;
 
@@ -287,6 +237,8 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
             fontSize: `${30 + (i % 3) * 14}px`,
             animationDelay: `${i * 0.2}s`,
             animationDuration: `${2.6 + (i % 3) * 0.6}s`,
+            // a longer party keeps the critters streaming across the whole time
+            animationIterationCount: theme.durationMs ? "infinite" : undefined,
           }}
         >
           {theme.flyer}
@@ -317,7 +269,12 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
           ))}
         </>
       )}
-      <span className={theme.chantClass}>{theme.chant}</span>
+      <span
+        className={theme.chantClass}
+        style={theme.durationMs ? { animationDuration: `${theme.durationMs}ms` } : undefined}
+      >
+        {theme.chant}
+      </span>
     </div>,
     document.body,
   );
@@ -359,19 +316,11 @@ export function ScoreInput({
       setHomeValue("0");
     }
     setFanfare(theme);
-    // musical eggs — this click is the user gesture that unlocks audio playback.
-    // An asset (soundSrc) plays via <audio>; the synth stings build an
-    // AudioContext and close it once they've played out.
+    // musical eggs — this click is the user gesture that unlocks audio playback
     if (theme.soundSrc) {
       const audio = new Audio(theme.soundSrc);
       audio.volume = 0.85;
       void audio.play().catch(() => {});
-    } else if (theme.playSound) {
-      const ctx = openAudio();
-      if (ctx) {
-        theme.playSound(ctx);
-        window.setTimeout(() => void ctx.close().catch(() => {}), 3000);
-      }
     }
   };
 
