@@ -450,7 +450,7 @@ html.pc-flip { transform: rotate(180deg); }
     <p class="sub">
       Tap a team button — it buries the opponent by that nation's founding year
       (the 99-goal cap blocks the real save; that's the joke) and throws a themed
-      party. Colombia &amp; Switzerland also play synthesized audio 🔊.
+      party. Colombia plays its jingle; Switzerland a synth yodel 🔊.
       Honors <em>prefers-reduced-motion</em>.
     </p>
     <h2 class="sec">Day carousel — swipe to find the button</h2>
@@ -477,27 +477,6 @@ function openAudio() {
   if (!AC) return null;
   try { const ctx = new AC(); ctx.resume && ctx.resume(); return ctx; }
   catch { return null; }
-}
-function note(ctx, out, freq, at, dur, type = "triangle", peak = 0.22) {
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, at);
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(peak, at + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  o.connect(g).connect(out);
-  o.start(at); o.stop(at + dur + 0.04);
-}
-function playColombiaJingle(ctx) {
-  const t0 = ctx.currentTime + 0.03;
-  const m = ctx.createGain(); m.gain.value = 0.9; m.connect(ctx.destination);
-  const seq = [
-    [392.0,0.0,0.16],[523.3,0.16,0.16],[659.3,0.32,0.16],[784.0,0.48,0.22],
-    [659.3,0.74,0.14],[587.3,0.9,0.14],[523.3,1.06,0.3],[587.3,1.4,0.14],
-    [659.3,1.56,0.16],[784.0,1.74,0.36],
-  ];
-  for (const [f,s,d] of seq) note(ctx, m, f, t0 + s, d, "triangle", 0.22);
-  for (const s of [0.0,0.48,1.06,1.74]) note(ctx, m, 130.8, t0 + s, 0.12, "sine", 0.32);
 }
 function playSwissYodel(ctx) {
   const t0 = ctx.currentTime + 0.03;
@@ -533,7 +512,7 @@ const PATRIOTS = {
   "Colombia": { team:"Colombia", opp:"Congo DR", year:1810, btnClass:"pc-co-btn",
     label:"🇨🇴 ¡Hoy juega la Sele! 📻", chant:"📻 ¡Prenda la radio, encienda la tele, que hoy juega la Sele! 📺",
     chantClass:"pc-fanfare__chant pc-fanfare__chant--co pc-fanfare__chant--wrap", flyer:"🦋", flyerClass:"pc-fanfare__mariposa",
-    bursts:["🟡","🔵","🔴","🦋","⚽","🟡","🔵","🔴","🦋","☕"], playSound:playColombiaJingle },
+    bursts:["🟡","🔵","🔴","🦋","⚽","🟡","🔵","🔴","🦋","☕"], soundSrc:"colombia-jingle.mp3" },
   "Switzerland": { team:"Switzerland", opp:"Panama", year:1291, btnClass:"pc-ch-btn",
     label:"🇨🇭 Hopp Schwiiz! 🏔️", chant:"🇨🇭 Hopp Schwiiz! Yodl-ay-ee-oo! 🏔️",
     chantClass:"pc-fanfare__chant pc-fanfare__chant--ch pc-fanfare__chant--wrap", flyer:"🐄", flyerClass:"pc-fanfare__cow",
@@ -616,7 +595,11 @@ function unleash(theme, scoreEl, hintEl) {
     `${theme.team} <b>${theme.year}</b> – <b>0</b> ${theme.opp}`;
   hintEl.textContent = "(real save fails — 99 is the cap 😈)";
   fanfare(theme);
-  if (theme.playSound) {
+  if (theme.soundSrc) {
+    const audio = new Audio(theme.soundSrc);
+    audio.volume = 0.85;
+    audio.play().catch(() => {});
+  } else if (theme.playSound) {
     const ctx = openAudio();
     if (ctx) { theme.playSound(ctx); setTimeout(() => ctx.close && ctx.close(), 3000); }
   }
