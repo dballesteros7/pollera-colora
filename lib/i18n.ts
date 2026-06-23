@@ -172,6 +172,7 @@ const M: Record<string, Msg> = {
   "g.title": { es: "Tabla de posiciones", en: "Standings", de: "Tabelle", it: "Classifica", pt: "Classificação", fr: "Classement", zh: "积分榜", zht: "積分榜", nl: "Stand" },
   "g.live": { es: "¡En juego!", en: "Live now!", de: "Läuft gerade!", it: "In corso!", pt: "Ao vivo!", fr: "En direct !", zh: "正在进行！", zht: "正在進行！", nl: "Nu bezig!" },
   "g.next": { es: "Próximo partido", en: "Next match", de: "Nächstes Spiel", it: "Prossima partita", pt: "Próximo jogo", fr: "Prochain match", zh: "下一场比赛", zht: "下一場比賽", nl: "Volgende wedstrijd" },
+  "g.today": { es: "Hoy", en: "Today", de: "Heute", it: "Oggi", pt: "Hoje", fr: "Aujourd'hui", zh: "今天", zht: "今天", nl: "Vandaag" },
   "g.startsIn": { es: "arranca en {t}", en: "kicks off in {t}", de: "Anpfiff in {t}", it: "inizia tra {t}", pt: "começa em {t}", fr: "coup d'envoi dans {t}", zh: "{t}后开赛", zht: "{t}後開賽", nl: "begint over {t}" },
   "g.yourPick": { es: "su pronóstico", en: "your pick", de: "dein Tipp", it: "il tuo pronostico", pt: "seu palpite", fr: "ton prono", zh: "你的预测", zht: "你的預測", nl: "jouw voorspelling" },
   "g.noPick": { es: "no marcó", en: "no pick yet", de: "kein Tipp", it: "nessun pronostico", pt: "sem palpite", fr: "pas de prono", zh: "尚未预测", zht: "尚未預測", nl: "nog geen voorspelling" },

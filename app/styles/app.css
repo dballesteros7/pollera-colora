@@ -232,6 +232,51 @@
   color: var(--state-open-ink);
 }
 
+/* ---- day-of-matches carousel on group home ----
+   Horizontal scroll-snap (no JS): each card snaps centered with a sliver of the
+   next one peeking, so it reads as swipeable and every match — including a 4am
+   kickoff and its Easter-egg button — is reachable. */
+.pc-carousel-wrap { display: flex; flex-direction: column; gap: var(--space-2); }
+.pc-carousel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pc-carousel__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--w-bold);
+  color: var(--ink-faint);
+}
+.pc-carousel {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--page-pad);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* bleed to the screen edges so the peek isn't clipped by page padding */
+  margin-inline: calc(-1 * var(--page-pad));
+  padding-inline: var(--page-pad);
+  padding-bottom: 2px;
+}
+.pc-carousel::-webkit-scrollbar { display: none; }
+.pc-carousel > .pc-match {
+  flex: 0 0 88%;
+  max-width: 88%;
+  scroll-snap-align: center;
+}
+/* a lone slide fills the width — no peek, no scroll affordance needed */
+.pc-carousel--single > .pc-match { flex-basis: 100%; max-width: 100%; }
+@media (min-width: 560px) {
+  .pc-carousel > .pc-match { flex-basis: 64%; max-width: 64%; }
+  .pc-carousel--single > .pc-match { flex-basis: 100%; max-width: 100%; }
+}
+
 /* ---- language switcher ---- */
 
 /* ---- decramp match-card header: let meta and time/badge wrap ---- */

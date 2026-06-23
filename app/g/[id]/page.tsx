@@ -78,9 +78,18 @@ export default async function GroupPage({
         m.kickoffUtc.getTime() - now.getTime() < 48 * 3600_000 &&
         m.homeTeam !== null,
     );
-  const heroIsLive = Boolean(liveMatch);
-  const heroPred = nextMatch ? myPredictions.get(nextMatch.id) : undefined;
   const heroOpen = nextMatch ? isPredictable(nextMatch, now) : false;
+
+  // Home carousel: every predictable match kicking off within the next 24h, so
+  // late-night games (e.g. a 04:00-CEST kickoff) — and their patriotic Easter-egg
+  // buttons — are still reachable while users are awake the day before, instead
+  // of only surfacing as the hero in the dead of night. A live match leads as a
+  // read-only slide. Falls back to the single hero card between matchdays.
+  const next24hMs = now.getTime() + 24 * 3600_000;
+  const dayMatches = matches.filter(
+    (m) => isPredictable(m, now) && m.kickoffUtc.getTime() <= next24hMs,
+  );
+  const slideCount = (liveMatch ? 1 : 0) + dayMatches.length;
 
   const questions = getGroupQuestions(db, group.id);
   const myAnswers = getUserAnswers(db, group.id, user.id);
@@ -92,6 +101,157 @@ export default async function GroupPage({
   // a just-finished round gets a loud banner for ~2 days; the bottom-bar
   // "Resumen" tab handles general access once recaps go live
   const featuredRecap = featuredRecapRound(matches, now);
+
+  type Match = (typeof matches)[number];
+
+  // one open, predictable match → the full predict card (with its patriotic
+  // Easter-egg button). Reused for every carousel slide and the single-hero
+  // fallback. `featured` (the soonest one) shows the countdown; the rest show
+  // their kickoff time so a late-night game reads clearly.
+  const renderOpen = (m: Match, featured: boolean) => {
+    const pred = myPredictions.get(m.id);
+    const patriots = patriotSides(m.homeTeam, m.awayTeam);
+    return (
+      <article key={m.id} className="pc-match pc-hero-match" data-state="open">
+        <div className="pc-match__head">
+          <span className="pc-match__meta">
+            {featured ? t(lo, "g.next") : fmtDateTime.format(m.kickoffUtc)}
+          </span>
+          {featured && (
+            <span className="pc-countdown">
+              {t(lo, "g.startsIn", { t: countdown(m.kickoffUtc.getTime() - now.getTime()) })}
+            </span>
+          )}
+        </div>
+        <FeedbackForm
+          action={savePredictionAction}
+          doneMsg={t(lo, "ui.saved")}
+          errMsg={t(lo, "ui.lockedErr")}
+          invalidMsg={t(lo, scoreErrKey(patriots))}
+        >
+          <input type="hidden" name="groupId" value={group.id} />
+          <input type="hidden" name="matchId" value={m.id} />
+          <div className="pc-match__body">
+            <ScoreInput
+              homeTeam={teamName(m.homeTeam, lo)!}
+              awayTeam={teamName(m.awayTeam, lo)!}
+              homeCrest={m.homeCrest}
+              awayCrest={m.awayCrest}
+              defaultHome={pred?.predHome ?? null}
+              defaultAway={pred?.predAway ?? null}
+              patriots={patriots}
+              aria={{ goals: t(lo, "f.goalsOf", { team: "{team}" }), minus: t(lo, "f.minus", { team: "{team}" }), plus: t(lo, "f.plus", { team: "{team}" }) }}
+            />
+          </div>
+          <div className="pc-match__footer">
+            {preset.joker && (
+              <label className="pc-comodin">
+                <input type="checkbox" name="joker" defaultChecked={pred?.joker ?? false} />
+                {t(lo, "comodin")}
+              </label>
+            )}
+            {hasOtherGroups && (
+              <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
+                {t(lo, "f.alsoAll")}
+              </label>
+            )}
+            <PendingButton
+              label={pred ? t(lo, "btn.update") : t(lo, "btn.save")}
+              pendingLabel={t(lo, "ui.saving")}
+              className={`pc-btn ${pred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
+              style={{ marginLeft: "auto" }}
+            />
+          </div>
+        </FeedbackForm>
+      </article>
+    );
+  };
+
+  // a live match → read-only score, leads the carousel
+  const renderLive = (m: Match) => (
+    <article key={m.id} className="pc-match pc-hero-match" data-state="live">
+      <div className="pc-match__head">
+        <span className="pc-match__meta">{t(lo, "g.live")}</span>
+        <span className="pc-badge pc-badge--live">
+          <span className="pc-dot" />
+          {t(lo, "badge.live")}
+        </span>
+      </div>
+      <div className="pc-match__body">
+        <div className="pc-match__row">
+          <span className="pc-team pc-team--home">
+            {m.homeCrest && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={m.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
+            )}
+            <span className="pc-team__name">{teamName(m.homeTeam, lo)}</span>
+          </span>
+          <span className="pc-result">
+            {m.finalHome ?? 0} – {m.finalAway ?? 0}
+          </span>
+          <span className="pc-team pc-team--away">
+            {m.awayCrest && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={m.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
+            )}
+            <span className="pc-team__name">{teamName(m.awayTeam, lo)}</span>
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+
+  // the single-hero fallback when the next match isn't predictable yet
+  const renderLocked = (m: Match) => {
+    const pred = myPredictions.get(m.id);
+    return (
+      <article key={m.id} className="pc-match pc-hero-match" data-state="locked">
+        <div className="pc-match__head">
+          <span className="pc-match__meta">{t(lo, "g.next")}</span>
+          <span className="pc-countdown">
+            {t(lo, "g.startsIn", { t: countdown(m.kickoffUtc.getTime() - now.getTime()) })}
+          </span>
+        </div>
+        <div className="pc-match__body">
+          <div className="pc-match__row">
+            <span className="pc-team pc-team--home">
+              {m.homeCrest && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={m.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
+              )}
+              <span className="pc-team__name">{teamName(m.homeTeam, lo)}</span>
+            </span>
+            <span className="pc-result">
+              <span style={{ color: "var(--ink-faint)" }}>vs</span>
+            </span>
+            <span className="pc-team pc-team--away">
+              {m.awayCrest && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={m.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
+              )}
+              <span className="pc-team__name">{teamName(m.awayTeam, lo)}</span>
+            </span>
+          </div>
+          <div className="pc-match__pick">
+            <span>
+              {fmtDateTime.format(m.kickoffUtc)} · {t(lo, "g.yourPick")}:{" "}
+              {pred ? (
+                <b className="pc-pick">
+                  {pred.predHome}–{pred.predAway}
+                </b>
+              ) : (
+                t(lo, "g.noPick")
+              )}
+            </span>
+            <Link href={`/g/${group.id}/fixtures`} className="pc-btn pc-btn--quiet pc-btn--sm">
+              {t(lo, "g.seeMatches")}
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  };
 
   return (
     <>
@@ -136,114 +296,29 @@ export default async function GroupPage({
           </Link>
         )}
 
-        {nextMatch && (
-          <article
-            className="pc-match pc-hero-match"
-            data-state={heroIsLive ? "live" : heroOpen ? "open" : "locked"}
-          >
-            <div className="pc-match__head">
-              <span className="pc-match__meta">
-                {heroIsLive ? t(lo, "g.live") : t(lo, "g.next")}
-              </span>
-              {heroIsLive ? (
-                <span className="pc-badge pc-badge--live">
-                  <span className="pc-dot" />
-                  {t(lo, "badge.live")}
-                </span>
-              ) : (
-                <span className="pc-countdown">
-                  {t(lo, "g.startsIn", { t: countdown(nextMatch.kickoffUtc.getTime() - now.getTime()) })}
+        {slideCount > 0 ? (
+          <section className="pc-carousel-wrap" aria-label={t(lo, "g.today")}>
+            <div className="pc-carousel__head">
+              <span className="pc-match__meta">{t(lo, "g.today")}</span>
+              {slideCount > 1 && (
+                <span className="pc-carousel__hint" aria-hidden>
+                  {slideCount}
+                  <ChevronRight size={14} />
                 </span>
               )}
             </div>
-            {heroOpen && !heroIsLive ? (
-              <FeedbackForm
-                action={savePredictionAction}
-                doneMsg={t(lo, "ui.saved")}
-                errMsg={t(lo, "ui.lockedErr")}
-                invalidMsg={t(lo, scoreErrKey(patriotSides(nextMatch.homeTeam, nextMatch.awayTeam)))}
-              >
-                <input type="hidden" name="groupId" value={group.id} />
-                <input type="hidden" name="matchId" value={nextMatch.id} />
-                <div className="pc-match__body">
-                  <ScoreInput
-                    homeTeam={teamName(nextMatch.homeTeam, lo)!}
-                    awayTeam={teamName(nextMatch.awayTeam, lo)!}
-                    homeCrest={nextMatch.homeCrest}
-                    awayCrest={nextMatch.awayCrest}
-                    defaultHome={heroPred?.predHome ?? null}
-                    defaultAway={heroPred?.predAway ?? null}
-                    patriots={patriotSides(nextMatch.homeTeam, nextMatch.awayTeam)}
-                    aria={{ goals: t(lo, "f.goalsOf", { team: "{team}" }), minus: t(lo, "f.minus", { team: "{team}" }), plus: t(lo, "f.plus", { team: "{team}" }) }}
-                  />
-                </div>
-                <div className="pc-match__footer">
-                  {preset.joker && (
-                    <label className="pc-comodin">
-                      <input type="checkbox" name="joker" defaultChecked={heroPred?.joker ?? false} />
-                      {t(lo, "comodin")}
-                    </label>
-                  )}
-                  {hasOtherGroups && (
-                    <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
-                      {t(lo, "f.alsoAll")}
-                    </label>
-                  )}
-                  <PendingButton
-                    label={heroPred ? t(lo, "btn.update") : t(lo, "btn.save")}
-                    pendingLabel={t(lo, "ui.saving")}
-                    className={`pc-btn ${heroPred ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
-                    style={{ marginLeft: "auto" }}
-                  />
-                </div>
-              </FeedbackForm>
-            ) : (
-              <div className="pc-match__body">
-                <div className="pc-match__row">
-                  <span className="pc-team pc-team--home">
-                    {nextMatch.homeCrest && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={nextMatch.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
-                    )}
-                    <span className="pc-team__name">{teamName(nextMatch.homeTeam, lo)}</span>
-                  </span>
-                  <span className="pc-result">
-                    {heroIsLive ? (
-                      <>
-                        {nextMatch.finalHome ?? 0} – {nextMatch.finalAway ?? 0}
-                      </>
-                    ) : (
-                      <span style={{ color: "var(--ink-faint)" }}>vs</span>
-                    )}
-                  </span>
-                  <span className="pc-team pc-team--away">
-                    {nextMatch.awayCrest && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={nextMatch.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
-                    )}
-                    <span className="pc-team__name">{teamName(nextMatch.awayTeam, lo)}</span>
-                  </span>
-                </div>
-                <div className="pc-match__pick">
-                  <span>
-                    {fmtDateTime.format(nextMatch.kickoffUtc)} · {t(lo, "g.yourPick")}:{" "}
-                    {heroPred ? (
-                      <b className="pc-pick">
-                        {heroPred.predHome}–{heroPred.predAway}
-                      </b>
-                    ) : (
-                      t(lo, "g.noPick")
-                    )}
-                  </span>
-                  <Link href={`/g/${group.id}/fixtures`} className="pc-btn pc-btn--quiet pc-btn--sm">
-                    {t(lo, "g.seeMatches")}
-                  </Link>
-                </div>
-              </div>
-            )}
-          </article>
-        )}
+            <div
+              className={`pc-carousel${slideCount === 1 ? " pc-carousel--single" : ""}`}
+              role="group"
+              aria-label={t(lo, "g.today")}
+            >
+              {liveMatch && renderLive(liveMatch)}
+              {dayMatches.map((m, i) => renderOpen(m, i === 0))}
+            </div>
+          </section>
+        ) : nextMatch ? (
+          heroOpen ? renderOpen(nextMatch, true) : renderLocked(nextMatch)
+        ) : null}
 
         {board.length <= 1 && board.every((r) => r.total === 0) ? (
           <div className="pc-card pc-empty">
