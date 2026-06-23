@@ -3,7 +3,7 @@
 // jokers/bonus are in play, and what the bot already picked). Feed this to the
 // reasoning step. Usage: tsx scripts/claude-brief.ts
 import { getDb } from "../lib/db";
-import { CLAUDE_BOT_ID } from "../lib/claude-bot";
+import { CLAUDE_BOT_ID, reconcileClaudeMembership } from "../lib/claude-bot";
 import { getUserGroups } from "../lib/groups";
 import {
   getAllMatches,
@@ -16,6 +16,10 @@ import { parseScoringRules } from "../lib/scoring/presets";
 
 const db = getDb();
 const now = new Date();
+// Same reconciliation as claude-apply: make sure Claudio is in every existing
+// polla before we read them, so the brief's presets/jokers/bonus reflect pollas
+// that predated the bot seed (which only get joined at creation otherwise).
+reconcileClaudeMembership(db, now);
 const botGroups = getUserGroups(db, CLAUDE_BOT_ID).map((m) => m.group);
 const presets = [...new Set(botGroups.map((g) => parseScoringRules(g.scoringRules).preset))];
 const escalonada = botGroups.find((g) => parseScoringRules(g.scoringRules).preset === "escalonada");

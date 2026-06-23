@@ -4,7 +4,7 @@
 //   tsx scripts/claude-apply.ts <predictions.json>
 import { readFileSync } from "node:fs";
 import { getDb } from "../lib/db";
-import { CLAUDE_BOT_ID } from "../lib/claude-bot";
+import { CLAUDE_BOT_ID, reconcileClaudeMembership } from "../lib/claude-bot";
 import { getUserGroups } from "../lib/groups";
 import { savePredictionForGroups, roundKey, getAllMatches } from "../lib/predictions";
 import { saveBonusPick, BonusLockedError, type BonusCategory } from "../lib/bonus";
@@ -26,9 +26,14 @@ const preds: Predictions = JSON.parse(readFileSync(file, "utf8"));
 const now = new Date();
 const db = getDb();
 
+// Make sure Claudio is in every existing polla before applying — joins only
+// happen at polla-creation time, so pollas that predated the bot seed would
+// otherwise never get a pick. Idempotent.
+reconcileClaudeMembership(db, now);
+
 const botGroups = getUserGroups(db, CLAUDE_BOT_ID).map((m) => m.group);
 if (botGroups.length === 0) {
-  console.error("Claudio is not a member of any group — run seed-claude first");
+  console.error("Claudio is not a member of any group — create a polla first");
   process.exit(1);
 }
 const matchById = new Map(getAllMatches(db).map((m) => [m.id, m]));

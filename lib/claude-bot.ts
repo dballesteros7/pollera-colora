@@ -66,3 +66,14 @@ export function addClaudeToAllGroups(db: Db, now = new Date()) {
   for (const g of all) addClaudeToGroup(db, g.id, now);
   return all.length;
 }
+
+// Matchday entry point for the bot scripts (brief + apply). Claudio joins a polla
+// at creation time, but that's a no-op for pollas created before the bot was
+// seeded — so without this, picks only ever reach pollas created after the seed
+// (typically the maintainer's own, not friends' older ones). Seed + backfill
+// here, idempotently, so EVERY existing polla is covered before we read or write.
+// Returns the polla count, so callers can log coverage.
+export function reconcileClaudeMembership(db: Db, now = new Date()) {
+  ensureClaudeBot(db, now);
+  return addClaudeToAllGroups(db, now);
+}
