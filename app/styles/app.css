@@ -224,7 +224,8 @@
 .pc-sheet td:last-child { text-align: right; font-family: var(--font-mono); font-weight: var(--w-semibold); white-space: nowrap; }
 
 /* ---- next-match hero on group home ---- */
-.pc-hero-match { box-shadow: var(--shadow-md); }
+/* TEST: temporary tint to demonstrate the visual-diff workflow (revert me) */
+.pc-hero-match { box-shadow: var(--shadow-md); background: var(--brand-soft); }
 .pc-hero-match .pc-match__head { background: var(--paper-tint); }
 .pc-countdown {
   font-family: var(--font-mono);
