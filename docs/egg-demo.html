@@ -450,8 +450,8 @@ html.pc-flip { transform: rotate(180deg); }
     <p class="sub">
       Tap a team button — it buries the opponent by that nation's founding year
       (the 99-goal cap blocks the real save; that's the joke) and throws a themed
-      party. Colombia plays its jingle; Switzerland a synth yodel 🔊.
-      Honors <em>prefers-reduced-motion</em>.
+      party. Colombia &amp; Switzerland play their jingles 🔊 (the party lasts the
+      whole clip). Honors <em>prefers-reduced-motion</em>.
     </p>
     <h2 class="sec">Day carousel — swipe to find the button</h2>
     <p class="swipehint">
@@ -472,32 +472,6 @@ html.pc-flip { transform: rotate(180deg); }
 
 <script>
 // ── Web Audio: a tiny synth so the musical eggs ship no audio files ──────────
-function openAudio() {
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return null;
-  try { const ctx = new AC(); ctx.resume && ctx.resume(); return ctx; }
-  catch { return null; }
-}
-function playSwissYodel(ctx) {
-  const t0 = ctx.currentTime + 0.03;
-  const m = ctx.createGain(); m.gain.value = 0.85; m.connect(ctx.destination);
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = "sine"; o.connect(g).connect(m);
-  const leaps = [[440.0,880.0,0.0],[523.3,1046.5,0.45],[392.0,784.0,0.9],[440.0,880.0,1.3]];
-  g.gain.setValueAtTime(0.0001, t0);
-  o.frequency.setValueAtTime(leaps[0][0], t0);
-  for (const [low, high, at] of leaps) {
-    const a = t0 + at;
-    o.frequency.setValueAtTime(low, a);
-    o.frequency.exponentialRampToValueAtTime(high, a + 0.12);
-    o.frequency.exponentialRampToValueAtTime(low, a + 0.34);
-    g.gain.exponentialRampToValueAtTime(0.22, a + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.05, a + 0.4);
-  }
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.8);
-  o.start(t0); o.stop(t0 + 1.9);
-}
-
 const SORRIES = ["Sorry!","Désolé!","Pardon, eh!","So sorry!","Sorry aboot that!","My bad, eh!","Apologies!","Sorry!"];
 
 // theme data — kept in sync with PATRIOTS in score-input.tsx
@@ -512,11 +486,11 @@ const PATRIOTS = {
   "Colombia": { team:"Colombia", opp:"Congo DR", year:1810, btnClass:"pc-co-btn",
     label:"🇨🇴 ¡Hoy juega la Sele! 📻", chant:"📻 ¡Prenda la radio, encienda la tele, que hoy juega la Sele! 📺",
     chantClass:"pc-fanfare__chant pc-fanfare__chant--co pc-fanfare__chant--wrap", flyer:"🦋", flyerClass:"pc-fanfare__mariposa",
-    bursts:["🟡","🔵","🔴","🦋","⚽","🟡","🔵","🔴","🦋","☕"], soundSrc:"colombia-jingle.mp3" },
+    bursts:["🟡","🔵","🔴","🦋","⚽","🟡","🔵","🔴","🦋","☕"], soundSrc:"colombia-jingle.mp3", durationMs:10000 },
   "Switzerland": { team:"Switzerland", opp:"Panama", year:1291, btnClass:"pc-ch-btn",
     label:"🇨🇭 Hopp Schwiiz! 🏔️", chant:"🇨🇭 Hopp Schwiiz! Yodl-ay-ee-oo! 🏔️",
     chantClass:"pc-fanfare__chant pc-fanfare__chant--ch pc-fanfare__chant--wrap", flyer:"🐄", flyerClass:"pc-fanfare__cow",
-    bursts:["🧀","🍫","🏔️","🐮","⛰️","🧀","🍫","🏔️","🐮","⛰️"], graben:true, playSound:playSwissYodel },
+    bursts:["🧀","🍫","🏔️","🐮","⛰️","🧀","🍫","🏔️","🐮","⛰️"], graben:true, soundSrc:"switzerland-yodel.mp3", durationMs:7100 },
   "Canada": { team:"Canada", opp:"Mexico", year:1867, btnClass:"pc-ca-btn",
     label:"🇨🇦 Sorry, eh? 🍁", chant:"🍁 So sorry for disrupting your page, eh! 🇨🇦",
     chantClass:"pc-fanfare__chant pc-fanfare__chant--ca pc-fanfare__chant--wrap", flyer:"🫎", flyerClass:"pc-fanfare__moose",
@@ -552,6 +526,7 @@ function fanfare(theme) {
     s.style.fontSize = `${30 + (i % 3) * 14}px`;
     s.style.animationDelay = `${i * 0.2}s`;
     s.style.animationDuration = `${2.6 + (i % 3) * 0.6}s`;
+    if (theme.durationMs) s.style.animationIterationCount = "infinite";
     s.textContent = theme.flyer;
     el.appendChild(s);
   }
@@ -580,6 +555,7 @@ function fanfare(theme) {
   }
   const chant = document.createElement("span");
   chant.className = theme.chantClass;
+  if (theme.durationMs) chant.style.animationDuration = `${theme.durationMs}ms`;
   chant.textContent = theme.chant;
   el.appendChild(chant);
 
@@ -587,7 +563,7 @@ function fanfare(theme) {
   setTimeout(() => {
     el.remove();
     if (flip) root.classList.remove("pc-flip");
-  }, 4000);
+  }, theme.durationMs || 4000);
 }
 
 function unleash(theme, scoreEl, hintEl) {
