@@ -47,6 +47,40 @@
   .hint { text-align: center; color: #9aa6bd; font-size: 12px; min-height: 16px; }
   .foot { color: #6f7d99; font-size: 12px; line-height: 1.5; margin-top: 20px; }
   .foot code { background: #ffffff14; padding: 1px 5px; border-radius: 5px; }
+  .sec { font-size: 15px; margin: 26px 0 4px; color: #cdd6e6; }
+  .swipehint { font-size: 12px; color: #8a96ad; margin: 0 0 10px; }
+
+  /* day-of-matches carousel (mirrors .pc-carousel in app.css) */
+  .pc-carousel {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+  }
+  .pc-carousel::-webkit-scrollbar { display: none; }
+  .pc-carousel > .dcard { flex: 0 0 84%; max-width: 84%; scroll-snap-align: center; }
+  .dcard {
+    background: #18203088;
+    border: 1px solid #ffffff1f;
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dcard__head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  .dcard__meta { font-weight: 700; color: #cdd6e6; }
+  .dcard__time { color: #9aa6bd; }
+  .dcard__time.late { color: #f5a623; font-weight: 700; }
+  .dcard__teams { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; font-size: 16px; }
+  .dcard__vs { color: #6f7d99; font-size: 13px; }
+  .dcard__ph {
+    text-align: center; font-size: 12px; color: #6f7d99;
+    border: 1px dashed #ffffff24; border-radius: 8px; padding: 8px;
+  }
 
 /* ===== copied verbatim from app/styles/app.css (patriot Easter-egg block) ===== */
 /* ── USA! USA! USA! Easter egg (USA matches only) ───────────────────────────
@@ -419,10 +453,20 @@ html.pc-flip { transform: rotate(180deg); }
       party. Colombia &amp; Switzerland also play synthesized audio 🔊.
       Honors <em>prefers-reduced-motion</em>.
     </p>
+    <h2 class="sec">Day carousel — swipe to find the button</h2>
+    <p class="swipehint">
+      On the home page, today's matches show as a swipeable row, so a 4am Colombia
+      kickoff is reachable while you're awake. <strong>Swipe →</strong> to the
+      Colombia / Switzerland / Canada cards and tap their button.
+    </p>
+    <div id="carousel" class="pc-carousel" role="group" aria-label="Today"></div>
+
+    <h2 class="sec">Or try each egg directly</h2>
     <div id="cards"></div>
     <p class="foot">
-      Demo of <code>score-input.tsx</code> + <code>app.css</code>. In the app these
-      appear on the “up next” hero card when one of these teams is playing.
+      Demo of <code>score-input.tsx</code> + <code>app.css</code> (the eggs) and the
+      <code>.pc-carousel</code> on group home. In the app the buttons ride on each
+      day's predict cards; the carousel makes late-night matches discoverable.
     </p>
   </div>
 
@@ -593,6 +637,46 @@ for (const theme of Object.values(PATRIOTS)) {
   btn.addEventListener("click", () => unleash(theme, score, hint));
   card.append(score, hint, btn);
   cards.appendChild(card);
+}
+
+// ── day-of-matches carousel — a faithful mock of the group-home carousel ─────
+const MATCHES = [
+  { home: "Portugal", away: "Uzbekistan", time: "17:00", featured: true },
+  { home: "England", away: "Ghana", time: "20:00" },
+  { home: "Switzerland", away: "Panama", time: "21:00", patriot: "Switzerland" },
+  { home: "Panama", away: "Croatia", time: "23:00" },
+  { home: "Colombia", away: "Congo DR", time: "04:00 +1", late: true, patriot: "Colombia" },
+  { home: "Canada", away: "Mexico", time: "06:00 +1", late: true, patriot: "Canada" },
+];
+const carousel = document.getElementById("carousel");
+for (const m of MATCHES) {
+  const card = document.createElement("div");
+  card.className = "dcard";
+  const head = document.createElement("div");
+  head.className = "dcard__head";
+  head.innerHTML =
+    `<span class="dcard__meta">${m.featured ? "Next ▸" : "Today"}</span>` +
+    `<span class="dcard__time${m.late ? " late" : ""}">${m.time}</span>`;
+  const teams = document.createElement("div");
+  teams.className = "dcard__teams";
+  teams.innerHTML = `<span>${m.home}</span><span class="dcard__vs">vs</span><span>${m.away}</span>`;
+  card.append(head, teams);
+  if (m.patriot) {
+    const theme = PATRIOTS[m.patriot];
+    const score = document.createElement("div"); score.className = "hint";
+    const hint = document.createElement("div"); hint.className = "hint";
+    const btn = document.createElement("button");
+    btn.className = theme.btnClass;
+    btn.textContent = theme.label;
+    btn.addEventListener("click", () => unleash(theme, score, hint));
+    card.append(btn, score, hint);
+  } else {
+    const ph = document.createElement("div");
+    ph.className = "dcard__ph";
+    ph.textContent = "[ score input · predict ]";
+    card.append(ph);
+  }
+  carousel.appendChild(card);
 }
 </script>
 </body>
