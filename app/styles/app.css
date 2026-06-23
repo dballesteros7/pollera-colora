@@ -262,14 +262,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 10px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   border: 1.5px solid var(--line-strong);
   border-radius: var(--radius-md);
   background: var(--card);
   color: var(--ink);
+  font-family: var(--font-sans);
   font-size: var(--text-xs);
   font-weight: var(--w-bold);
+  line-height: var(--lh-snug);
   white-space: nowrap;
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
@@ -278,18 +280,54 @@
   border-color: var(--magenta);
   background: var(--brand-soft);
 }
-.pc-daychip__match { display: inline-flex; align-items: center; gap: 4px; }
+/* uppercase country codes read better with caps tracking */
+.pc-daychip__match {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  letter-spacing: var(--ls-caps);
+}
 .pc-daychip__match img { border-radius: 2px; flex: none; }
-.pc-daychip__vs { color: var(--ink-faint); font-weight: var(--w-medium); }
+.pc-daychip__vs {
+  color: var(--ink-faint);
+  font-weight: var(--w-medium);
+  letter-spacing: var(--ls-normal);
+}
 .pc-daychip__sub {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-family: var(--font-mono);
+  font-feature-settings: var(--fnum);
   font-size: var(--text-2xs);
+  font-weight: var(--w-semibold);
+  letter-spacing: var(--ls-normal);
   color: var(--ink-soft);
 }
 .pc-daychip__sub.is-live { color: var(--magenta); font-weight: var(--w-bold); }
+
+/* desktop scroll affordance: arrow buttons (touch devices swipe instead) */
+.pc-daynav { display: inline-flex; gap: var(--space-1); }
+.pc-daynav__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+.pc-daynav__btn:hover:not(:disabled) {
+  color: var(--magenta);
+  border-color: var(--magenta);
+}
+.pc-daynav__btn:disabled { opacity: 0.35; cursor: default; }
+@media (pointer: coarse) { .pc-daynav { display: none; } }
+
 .pc-daydetail { display: block; }
 
 /* ---- language switcher ---- */
