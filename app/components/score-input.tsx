@@ -20,6 +20,18 @@ function fill(tpl: string, team: string) {
   return tpl.replaceAll("{team}", team);
 }
 
+// very Canadian apologies, sprinkled across the screen during the Canada egg
+const SORRIES = [
+  "Sorry!",
+  "Désolé!",
+  "Pardon, eh!",
+  "So sorry!",
+  "Sorry aboot that!",
+  "My bad, eh!",
+  "Apologies!",
+  "Sorry!",
+];
+
 // ── Patriotic Easter eggs ───────────────────────────────────────────────────
 // Each patriot team buries the opponent by its founding year and throws a party.
 // The cap is 99 (server-side), so the score can be *set* and celebrated but not
@@ -29,11 +41,15 @@ interface PatriotTheme {
   btnClass: string; // patriotic button styling
   label: string; // button text
   chant: string; // big center chant
-  chantClass: string; // base chant + theme color
+  chantClass: string; // base chant + theme color (+ --wrap for long lines)
   flyer: string; // creature that crosses the screen
-  flyerClass: string; // flight style (eagle glide / kangaroo hop)
+  flyerClass: string; // flight style (eagle glide / kangaroo hop / …)
   bursts: string[]; // the "fireworks"
   flipPage?: boolean; // turn the whole page upside down (Australia → down under)
+  graben?: boolean; // Switzerland: draw the Röstigraben across the screen
+  apology?: boolean; // Canada: floating sorries + a maple-syrup drip
+  soundSrc?: string; // audio asset played on the click gesture (the jingles)
+  durationMs?: number; // fanfare lifetime; defaults to 4000, matched to the clip
 }
 
 const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
@@ -57,6 +73,42 @@ const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
     flyerClass: "pc-fanfare__roo",
     bursts: ["🦘", "🐨", "🪃", "⭐", "🦘", "🐨", "🪃", "⭐", "🦘", "🐨"],
     flipPage: true, // down under: the whole page turns upside down
+  },
+  Colombia: {
+    year: 1810, // El Grito de Independencia
+    btnClass: "pc-co-btn",
+    label: "🇨🇴 ¡Hoy juega la Sele! 📻",
+    chant: "📻 ¡Prenda la radio, encienda la tele, que hoy juega la Sele! 📺",
+    chantClass: "pc-fanfare__chant pc-fanfare__chant--co pc-fanfare__chant--wrap",
+    flyer: "🦋", // the yellow butterflies of Macondo
+    flyerClass: "pc-fanfare__mariposa",
+    bursts: ["🟡", "🔵", "🔴", "🦋", "⚽", "🟡", "🔵", "🔴", "🦋", "☕"],
+    soundSrc: "/eggs/colombia-jingle.mp3",
+    durationMs: 10000, // run the party for the full jingle
+  },
+  Switzerland: {
+    year: 1291, // Bundesbrief — the founding pact
+    btnClass: "pc-ch-btn",
+    label: "🇨🇭 Hopp Schwiiz! 🏔️",
+    chant: "🇨🇭 Hopp Schwiiz! Yodl-ay-ee-oo! 🏔️",
+    chantClass: "pc-fanfare__chant pc-fanfare__chant--ch pc-fanfare__chant--wrap",
+    flyer: "🐄",
+    flyerClass: "pc-fanfare__cow",
+    bursts: ["🧀", "🍫", "🏔️", "🐮", "⛰️", "🧀", "🍫", "🏔️", "🐮", "⛰️"],
+    graben: true, // the Röstigraben splits the screen in two
+    soundSrc: "/eggs/switzerland-yodel.mp3",
+    durationMs: 7100, // match the clip
+  },
+  Canada: {
+    year: 1867, // Confederation
+    btnClass: "pc-ca-btn",
+    label: "🇨🇦 Sorry, eh? 🍁",
+    chant: "🍁 So sorry for disrupting your page, eh! 🇨🇦",
+    chantClass: "pc-fanfare__chant pc-fanfare__chant--ca pc-fanfare__chant--wrap",
+    flyer: "🫎",
+    flyerClass: "pc-fanfare__moose",
+    bursts: ["🍁", "🏒", "🍯", "🫎", "🐻", "🍁", "🏒", "🍯", "🫎", "🍁"],
+    apology: true, // floating sorries + a maple-syrup drip from the top
   },
 };
 
@@ -137,7 +189,7 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
-    const id = setTimeout(() => done.current(), 4000);
+    const id = setTimeout(() => done.current(), theme.durationMs ?? 4000);
     // down under: flip the whole document — but not on users who asked for less
     // motion (a spinning page is exactly what they're avoiding)
     const flip =
@@ -154,7 +206,7 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
       clearTimeout(id);
       if (flip) root.classList.remove("pc-flip");
     };
-  }, [theme.flipPage]);
+  }, [theme.flipPage, theme.durationMs]);
 
   if (typeof document === "undefined") return null;
 
@@ -185,12 +237,44 @@ function Fanfare({ theme, onDone }: { theme: PatriotTheme; onDone: () => void })
             fontSize: `${30 + (i % 3) * 14}px`,
             animationDelay: `${i * 0.2}s`,
             animationDuration: `${2.6 + (i % 3) * 0.6}s`,
+            // a longer party keeps the critters streaming across the whole time
+            animationIterationCount: theme.durationMs ? "infinite" : undefined,
           }}
         >
           {theme.flyer}
         </span>
       ))}
-      <span className={theme.chantClass}>{theme.chant}</span>
+      {theme.graben && (
+        // the Röstigraben: the (only half-joking) cultural rift between the
+        // Swiss-German and Romandie halves of the country
+        <div className="pc-fanfare__graben" aria-hidden>
+          <span className="pc-fanfare__graben-label">🥔 Röstigraben 🥔</span>
+        </div>
+      )}
+      {theme.apology && (
+        <>
+          <div className="pc-fanfare__syrup" aria-hidden />
+          {SORRIES.map((s, i) => (
+            <span
+              key={`s${i}`}
+              className="pc-fanfare__sorry"
+              style={{
+                left: `${6 + ((i * 89) % 86)}%`,
+                animationDelay: `${(i % 4) * 0.3}s`,
+                animationDuration: `${3 + (i % 3) * 0.5}s`,
+              }}
+            >
+              {s}
+            </span>
+          ))}
+        </>
+      )}
+      <span
+        className={theme.chantClass}
+        style={theme.durationMs ? { animationDuration: `${theme.durationMs}ms` } : undefined}
+      >
+        {theme.chant}
+      </span>
     </div>,
     document.body,
   );
@@ -232,6 +316,12 @@ export function ScoreInput({
       setHomeValue("0");
     }
     setFanfare(theme);
+    // musical eggs — this click is the user gesture that unlocks audio playback
+    if (theme.soundSrc) {
+      const audio = new Audio(theme.soundSrc);
+      audio.volume = 0.85;
+      void audio.play().catch(() => {});
+    }
   };
 
   return (

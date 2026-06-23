@@ -62,25 +62,58 @@ const MANUAL: Record<string, Record<Locale, string>> = {
 };
 
 // Teams with a patriotic Easter egg on the score input, by raw football-data
-// name. 🦅 USA buries you 1776–0; 🦘 Australia 1901–0 (Federation), upside down.
-export type PatriotTeam = "United States" | "Australia";
+// name. Each buries the opponent by a founding year and throws a themed party:
+//   🦅 USA 1776–0 · 🦘 Australia 1901–0 (upside down) · 🦋 Colombia 1810–0 (la
+//   Sele jingle) · 🐄 Switzerland 1291–0 (yodel + Röstigraben) · 🫎 Canada
+//   1867–0 (moose, maple, and a heartfelt sorry). The 99 cap blocks the save —
+//   that's the running joke. Order here drives button order in the rare
+//   patriot-vs-patriot match.
+export type PatriotTeam =
+  | "United States"
+  | "Australia"
+  | "Colombia"
+  | "Switzerland"
+  | "Canada";
 export interface PatriotSide {
   team: PatriotTeam;
   side: "home" | "away";
 }
 
-// Which patriot team(s) are in this match, and on which side — a USA-vs-Australia
-// match (yes, it happens) returns both, so both buttons show.
+const PATRIOT_TEAMS: readonly PatriotTeam[] = [
+  "United States",
+  "Australia",
+  "Colombia",
+  "Switzerland",
+  "Canada",
+];
+
+// Which patriot team(s) are in this match, and on which side — a patriot-vs-
+// patriot match (yes, it happens) returns both, so both buttons show.
 export function patriotSides(
   homeTeam: string | null,
   awayTeam: string | null,
 ): PatriotSide[] {
   const out: PatriotSide[] = [];
-  for (const team of ["United States", "Australia"] as const) {
+  for (const team of PATRIOT_TEAMS) {
     if (homeTeam === team) out.push({ team, side: "home" });
     else if (awayTeam === team) out.push({ team, side: "away" });
   }
   return out;
+}
+
+// i18n key for the "over the 99 cap" save-failed toast, themed per team.
+const SCORE_ERR_KEY: Record<PatriotTeam, string> = {
+  "United States": "ui.scoreErr",
+  Australia: "ui.scoreErrAus",
+  Colombia: "ui.scoreErrCol",
+  Switzerland: "ui.scoreErrSui",
+  Canada: "ui.scoreErrCan",
+};
+
+// Which toast to show when an over-cap patriotic score fails to save. Falls back
+// to the generic message; in a patriot-vs-patriot match the home side's wins.
+export function scoreErrKey(sides: PatriotSide[]): string {
+  return sides.length > 0 ? SCORE_ERR_KEY[sides[0].team] : "ui.scoreErr";
 }
 
 const displayCache = new Map<Locale, Intl.DisplayNames>();

@@ -457,3 +457,220 @@ html.pc-flip { transform: rotate(180deg); }
   .pc-fanfare__roo { animation: none; left: 8%; }
   html { transition: none; }
 }
+
+/* longer chants (full sentences) wrap and shrink instead of overflowing */
+.pc-fanfare__chant--wrap {
+  white-space: normal;
+  width: min(90vw, 760px);
+  text-align: center;
+  line-height: 1.15;
+  font-size: clamp(22px, 6vw, 52px);
+}
+
+/* ── ¡Hoy juega la Sele! (Colombia matches) ─────────────────────────────────
+   Yellow-blue-red, fluttering Macondo butterflies, and a cumbia jingle (synth,
+   no audio file). Buries the opponent 1810–0 (El Grito de Independencia). */
+.pc-co-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3, 8px);
+  padding: 8px 12px;
+  border: 2px solid #ce1126; /* Colombian red */
+  border-radius: var(--r-md, 10px);
+  background: linear-gradient(180deg, #fcd116 0%, #fcd116 50%, #003893 50%, #00257a 100%);
+  color: #00257a; /* reads on the gold top half */
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: filter 0.12s ease, transform 0.06s ease;
+}
+.pc-co-btn:hover { filter: brightness(1.06); }
+.pc-co-btn:active { transform: translateY(1px); }
+
+/* butterflies drifting across with a gentle bob and flutter */
+.pc-fanfare__mariposa {
+  position: absolute;
+  left: -12vw;
+  will-change: transform;
+  animation-name: pc-mariposa;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+@keyframes pc-mariposa {
+  0%   { transform: translate(0, 0) rotate(-8deg); }
+  25%  { transform: translate(32vw, -40px) rotate(8deg); }
+  50%  { transform: translate(64vw, 24px) rotate(-8deg); }
+  75%  { transform: translate(96vw, -30px) rotate(8deg); }
+  100% { transform: translate(128vw, 10px) rotate(0deg); }
+}
+.pc-fanfare__chant--co {
+  color: #fff;
+  text-shadow: 0 2px 0 #ce1126, 0 -2px 0 #003893, 0 0 26px rgba(252, 209, 22, 0.95);
+}
+
+/* ── Hopp Schwiiz! (Switzerland matches) ────────────────────────────────────
+   Red & white, ambling cows, a yodel (synth), and the Röstigraben splitting the
+   screen. Buries the opponent 1291–0 (the founding pact). */
+.pc-ch-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3, 8px);
+  padding: 8px 12px;
+  border: 2px solid #fff;
+  border-radius: var(--r-md, 10px);
+  background: linear-gradient(180deg, #d52b1e, #b71c12); /* Swiss red */
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: filter 0.12s ease, transform 0.06s ease;
+}
+.pc-ch-btn:hover { filter: brightness(1.08); }
+.pc-ch-btn:active { transform: translateY(1px); }
+
+/* a cow ambling across, with a slow bob */
+.pc-fanfare__cow {
+  position: absolute;
+  left: -14vw;
+  will-change: transform;
+  animation-name: pc-amble;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes pc-amble {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(33vw, -8px); }
+  50%  { transform: translate(66vw, 0); }
+  75%  { transform: translate(99vw, -8px); }
+  100% { transform: translate(132vw, 0); }
+}
+.pc-fanfare__chant--ch {
+  color: #fff;
+  text-shadow: 0 2px 0 #d52b1e, 0 0 26px rgba(213, 43, 30, 0.9);
+}
+
+/* the Röstigraben: a seam across the middle of the screen, German rösti on one
+   side of the divide, French baguette energy on the other */
+.pc-fanfare__graben {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  height: 0;
+  border-top: 4px dashed #8a5a2b;
+  display: flex;
+  justify-content: center;
+  animation: pc-graben-in 0.6s ease-out both;
+}
+.pc-fanfare__graben-label {
+  transform: translateY(-50%);
+  background: #f4e6c8;
+  color: #6b4316;
+  border: 2px solid #8a5a2b;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-weight: 800;
+  font-size: clamp(13px, 3.4vw, 20px);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+@keyframes pc-graben-in {
+  0%   { opacity: 0; transform: scaleX(0.2); }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+
+/* ── Sorry, eh? (Canada matches) ────────────────────────────────────────────
+   Red & white, a lumbering moose, floating apologies, and maple syrup dripping
+   from the top. Buries the opponent 1867–0 (Confederation). */
+.pc-ca-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3, 8px);
+  padding: 8px 12px;
+  border: 2px solid #fff;
+  border-radius: var(--r-md, 10px);
+  background: linear-gradient(180deg, #d80621, #b00519); /* Canadian red */
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: filter 0.12s ease, transform 0.06s ease;
+}
+.pc-ca-btn:hover { filter: brightness(1.08); }
+.pc-ca-btn:active { transform: translateY(1px); }
+
+/* a moose lumbering across — bigger and slower than the others */
+.pc-fanfare__moose {
+  position: absolute;
+  left: -16vw;
+  will-change: transform;
+  animation-name: pc-lumber;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes pc-lumber {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(26vw, -6px); }
+  40%  { transform: translate(52vw, 0); }
+  60%  { transform: translate(78vw, -6px); }
+  80%  { transform: translate(104vw, 0); }
+  100% { transform: translate(134vw, -4px); }
+}
+.pc-fanfare__chant--ca {
+  color: #fff;
+  text-shadow: 0 2px 0 #d80621, 0 0 26px rgba(216, 6, 33, 0.9);
+}
+
+/* maple syrup oozing down from the top edge */
+.pc-fanfare__syrup {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 18vh;
+  background: linear-gradient(180deg, #7a3b09 0%, rgba(160, 82, 12, 0.85) 55%, rgba(160, 82, 12, 0) 100%);
+  transform-origin: top;
+  animation: pc-drip 1.1s ease-out both;
+}
+@keyframes pc-drip {
+  0%   { transform: scaleY(0); }
+  100% { transform: scaleY(1); }
+}
+
+/* polite apologies drifting down the screen */
+.pc-fanfare__sorry {
+  position: absolute;
+  top: -6%;
+  font-weight: 800;
+  font-size: clamp(16px, 4vw, 30px);
+  color: #d80621;
+  text-shadow: 0 1px 0 #fff, 0 0 8px rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  will-change: transform, opacity;
+  animation-name: pc-sorry-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+@keyframes pc-sorry-fall {
+  0%   { opacity: 0; transform: translateY(0) rotate(-6deg); }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(96vh) rotate(6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* keep every gag, drop the travel: park the critters, settle the apologies */
+  .pc-fanfare__mariposa { animation: none; left: auto; right: 10%; }
+  .pc-fanfare__cow { animation: none; left: 10%; }
+  .pc-fanfare__moose { animation: none; left: 8%; }
+  .pc-fanfare__graben { animation: none; }
+  .pc-fanfare__syrup { animation: none; }
+  .pc-fanfare__sorry {
+    animation: pc-firework-rm 4s steps(1) forwards;
+    top: auto;
+    bottom: 12%;
+  }
+}
