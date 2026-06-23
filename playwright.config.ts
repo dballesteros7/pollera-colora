@@ -12,7 +12,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: [["list"]],
+  // list for the console, html for the diff viewer (Diff/Actual/Expected slider).
+  // The html report (open: never) is what the CI `visual` job uploads.
+  reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
   },
