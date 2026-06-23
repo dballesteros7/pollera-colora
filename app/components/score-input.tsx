@@ -40,52 +40,6 @@ function openAudio(): AudioContext | null {
 }
 
 // one note with a soft pluck envelope
-function note(
-  ctx: AudioContext,
-  out: AudioNode,
-  freq: number,
-  at: number,
-  dur: number,
-  type: OscillatorType = "triangle",
-  peak = 0.22,
-) {
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, at);
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(peak, at + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  o.connect(g).connect(out);
-  o.start(at);
-  o.stop(at + dur + 0.04);
-}
-
-// Colombia: a bright, cumbia-lilted "¡hoy juega la Sele!" fanfare.
-function playColombiaJingle(ctx: AudioContext) {
-  const t0 = ctx.currentTime + 0.03;
-  const master = ctx.createGain();
-  master.gain.value = 0.9;
-  master.connect(ctx.destination);
-  // G-major sing-song motif over a couple of playful phrases
-  const seq: [number, number, number][] = [
-    [392.0, 0.0, 0.16], // G4
-    [523.3, 0.16, 0.16], // C5
-    [659.3, 0.32, 0.16], // E5
-    [784.0, 0.48, 0.22], // G5
-    [659.3, 0.74, 0.14], // E5
-    [587.3, 0.9, 0.14], // D5
-    [523.3, 1.06, 0.3], // C5 (hold)
-    [587.3, 1.4, 0.14], // D5
-    [659.3, 1.56, 0.16], // E5
-    [784.0, 1.74, 0.36], // G5 finale
-  ];
-  for (const [f, s, d] of seq) note(ctx, master, f, t0 + s, d, "triangle", 0.22);
-  // low thumps for the cumbia heartbeat
-  for (const s of [0.0, 0.48, 1.06, 1.74])
-    note(ctx, master, 130.8, t0 + s, 0.12, "sine", 0.32); // C3
-}
-
 // Switzerland: a yodel — chest-to-falsetto octave leaps that glide up and snap
 // back, the classic "yodel-ay-ee-oo".
 function playSwissYodel(ctx: AudioContext) {
@@ -146,7 +100,8 @@ interface PatriotTheme {
   flipPage?: boolean; // turn the whole page upside down (Australia → down under)
   graben?: boolean; // Switzerland: draw the Röstigraben across the screen
   apology?: boolean; // Canada: floating sorries + a maple-syrup drip
-  playSound?: (ctx: AudioContext) => void; // Colombia jingle / Swiss yodel
+  playSound?: (ctx: AudioContext) => void; // synth sting (Swiss yodel)
+  soundSrc?: string; // path to an audio asset to play instead (Colombia jingle)
 }
 
 const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
@@ -180,7 +135,7 @@ const PATRIOTS: Record<PatriotTeam, PatriotTheme> = {
     flyer: "🦋", // the yellow butterflies of Macondo
     flyerClass: "pc-fanfare__mariposa",
     bursts: ["🟡", "🔵", "🔴", "🦋", "⚽", "🟡", "🔵", "🔴", "🦋", "☕"],
-    playSound: playColombiaJingle,
+    soundSrc: "/eggs/colombia-jingle.mp3",
   },
   Switzerland: {
     year: 1291, // Bundesbrief — the founding pact
@@ -404,9 +359,14 @@ export function ScoreInput({
       setHomeValue("0");
     }
     setFanfare(theme);
-    // musical eggs (Colombia jingle, Swiss yodel) — this click is the user
-    // gesture that lets the AudioContext start; close it once it's played out
-    if (theme.playSound) {
+    // musical eggs — this click is the user gesture that unlocks audio playback.
+    // An asset (soundSrc) plays via <audio>; the synth stings build an
+    // AudioContext and close it once they've played out.
+    if (theme.soundSrc) {
+      const audio = new Audio(theme.soundSrc);
+      audio.volume = 0.85;
+      void audio.play().catch(() => {});
+    } else if (theme.playSound) {
       const ctx = openAudio();
       if (ctx) {
         theme.playSound(ctx);
