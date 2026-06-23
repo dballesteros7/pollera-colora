@@ -21,11 +21,12 @@ import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predicti
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
 import { bonusLocked, bonusDeadline } from "@/lib/bonus";
 import { featuredRecapRound } from "@/lib/recap";
-import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
+import { getViewerTz, dateTimeFormatter, timeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
-import { teamName, patriotSides, scoreErrKey } from "@/lib/teams";
+import { teamName, teamAbbrev, patriotSides, scoreErrKey } from "@/lib/teams";
 import { Header, GroupTabs } from "@/app/components/shell";
 import { ScoreInput } from "@/app/components/score-input";
+import { DayBoard, type DayChip } from "@/app/components/day-board";
 import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
 import { ScoringSheet } from "@/app/components/scoring-rules";
 import { savePredictionAction } from "./fixtures/actions";
@@ -54,6 +55,7 @@ export default async function GroupPage({
   const lo = await getLocale();
   const tz = await getViewerTz();
   const fmtDateTime = dateTimeFormatter(tz, LOCALE_TAG[lo]);
+  const fmtTime = timeFormatter(tz, LOCALE_TAG[lo]);
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
@@ -89,7 +91,26 @@ export default async function GroupPage({
   const dayMatches = matches.filter(
     (m) => isPredictable(m, now) && m.kickoffUtc.getTime() <= next24hMs,
   );
-  const slideCount = (liveMatch ? 1 : 0) + dayMatches.length;
+
+  type Match = (typeof matches)[number];
+  // a live match leads the strip, then the predictable matches in kickoff order
+  const daySlides: { m: Match; kind: "live" | "open" }[] = [
+    ...(liveMatch ? [{ m: liveMatch, kind: "live" as const }] : []),
+    ...dayMatches.map((m) => ({ m, kind: "open" as const })),
+  ];
+  const firstOpenIdx = liveMatch ? 1 : 0;
+  const dayChips: DayChip[] = daySlides.map(({ m, kind }) => ({
+    key: String(m.id),
+    home: teamAbbrev(m.homeTeam),
+    away: teamAbbrev(m.awayTeam),
+    homeCrest: m.homeCrest,
+    awayCrest: m.awayCrest,
+    center:
+      kind === "live"
+        ? `${m.finalHome ?? 0}–${m.finalAway ?? 0}`
+        : fmtTime.format(m.kickoffUtc),
+    live: kind === "live",
+  }));
 
   const questions = getGroupQuestions(db, group.id);
   const myAnswers = getUserAnswers(db, group.id, user.id);
@@ -106,8 +127,6 @@ export default async function GroupPage({
   // "Resumen" tab handles general access once recaps go live
   const featuredRecap = featuredRecapRound(matches, now);
 
-  type Match = (typeof matches)[number];
-
   // one open, predictable match → the full predict card (with its patriotic
   // Easter-egg button). Reused for every carousel slide and the single-hero
   // fallback. `featured` (the soonest one) shows the countdown; the rest show
@@ -121,11 +140,9 @@ export default async function GroupPage({
           <span className="pc-match__meta">
             {featured ? t(lo, "g.next") : fmtDateTime.format(m.kickoffUtc)}
           </span>
-          {featured && (
-            <span className="pc-countdown">
-              {t(lo, "g.startsIn", { t: countdown(m.kickoffUtc.getTime() - now.getTime()) })}
-            </span>
-          )}
+          <span className="pc-countdown">
+            {t(lo, "g.startsIn", { t: countdown(m.kickoffUtc.getTime() - now.getTime()) })}
+          </span>
         </div>
         <FeedbackForm
           action={savePredictionAction}
@@ -257,6 +274,11 @@ export default async function GroupPage({
     );
   };
 
+  // the detail cards, in strip order — the client board shows the selected one
+  const dayDetails = daySlides.map(({ m, kind }, i) =>
+    kind === "live" ? renderLive(m) : renderOpen(m, i === firstOpenIdx),
+  );
+
   return (
     <>
       <Header>
@@ -322,26 +344,13 @@ export default async function GroupPage({
           </Link>
         )}
 
-        {slideCount > 0 ? (
-          <section className="pc-carousel-wrap" aria-label={t(lo, "g.today")}>
-            <div className="pc-carousel__head">
-              <span className="pc-match__meta">{t(lo, "g.today")}</span>
-              {slideCount > 1 && (
-                <span className="pc-carousel__hint" aria-hidden>
-                  {slideCount}
-                  <ChevronRight size={14} />
-                </span>
-              )}
-            </div>
-            <div
-              className={`pc-carousel${slideCount === 1 ? " pc-carousel--single" : ""}`}
-              role="group"
-              aria-label={t(lo, "g.today")}
-            >
-              {liveMatch && renderLive(liveMatch)}
-              {dayMatches.map((m, i) => renderOpen(m, i === 0))}
-            </div>
-          </section>
+        {daySlides.length > 0 ? (
+          <DayBoard
+            label={t(lo, "g.today")}
+            chips={dayChips}
+            details={dayDetails}
+            defaultIndex={0}
+          />
         ) : nextMatch ? (
           heroOpen ? renderOpen(nextMatch, true) : renderLocked(nextMatch)
         ) : null}

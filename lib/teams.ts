@@ -116,6 +116,28 @@ export function scoreErrKey(sides: PatriotSide[]): string {
   return sides.length > 0 ? SCORE_ERR_KEY[sides[0].team] : "ui.scoreErr";
 }
 
+// FIFA-style 3-letter codes for the compact fixtures strip; fall back to the
+// first three letters of the raw name for anything unmapped.
+const TEAM_CODE: Record<string, string> = {
+  Algeria: "ALG", Argentina: "ARG", Australia: "AUS", Austria: "AUT",
+  Belgium: "BEL", "Bosnia-Herzegovina": "BIH", Brazil: "BRA", Canada: "CAN",
+  "Cape Verde Islands": "CPV", Colombia: "COL", "Congo DR": "COD", Croatia: "CRO",
+  Curaçao: "CUW", Czechia: "CZE", Ecuador: "ECU", Egypt: "EGY", England: "ENG",
+  France: "FRA", Germany: "GER", Ghana: "GHA", Haiti: "HAI", Iran: "IRN",
+  Iraq: "IRQ", "Ivory Coast": "CIV", Japan: "JPN", Jordan: "JOR", Mexico: "MEX",
+  Morocco: "MAR", Netherlands: "NED", "New Zealand": "NZL", Norway: "NOR",
+  Panama: "PAN", Paraguay: "PAR", Portugal: "POR", Qatar: "QAT",
+  "Saudi Arabia": "KSA", Scotland: "SCO", Senegal: "SEN", "South Africa": "RSA",
+  "South Korea": "KOR", Spain: "ESP", Sweden: "SWE", Switzerland: "SUI",
+  Tunisia: "TUN", Turkey: "TUR", "United States": "USA", Uruguay: "URU",
+  Uzbekistan: "UZB",
+};
+
+export function teamAbbrev(name: string | null): string {
+  if (!name) return "—";
+  return TEAM_CODE[name] ?? name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
+}
+
 const displayCache = new Map<Locale, Intl.DisplayNames>();
 
 export function teamName(name: string | null, locale: Locale): string | null {

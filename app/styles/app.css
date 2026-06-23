@@ -232,50 +232,65 @@
   color: var(--state-open-ink);
 }
 
-/* ---- day-of-matches carousel on group home ----
-   Horizontal scroll-snap (no JS): each card snaps centered with a sliver of the
-   next one peeking, so it reads as swipeable and every match — including a 4am
-   kickoff and its Easter-egg button — is reachable. */
-.pc-carousel-wrap { display: flex; flex-direction: column; gap: var(--space-2); }
-.pc-carousel__head {
+/* ---- day board on group home (kicker-style) ----
+   A compact, smoothly-scrollable strip of the day's fixtures (flags + 3-letter
+   codes + score/time) over ONE full-width detail card. Tapping a chip swaps the
+   detail below, so late kickoffs and their Easter-egg buttons stay reachable
+   without cramming a predict form into a narrow carousel slide. */
+.pc-daysec { display: flex; flex-direction: column; gap: var(--space-2); }
+.pc-daysec__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.pc-carousel__hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: var(--w-bold);
-  color: var(--ink-faint);
-}
-.pc-carousel {
+.pc-daystrip {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--page-pad);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  /* bleed to the screen edges so the peek isn't clipped by page padding */
+  scroll-snap-type: x proximity;
+  /* bleed to the screen edges so chips scroll under the page padding */
   margin-inline: calc(-1 * var(--page-pad));
   padding-inline: var(--page-pad);
   padding-bottom: 2px;
 }
-.pc-carousel::-webkit-scrollbar { display: none; }
-.pc-carousel > .pc-match {
-  flex: 0 0 88%;
-  max-width: 88%;
-  scroll-snap-align: center;
+.pc-daystrip::-webkit-scrollbar { display: none; }
+.pc-daychip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--ink);
+  font-size: var(--text-xs);
+  font-weight: var(--w-bold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
-/* a lone slide fills the width — no peek, no scroll affordance needed */
-.pc-carousel--single > .pc-match { flex-basis: 100%; max-width: 100%; }
-@media (min-width: 560px) {
-  .pc-carousel > .pc-match { flex-basis: 64%; max-width: 64%; }
-  .pc-carousel--single > .pc-match { flex-basis: 100%; max-width: 100%; }
+.pc-daychip.is-active {
+  border-color: var(--magenta);
+  background: var(--brand-soft);
 }
+.pc-daychip__match { display: inline-flex; align-items: center; gap: 4px; }
+.pc-daychip__match img { border-radius: 2px; flex: none; }
+.pc-daychip__vs { color: var(--ink-faint); font-weight: var(--w-medium); }
+.pc-daychip__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--ink-soft);
+}
+.pc-daychip__sub.is-live { color: var(--magenta); font-weight: var(--w-bold); }
+.pc-daydetail { display: block; }
 
 /* ---- language switcher ---- */
 
