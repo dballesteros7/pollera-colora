@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
+    "test:visual:baselines": "bash scripts/update-visual-baselines.sh",
     "db:generate": "drizzle-kit generate",
     "sync": "tsx --env-file-if-exists=.env.local scripts/sync.ts"
   },
