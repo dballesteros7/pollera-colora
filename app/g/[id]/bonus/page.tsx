@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/require";
 import {
   BONUS_CATEGORIES,
   bonusLocked,
+  bonusDeadline,
   getUserBonusPicks,
   getGroupBonusPicks,
   getKnownTeams,
@@ -41,6 +42,7 @@ export default async function BonusPage({
   const lo = await getLocale();
   const deadlineFormat = dateTimeFormatter(await getViewerTz(), LOCALE_TAG[lo]);
   const locked = bonusLocked(group, now);
+  const deadline = bonusDeadline(group);
   const rules = parseScoringRules(group.scoringRules);
   const points = PRESETS[rules.preset].bonusPoints;
   const mine = getUserBonusPicks(db, user.id, group.id);
@@ -58,12 +60,22 @@ export default async function BonusPage({
         <div>
           <span className="eyebrow">{group.name}</span>
           <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "b.title")}</h1>
-          <p className="pc-hint" style={{ margin: "4px 0 0" }}>
-            {group.bonusLockAt
-              ? locked
-                ? t(lo, "b.closedLine")
-                : t(lo, "b.closesAt", { when: deadlineFormat.format(group.bonusLockAt) })
-              : t(lo, "b.noDeadline")}
+        </div>
+
+        <div
+          className="pc-card"
+          style={{
+            padding: "var(--space-3) var(--space-4)",
+            borderColor: locked ? "var(--line-strong)" : "var(--amarillo-deep)",
+            background: locked
+              ? undefined
+              : "color-mix(in srgb, var(--amarillo) 14%, transparent)",
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 700 }}>
+            {locked
+              ? t(lo, "b.closedGroupPhase")
+              : t(lo, "b.closesGroupPhase", { when: deadlineFormat.format(deadline) })}
           </p>
         </div>
 

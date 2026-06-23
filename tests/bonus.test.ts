@@ -9,6 +9,9 @@ import {
   setOutcome,
   BonusLockedError,
   getUserBonusPicks,
+  bonusDeadline,
+  bonusLocked,
+  BONUS_CLOSE,
 } from "../lib/bonus";
 import { rebuildGroupScores } from "../lib/scoring/score";
 
@@ -69,5 +72,29 @@ describe("bonus picks", () => {
     saveBonusPick(db, { userId, groupId, category: "champion", value: "Colombia" }, NOW);
     rebuildGroupScores(db, groupId, NOW);
     expect(db.select().from(scores).all()[0].pointsBonus).toBe(0);
+  });
+});
+
+describe("bonus closes at the group phase end", () => {
+  const before = new Date(BONUS_CLOSE.getTime() - 3600_000);
+  const after = new Date(BONUS_CLOSE.getTime() + 3600_000);
+
+  it("falls back to the group-phase close when no override is set", () => {
+    expect(bonusDeadline({ bonusLockAt: null })).toEqual(BONUS_CLOSE);
+  });
+
+  it("a later override is capped at the group-phase close", () => {
+    const later = new Date(BONUS_CLOSE.getTime() + 5 * 24 * 3600_000);
+    expect(bonusDeadline({ bonusLockAt: later })).toEqual(BONUS_CLOSE);
+  });
+
+  it("an earlier override wins", () => {
+    const earlier = new Date(BONUS_CLOSE.getTime() - 5 * 24 * 3600_000);
+    expect(bonusDeadline({ bonusLockAt: earlier })).toEqual(earlier);
+  });
+
+  it("locks at the group-phase close even with no override", () => {
+    expect(bonusLocked({ bonusLockAt: null }, before)).toBe(false);
+    expect(bonusLocked({ bonusLockAt: null }, after)).toBe(true);
   });
 });
