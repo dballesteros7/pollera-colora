@@ -101,6 +101,21 @@ export function patriotSides(
   return out;
 }
 
+// i18n key for the "over the 99 cap" save-failed toast, themed per team.
+const SCORE_ERR_KEY: Record<PatriotTeam, string> = {
+  "United States": "ui.scoreErr",
+  Australia: "ui.scoreErrAus",
+  Colombia: "ui.scoreErrCol",
+  Switzerland: "ui.scoreErrSui",
+  Canada: "ui.scoreErrCan",
+};
+
+// Which toast to show when an over-cap patriotic score fails to save. Falls back
+// to the generic message; in a patriot-vs-patriot match the home side's wins.
+export function scoreErrKey(sides: PatriotSide[]): string {
+  return sides.length > 0 ? SCORE_ERR_KEY[sides[0].team] : "ui.scoreErr";
+}
+
 const displayCache = new Map<Locale, Intl.DisplayNames>();
 
 export function teamName(name: string | null, locale: Locale): string | null {
