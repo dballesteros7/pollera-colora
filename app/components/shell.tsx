@@ -4,6 +4,7 @@ import { Trophy, CalendarDays, ListChecks, Star, Sparkles } from "lucide-react";
 import { getLocale, t, LOCALES, LOCALE_LABEL } from "@/lib/i18n";
 import { recapTabAvailable } from "@/lib/recap";
 import { RECOCHA_CLOSE } from "@/lib/props";
+import { BONUS_CLOSE } from "@/lib/bonus";
 import { getDb } from "@/lib/db";
 import { getAllMatches } from "@/lib/predictions";
 import { LangSelect } from "./lang-select";
@@ -78,8 +79,10 @@ export async function GroupTabs({
   active: "home" | "fixtures" | "props" | "bonus" | "recap";
 }) {
   const locale = await getLocale();
-  // countdown to the Recocha weekend close, shown under its tab while it's open
+  // countdowns shown under their tabs while still open: the Recocha weekend
+  // close, and the bonus close at the end of the group phase
   const recochaMsLeft = RECOCHA_CLOSE.getTime() - Date.now();
+  const bonusMsLeft = BONUS_CLOSE.getTime() - Date.now();
   const tabs: {
     id: string;
     href: string;
@@ -96,7 +99,13 @@ export async function GroupTabs({
       label: t(locale, "tab.recocha"),
       sub: recochaMsLeft > 0 ? tabCountdown(recochaMsLeft) : undefined,
     },
-    { id: "bonus", href: "/bonus", icon: Star, label: t(locale, "tab.bonus") },
+    {
+      id: "bonus",
+      href: "/bonus",
+      icon: Star,
+      label: t(locale, "tab.bonus"),
+      sub: bonusMsLeft > 0 ? tabCountdown(bonusMsLeft) : undefined,
+    },
   ];
   // recaps join the bottom bar on Jun 18, once matchday 1 is over
   if (recapTabAvailable(getAllMatches(getDb()))) {

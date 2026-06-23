@@ -19,7 +19,7 @@ import { requireUser } from "@/lib/auth/require";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predictions";
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
-import { bonusLocked } from "@/lib/bonus";
+import { bonusLocked, bonusDeadline } from "@/lib/bonus";
 import { featuredRecapRound } from "@/lib/recap";
 import { getViewerTz, dateTimeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
@@ -98,6 +98,10 @@ export default async function GroupPage({
   ).length;
 
   const bonusClosed = bonusLocked(group, now);
+  // nudge banner once the bonus close (end of group phase) is within 3 days
+  const bonusClosesSoon =
+    !bonusClosed &&
+    bonusDeadline(group).getTime() - now.getTime() <= 3 * 24 * 3600_000;
   // a just-finished round gets a loud banner for ~2 days; the bottom-bar
   // "Resumen" tab handles general access once recaps go live
   const featuredRecap = featuredRecapRound(matches, now);
@@ -296,6 +300,28 @@ export default async function GroupPage({
           </Link>
         )}
 
+        {bonusClosesSoon && (
+          <Link
+            href={`/g/${group.id}/bonus`}
+            className="pc-card pc-quicklink"
+            style={{
+              borderColor: "var(--amarillo-deep)",
+              background: "color-mix(in srgb, var(--amarillo) 12%, transparent)",
+            }}
+          >
+            <span className="pc-quicklink__icon" style={{ color: "var(--amarillo-deep)" }}>
+              <Star size={24} aria-hidden />
+            </span>
+            <span className="pc-quicklink__text">
+              <span className="pc-quicklink__label">{t(lo, "g.bonusClosingTitle")}</span>
+              <span className="pc-quicklink__sub">
+                {t(lo, "g.bonusClosingSub", { when: fmtDateTime.format(bonusDeadline(group)) })}
+              </span>
+            </span>
+            <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
+          </Link>
+        )}
+
         {slideCount > 0 ? (
           <section className="pc-carousel-wrap" aria-label={t(lo, "g.today")}>
             <div className="pc-carousel__head">
@@ -403,7 +429,7 @@ export default async function GroupPage({
               <span className="pc-quicklink__sub">
                 {bonusClosed
                   ? t(lo, "g.bonusClosed")
-                  : group.bonusLockAt
+                  : bonusClosesSoon
                     ? t(lo, "g.bonusSoon")
                     : t(lo, "g.bonusOpen")}
               </span>
