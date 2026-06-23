@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
     "db:generate": "drizzle-kit generate",
     "sync": "tsx --env-file-if-exists=.env.local scripts/sync.ts"
   },
@@ -20,6 +22,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
