@@ -49,10 +49,16 @@ export function seedVisualDb(dbPath: string): { groupId: string } {
     .run();
   addClaudeToGroup(db, group.id, at(0));
 
+  // seven matches so the strip overflows even the centered desktop column —
+  // exercising the scroll arrows in the baselines. A patriot team (Colombia)
+  // keeps the egg-button detail covered.
   const slate = [
     { fdId: 99001, off: -1 * H, home: "Portugal", away: "Uzbekistan", status: "IN_PLAY", fh: 4, fa: 0 },
     { fdId: 99002, off: 3 * H, home: "England", away: "Ghana", status: "TIMED" },
     { fdId: 99003, off: 6 * H, home: "Panama", away: "Croatia", status: "TIMED" },
+    { fdId: 99005, off: 8 * H, home: "Spain", away: "Morocco", status: "TIMED" },
+    { fdId: 99006, off: 10 * H, home: "France", away: "Senegal", status: "TIMED" },
+    { fdId: 99007, off: 14 * H, home: "Brazil", away: "Japan", status: "TIMED" },
     { fdId: 99004, off: 20 * H, home: "Colombia", away: "Congo DR", status: "TIMED" },
   ] as const;
   for (const m of slate) {
