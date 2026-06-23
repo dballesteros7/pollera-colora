@@ -43,3 +43,9 @@ data/
 
 # local runtime artifacts (metrics snapshots written by the scheduler)
 metrics.jsonl
+
+# playwright visual tests (seed DB + reports; baselines under *-snapshots/ ARE committed)
+.pw/
+test-results/
+playwright-report/
+blob-report/
