@@ -6,3 +6,8 @@ data
 *.md
 docs
 tests
+playwright.config.ts
+vitest.config.ts
+.pw
+playwright-report
+test-results
