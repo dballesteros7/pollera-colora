@@ -68,10 +68,13 @@ export default async function GroupPage({
     (m) => isPredictable(m, now) && !myPredictions.has(m.id),
   ).length;
 
-  // hero: a live match wins; otherwise the next kickoff within 48h
-  const liveMatch = matches.find(
+  // hero: a live match wins; otherwise the next kickoff within 48h. The final
+  // group-stage round kicks both games off simultaneously, so there can be more
+  // than one live match — each gets its own carousel slide, the first leads.
+  const liveMatches = matches.filter(
     (m) => m.status === "IN_PLAY" || m.status === "PAUSED",
   );
+  const liveMatch = liveMatches[0];
   const nextMatch =
     liveMatch ??
     matches.find(
@@ -95,10 +98,10 @@ export default async function GroupPage({
   type Match = (typeof matches)[number];
   // a live match leads the strip, then the predictable matches in kickoff order
   const daySlides: { m: Match; kind: "live" | "open" }[] = [
-    ...(liveMatch ? [{ m: liveMatch, kind: "live" as const }] : []),
+    ...liveMatches.map((m) => ({ m, kind: "live" as const })),
     ...dayMatches.map((m) => ({ m, kind: "open" as const })),
   ];
-  const firstOpenIdx = liveMatch ? 1 : 0;
+  const firstOpenIdx = liveMatches.length;
   const dayChips: DayChip[] = daySlides.map(({ m, kind }) => ({
     key: String(m.id),
     home: teamAbbrev(m.homeTeam),
