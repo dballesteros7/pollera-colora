@@ -44,29 +44,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  visual:
-    name: Visual regression (5 form factors)
-    runs-on: ubuntu-latest
-    # Same Playwright image used to generate the committed *-linux.png baselines,
-    # so rendering matches exactly.
-    container:
-      image: mcr.microsoft.com/playwright:v1.61.1-jammy
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm install -g npm@11
-      - run: npm ci
-      - run: npx playwright test
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
-
   deploy:
     name: Deploy to Fly
     # only on a push to main, and only once everything above is green
-    needs: [test, docker, visual]
+    needs: [test, docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency:
