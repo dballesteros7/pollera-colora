@@ -33,8 +33,11 @@ export async function saveBonusPicksAction(formData: FormData) {
   } catch (err) {
     if (!(err instanceof BonusLockedError)) throw err;
     revalidatePath(`/g/${groupId}/bonus`);
+    revalidatePath(`/g/${groupId}`);
     return { err: true };
   }
   revalidatePath(`/g/${groupId}/bonus`);
+  // the Súper Polla renders bonus inline on its home page
+  revalidatePath(`/g/${groupId}`);
   return {};
 }

@@ -9,6 +9,7 @@ import {
   groups,
   predictions,
   superIdentities,
+  bonusPicks,
 } from "../../lib/db/schema";
 import { createGroup } from "../../lib/groups";
 import { ensureClaudeBot, addClaudeToGroup, CLAUDE_BOT_ID } from "../../lib/claude-bot";
@@ -143,6 +144,16 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
       joker: false,
       updatedAt: at(0),
     })
+    .onConflictDoNothing()
+    .run();
+
+  // home-polla bonus picks (champion/top scorer) — the Súper Polla bonus form
+  // pre-fills from these until Diego sets his own
+  db.insert(bonusPicks)
+    .values([
+      { userId: "u-diego", groupId: group.id, category: "champion", value: "Brazil", updatedAt: at(0) },
+      { userId: "u-diego", groupId: group.id, category: "top_scorer", value: "Vinícius Jr", updatedAt: at(0) },
+    ])
     .onConflictDoNothing()
     .run();
 

@@ -9,7 +9,12 @@ import {
   propQuestions,
   propAnswers,
 } from "../db/schema";
-import { getGroupBonusPicks, getUserBonusPicks, getOutcomes } from "../bonus";
+import {
+  getGroupBonusPicks,
+  getUserBonusPicks,
+  getOutcomes,
+  BONUS_CATEGORIES,
+} from "../bonus";
 import {
   getSuperPolla,
   homePollaIdOf,
@@ -368,12 +373,17 @@ export function rebuildSuperPollaScores(db: Db, now = new Date()) {
       if (s.result) result++;
     }
 
-    // bonus (champion, top scorer, …) is copied from the home polla
-    if (homeId && outcomes.size > 0) {
-      for (const [category, value] of getUserBonusPicks(db, userId, homeId)) {
-        const real = outcomes.get(category);
+    // bonus (champion, top scorer, …): the player's own Súper Polla pick wins;
+    // the home-polla pick fills any category they haven't set here
+    if (outcomes.size > 0) {
+      const ownBonus = getUserBonusPicks(db, userId, sp.id);
+      const homeBonus = homeId ? getUserBonusPicks(db, userId, homeId) : new Map();
+      for (const cat of BONUS_CATEGORIES) {
+        const value = ownBonus.get(cat.id) ?? homeBonus.get(cat.id);
+        if (!value) continue;
+        const real = outcomes.get(cat.id);
         if (real && fold(real) === fold(value)) {
-          bonus += preset.bonusPoints[category];
+          bonus += preset.bonusPoints[cat.id];
         }
       }
     }
