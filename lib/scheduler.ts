@@ -3,7 +3,8 @@ import { lt } from "drizzle-orm";
 import { getDb } from "./db";
 import { otpCodes, sessions } from "./db/schema";
 import { syncMatches, isLiveWindow } from "./sync";
-import { rebuildAllScores } from "./scoring/score";
+import { rebuildAllScores, rebuildSuperPollaScores } from "./scoring/score";
+import { ensureSuperPolla, syncSuperPollaMembership } from "./super-polla";
 import { appendSnapshot } from "./metrics";
 import { FdConfigError } from "./fd/client";
 
@@ -33,6 +34,19 @@ export function getSyncStatus(): SyncStatus {
 export function startScheduler() {
   if (globalThis.__polleraSchedulerStarted) return;
   globalThis.__polleraSchedulerStarted = true;
+
+  // bring the Súper Polla into existence and seed its leaderboard at boot, so
+  // it's there the moment the app comes up (idle ticks keep it fresh after)
+  try {
+    const db = getDb();
+    const now = new Date();
+    if (ensureSuperPolla(db, now)) {
+      syncSuperPollaMembership(db, now);
+      rebuildSuperPollaScores(db, now);
+    }
+  } catch (err) {
+    console.warn("[super-polla] startup seed failed:", err);
+  }
 
   let lastSyncAt = 0;
   let running = false;

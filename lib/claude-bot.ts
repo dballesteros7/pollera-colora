@@ -62,7 +62,13 @@ export function addClaudeToGroup(db: Db, groupId: string, now = new Date()) {
 }
 
 export function addClaudeToAllGroups(db: Db, now = new Date()) {
-  const all = db.select({ id: groups.id }).from(groups).all();
+  // real pollas only — the bot joins the Súper Polla via membership sync, like
+  // every other active player
+  const all = db
+    .select({ id: groups.id })
+    .from(groups)
+    .where(eq(groups.isSuper, false))
+    .all();
   for (const g of all) addClaudeToGroup(db, g.id, now);
   return all.length;
 }

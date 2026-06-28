@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers } from "@/lib/groups";
@@ -25,6 +25,7 @@ export default async function GroupSettingsPage({
   const user = await requireUser(`/g/${id}/settings`);
   const access = getGroupForMember(getDb(), user.id, id);
   if (!access) notFound();
+  if (access.group.isSuper) redirect(`/g/${id}`);
   const { group } = access;
   const organizer = access.role === "organizer";
   const lo = await getLocale();

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Bot } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getUserGroups } from "@/lib/groups";
@@ -59,6 +59,7 @@ export default async function FixturesPage({
   const db = getDb();
   const access = getGroupForMember(db, user.id, id);
   if (!access) notFound();
+  if (access.group.isSuper) redirect(`/g/${id}`);
   const { group } = access;
 
   const now = new Date();

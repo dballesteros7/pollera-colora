@@ -13,7 +13,7 @@ import {
   MatchNotPredictableError,
 } from "@/lib/predictions";
 import { getUserGroups } from "@/lib/groups";
-import { parseScoringRules, PRESETS } from "@/lib/scoring/presets";
+import { parseScoringRules, PRESETS, presetForGroup } from "@/lib/scoring/presets";
 
 export async function savePredictionAction(formData: FormData) {
   const groupId = String(formData.get("groupId") ?? "");
@@ -22,7 +22,6 @@ export async function savePredictionAction(formData: FormData) {
   const access = getGroupForMember(db, user.id, groupId);
   if (!access) notFound();
 
-  const rules = parseScoringRules(access.group.scoringRules);
   const applyAll = formData.get("allGroups") === "on";
   try {
     if (applyAll) {
@@ -54,7 +53,7 @@ export async function savePredictionAction(formData: FormData) {
         predHome: Number(formData.get("predHome")),
         predAway: Number(formData.get("predAway")),
         joker: formData.get("joker") === "on",
-        allowJoker: PRESETS[rules.preset].joker,
+        allowJoker: presetForGroup(access.group).joker,
       });
     }
   } catch (err) {
