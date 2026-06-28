@@ -14,10 +14,10 @@ export type BonusCategory = (typeof BONUS_CATEGORIES)[number]["id"];
 
 export class BonusLockedError extends Error {}
 
-// Tournament bonus picks close at the end of the group phase — the kickoff of
-// the last group-stage matches. (Mirrors RECOCHA_CLOSE in lib/props.ts.) A group
-// may set an *earlier* bonusLockAt, but never a later one.
-export const BONUS_CLOSE = new Date("2026-06-28T02:00:00Z");
+// Tournament bonus picks close partway into the knockouts — extended past the
+// group phase so latecomers can still pick champion/top-scorer/etc. A group may
+// set an *earlier* bonusLockAt, but never a later one.
+export const BONUS_CLOSE = new Date("2026-07-03T22:00:00Z");
 
 // The effective bonus deadline: the earlier of the group-phase close and any
 // per-group override. There is always a deadline now (the group phase always

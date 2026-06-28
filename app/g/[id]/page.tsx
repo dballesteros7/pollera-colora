@@ -19,7 +19,13 @@ import { requireUser } from "@/lib/auth/require";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
 import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predictions";
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
-import { bonusLocked, bonusDeadline } from "@/lib/bonus";
+import {
+  bonusLocked,
+  bonusDeadline,
+  BONUS_CATEGORIES,
+  getUserBonusPicks,
+  getKnownTeams,
+} from "@/lib/bonus";
 import { featuredRecapRound } from "@/lib/recap";
 import { getViewerTz, dateTimeFormatter, timeFormatter } from "@/lib/viewer-tz";
 import { getLocale, t, LOCALE_TAG } from "@/lib/i18n";
@@ -38,6 +44,7 @@ import {
   homePollaIdOf,
 } from "@/lib/super-polla";
 import { setSuperIdentityAction } from "./super-actions";
+import { saveBonusPicksAction } from "./bonus/actions";
 
 // knockout-stage labels for the Súper Polla pick cards
 const SUPER_STAGE_KEY: Record<string, string> = {
@@ -47,6 +54,15 @@ const SUPER_STAGE_KEY: Record<string, string> = {
   SEMI_FINALS: "f.sf",
   THIRD_PLACE: "f.third",
   FINAL: "f.final",
+};
+
+// bonus-category id → i18n label key (matches the bonus page)
+const BONUS_KEY: Record<string, string> = {
+  champion: "b.champion",
+  runner_up: "b.runnerUp",
+  third: "b.third",
+  top_scorer: "b.topScorer",
+  best_gk: "b.bestGk",
 };
 
 function countdown(ms: number): string {
@@ -140,6 +156,15 @@ export default async function GroupPage({
     const homeId = homePollaIdOf(db, user.id);
     const ownPicks = getUserPredictions(db, user.id, group.id);
     const homePicks = homeId ? getUserPredictions(db, user.id, homeId) : new Map();
+    // the user's real pollas (Súper Polla excluded) — targets for "save to all"
+    const hasRealPollas = getUserGroups(db, user.id).length > 0;
+
+    // tournament bonus: own Súper pick per category, falling back to the home
+    // polla's. Enterable while bonus is open (the Súper Polla has no early lock).
+    const ownBonus = getUserBonusPicks(db, user.id, group.id);
+    const homeBonus = homeId ? getUserBonusPicks(db, user.id, homeId) : new Map();
+    const bonusOpen = !bonusLocked(group, now);
+    const teams = getKnownTeams(db);
     const pickMatches = getAllMatches(db)
       .filter((m) => isKnockoutStage(m.stage) && isPredictable(m, now))
       .sort((a, b) => a.kickoffUtc.getTime() - b.kickoffUtc.getTime());
@@ -192,6 +217,12 @@ export default async function GroupPage({
                 <input type="checkbox" name="joker" defaultChecked={eff?.joker ?? false} />
                 {t(lo, "comodin")}
               </label>
+              {hasRealPollas && (
+                <label className="pc-hint" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <input type="checkbox" name="allGroups" style={{ accentColor: "var(--magenta)" }} />
+                  {t(lo, "f.alsoAll")}
+                </label>
+              )}
               <PendingButton
                 label={own ? t(lo, "btn.update") : t(lo, "btn.save")}
                 pendingLabel={t(lo, "ui.saving")}
@@ -290,6 +321,70 @@ export default async function GroupPage({
               </tbody>
             </table>
           )}
+
+          <section className="pc-flow" style={{ gap: "var(--space-2)" }}>
+            <div>
+              <span className="pc-quicklink__label">{t(lo, "b.title")}</span>
+              <p className="pc-hint" style={{ margin: "4px 0 0" }}>{t(lo, "super.bonusSub")}</p>
+            </div>
+            {bonusOpen ? (
+              <FeedbackForm
+                action={saveBonusPicksAction}
+                doneMsg={t(lo, "ui.saved")}
+                errMsg={t(lo, "ui.lockedErr")}
+                className="pc-card pc-card--pad-lg pc-flow"
+              >
+                <input type="hidden" name="groupId" value={group.id} />
+                {BONUS_CATEGORIES.map((cat) => {
+                  const eff = ownBonus.get(cat.id) ?? homeBonus.get(cat.id) ?? "";
+                  return (
+                    <div className="pc-field" key={cat.id}>
+                      <label className="pc-label" htmlFor={`pick_${cat.id}`}>
+                        {t(lo, BONUS_KEY[cat.id])}{" "}
+                        <span className="pc-badge pc-badge--points">+{t(lo, "s.pts", { n: SUPER_PRESET.bonusPoints[cat.id] })}</span>
+                      </label>
+                      {cat.team ? (
+                        <select id={`pick_${cat.id}`} name={`pick_${cat.id}`} className="pc-input" defaultValue={eff}>
+                          <option value="">{t(lo, "b.none")}</option>
+                          {teams.map((team) => (
+                            <option key={team} value={team}>{teamName(team, lo)}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          id={`pick_${cat.id}`}
+                          name={`pick_${cat.id}`}
+                          className="pc-input"
+                          defaultValue={eff}
+                          placeholder={t(lo, "b.playerPh")}
+                          maxLength={60}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+                <PendingButton
+                  label={t(lo, "b.save")}
+                  pendingLabel={t(lo, "ui.saving")}
+                  className="pc-btn pc-btn--primary pc-btn--block"
+                />
+              </FeedbackForm>
+            ) : (
+              <div className="pc-card pc-card--pad-lg pc-flow" style={{ gap: 8 }}>
+                {BONUS_CATEGORIES.map((cat) => {
+                  const eff = ownBonus.get(cat.id) ?? homeBonus.get(cat.id);
+                  return (
+                    <div key={cat.id} className="pc-match__pick" style={{ marginTop: 0, paddingTop: 0, borderTop: "none" }}>
+                      <span>{t(lo, BONUS_KEY[cat.id])}</span>
+                      <b className="pc-pick">
+                        {eff ? (cat.team ? teamName(eff, lo) : eff) : t(lo, "b.none")}
+                      </b>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           <ScoringSheet preset={SUPER_PRESET} rules={rules} locale={lo} />
 

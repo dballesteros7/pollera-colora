@@ -13,7 +13,7 @@ import {
   MatchNotPredictableError,
 } from "@/lib/predictions";
 import { getUserGroups } from "@/lib/groups";
-import { parseScoringRules, PRESETS, presetForGroup } from "@/lib/scoring/presets";
+import { presetForGroup } from "@/lib/scoring/presets";
 
 export async function savePredictionAction(formData: FormData) {
   const groupId = String(formData.get("groupId") ?? "");
@@ -25,14 +25,17 @@ export async function savePredictionAction(formData: FormData) {
   const applyAll = formData.get("allGroups") === "on";
   try {
     if (applyAll) {
-      // score goes to every polla; the joker stays in this one
-      const groups = getUserGroups(db, user.id).map(({ group }) => {
-        const r = parseScoringRules(group.scoringRules);
+      // score goes to every polla; the joker stays in this one. getUserGroups
+      // omits the Súper Polla, so add the origin explicitly when saving from it
+      // — otherwise the user's Súper pick would be dropped entirely.
+      const targets = getUserGroups(db, user.id).map((g) => g.group);
+      if (!targets.some((g) => g.id === groupId)) targets.unshift(access.group);
+      const groups = targets.map((group) => {
         const isOrigin = group.id === groupId;
         return {
           groupId: group.id,
           joker: isOrigin && formData.get("joker") === "on",
-          allowJoker: isOrigin && PRESETS[r.preset].joker,
+          allowJoker: isOrigin && presetForGroup(group).joker,
           // the joker checkbox only speaks for this polla — never clear
           // a joker the user set in another one
           preserveJoker: !isOrigin,
