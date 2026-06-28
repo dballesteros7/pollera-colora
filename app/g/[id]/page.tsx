@@ -140,14 +140,80 @@ export default async function GroupPage({
     const homeId = homePollaIdOf(db, user.id);
     const ownPicks = getUserPredictions(db, user.id, group.id);
     const homePicks = homeId ? getUserPredictions(db, user.id, homeId) : new Map();
-    const pickMatches = getAllMatches(db).filter(
-      (m) => isKnockoutStage(m.stage) && isPredictable(m, now),
-    );
+    const pickMatches = getAllMatches(db)
+      .filter((m) => isKnockoutStage(m.stage) && isPredictable(m, now))
+      .sort((a, b) => a.kickoffUtc.getTime() - b.kickoffUtc.getTime());
     const superAria = {
       goals: t(lo, "f.goalsOf", { team: "{team}" }),
       minus: t(lo, "f.minus", { team: "{team}" }),
       plus: t(lo, "f.plus", { team: "{team}" }),
     };
+
+    // one swipeable card at a time (kicker-style strip) instead of a tall stack,
+    // so making a pick doesn't bury the glory table below
+    const renderSuperPick = (m: (typeof pickMatches)[number]) => {
+      const own = ownPicks.get(m.id);
+      const eff = own ?? homePicks.get(m.id);
+      const copied = !own && Boolean(homePicks.get(m.id));
+      return (
+        <article key={m.id} className="pc-match pc-hero-match" data-state="open">
+          <div className="pc-match__head">
+            <span className="pc-match__meta">
+              {SUPER_STAGE_KEY[m.stage] ? t(lo, SUPER_STAGE_KEY[m.stage]) : m.stage}
+            </span>
+            <span className="pc-match__time">{fmtDateTime.format(m.kickoffUtc)}</span>
+          </div>
+          <FeedbackForm
+            action={savePredictionAction}
+            doneMsg={t(lo, "ui.saved")}
+            errMsg={t(lo, "ui.lockedErr")}
+            invalidMsg={t(lo, "ui.scoreErr")}
+          >
+            <input type="hidden" name="groupId" value={group.id} />
+            <input type="hidden" name="matchId" value={m.id} />
+            <div className="pc-match__body">
+              <ScoreInput
+                homeTeam={teamName(m.homeTeam, lo)!}
+                awayTeam={teamName(m.awayTeam, lo)!}
+                homeCrest={m.homeCrest}
+                awayCrest={m.awayCrest}
+                defaultHome={eff?.predHome ?? null}
+                defaultAway={eff?.predAway ?? null}
+                aria={superAria}
+              />
+            </div>
+            <div className="pc-match__footer">
+              <label className="pc-comodin">
+                <input type="checkbox" name="joker" defaultChecked={eff?.joker ?? false} />
+                {t(lo, "comodin")}
+              </label>
+              <PendingButton
+                label={own ? t(lo, "btn.update") : t(lo, "btn.save")}
+                pendingLabel={t(lo, "ui.saving")}
+                className={`pc-btn ${own ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
+                style={{ marginLeft: "auto" }}
+              />
+            </div>
+            {copied && (
+              <p className="pc-hint" style={{ margin: "6px 0 0" }}>
+                {t(lo, "super.copiedHint")}
+              </p>
+            )}
+          </FeedbackForm>
+        </article>
+      );
+    };
+
+    const pickChips: DayChip[] = pickMatches.map((m) => ({
+      key: String(m.id),
+      home: teamAbbrev(m.homeTeam),
+      away: teamAbbrev(m.awayTeam),
+      homeCrest: m.homeCrest,
+      awayCrest: m.awayCrest,
+      center: fmtTime.format(m.kickoffUtc),
+      live: false,
+    }));
+    const pickDetails = pickMatches.map(renderSuperPick);
 
     return (
       <>
@@ -161,63 +227,17 @@ export default async function GroupPage({
           </div>
 
           {pickMatches.length > 0 && (
-            <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
+            <section className="pc-flow" style={{ gap: "var(--space-2)" }}>
               <div>
                 <span className="pc-quicklink__label">{t(lo, "super.pickTitle")}</span>
                 <p className="pc-hint" style={{ margin: "4px 0 0" }}>{t(lo, "super.pickSub")}</p>
               </div>
-              {pickMatches.map((m) => {
-                const own = ownPicks.get(m.id);
-                const eff = own ?? homePicks.get(m.id);
-                const copied = !own && Boolean(homePicks.get(m.id));
-                return (
-                  <article key={m.id} className="pc-match" data-state="open">
-                    <div className="pc-match__head">
-                      <span className="pc-match__meta">
-                        {SUPER_STAGE_KEY[m.stage] ? t(lo, SUPER_STAGE_KEY[m.stage]) : m.stage}
-                      </span>
-                      <span className="pc-match__time">{fmtTime.format(m.kickoffUtc)}</span>
-                    </div>
-                    <FeedbackForm
-                      action={savePredictionAction}
-                      doneMsg={t(lo, "ui.saved")}
-                      errMsg={t(lo, "ui.lockedErr")}
-                      invalidMsg={t(lo, "ui.scoreErr")}
-                    >
-                      <input type="hidden" name="groupId" value={group.id} />
-                      <input type="hidden" name="matchId" value={m.id} />
-                      <div className="pc-match__body">
-                        <ScoreInput
-                          homeTeam={teamName(m.homeTeam, lo)!}
-                          awayTeam={teamName(m.awayTeam, lo)!}
-                          homeCrest={m.homeCrest}
-                          awayCrest={m.awayCrest}
-                          defaultHome={eff?.predHome ?? null}
-                          defaultAway={eff?.predAway ?? null}
-                          aria={superAria}
-                        />
-                      </div>
-                      <div className="pc-match__footer">
-                        <label className="pc-comodin">
-                          <input type="checkbox" name="joker" defaultChecked={eff?.joker ?? false} />
-                          {t(lo, "comodin")}
-                        </label>
-                        <PendingButton
-                          label={own ? t(lo, "btn.update") : t(lo, "btn.save")}
-                          pendingLabel={t(lo, "ui.saving")}
-                          className={`pc-btn ${own ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
-                          style={{ marginLeft: "auto" }}
-                        />
-                      </div>
-                      {copied && (
-                        <p className="pc-hint" style={{ margin: "6px 0 0" }}>
-                          {t(lo, "super.copiedHint")}
-                        </p>
-                      )}
-                    </FeedbackForm>
-                  </article>
-                );
-              })}
+              <DayBoard
+                label={t(lo, "super.pickTitle")}
+                chips={pickChips}
+                details={pickDetails}
+                defaultIndex={0}
+              />
             </section>
           )}
 
