@@ -35,24 +35,15 @@ export function startScheduler() {
   if (globalThis.__polleraSchedulerStarted) return;
   globalThis.__polleraSchedulerStarted = true;
 
-  // bring the Súper Polla into existence and seed its leaderboard at boot, so
-  // it's there the moment the app comes up (idle ticks keep it fresh after)
-  try {
-    const db = getDb();
-    const now = new Date();
-    if (ensureSuperPolla(db, now)) {
-      syncSuperPollaMembership(db, now);
-      rebuildSuperPollaScores(db, now);
-    }
-  } catch (err) {
-    console.warn("[super-polla] startup seed failed:", err);
-  }
-
   let lastSyncAt = 0;
   let running = false;
   let runningSince = 0;
   let lastSnapshotHour = -1;
   let lastCleanupDay = -1;
+  // ensure the Súper Polla exists; done on the first tick (not synchronously at
+  // boot) so we never touch the DB before it's ready — on Fly the volume may not
+  // be mounted yet, and in tests the seed DB is written just after boot
+  let superSeeded = false;
 
   // tick every minute; the tick decides whether it's time to actually sync
   cron.schedule("* * * * *", async () => {
@@ -71,6 +62,18 @@ export function startScheduler() {
     try {
       const db = getDb();
       const now = new Date();
+      if (!superSeeded) {
+        superSeeded = true;
+        try {
+          if (ensureSuperPolla(db, now)) {
+            syncSuperPollaMembership(db, now);
+            rebuildSuperPollaScores(db, now);
+          }
+        } catch (err) {
+          superSeeded = false; // retry next tick
+          console.warn("[super-polla] seed failed:", err);
+        }
+      }
       if (now.getUTCHours() !== lastSnapshotHour) {
         lastSnapshotHour = now.getUTCHours();
         try {

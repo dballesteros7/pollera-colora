@@ -24,7 +24,11 @@ export default defineConfig({
     command: `npm run build && npx next start -p ${PORT}`,
     url: `http://127.0.0.1:${PORT}`,
     timeout: 240_000,
-    reuseExistingServer: !process.env.CI,
+    // never reuse a lingering server: globalSetup re-seeds the DB into a fresh
+    // file each run, but a reused server still holds its cached connection to
+    // the old (now-deleted) DB — serving stale data and flaking the snapshots.
+    // Always start a fresh server so it opens the freshly-seeded DB.
+    reuseExistingServer: false,
     env: {
       DATABASE_PATH: DB_PATH,
       // neuter the fixtures scheduler so it can't clobber the seeded matches

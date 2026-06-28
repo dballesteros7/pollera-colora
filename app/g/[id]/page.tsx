@@ -183,6 +183,11 @@ export default async function GroupPage({
               />
             </div>
             <div className="pc-match__footer">
+              {copied && (
+                <p className="pc-hint" style={{ flexBasis: "100%", margin: 0 }}>
+                  {t(lo, "super.copiedHint")}
+                </p>
+              )}
               <label className="pc-comodin">
                 <input type="checkbox" name="joker" defaultChecked={eff?.joker ?? false} />
                 {t(lo, "comodin")}
@@ -194,11 +199,6 @@ export default async function GroupPage({
                 style={{ marginLeft: "auto" }}
               />
             </div>
-            {copied && (
-              <p className="pc-hint" style={{ margin: "6px 0 0" }}>
-                {t(lo, "super.copiedHint")}
-              </p>
-            )}
           </FeedbackForm>
         </article>
       );

@@ -10,6 +10,6 @@ export default function globalSetup() {
   for (const f of [DB_PATH, `${DB_PATH}-wal`, `${DB_PATH}-shm`]) {
     rmSync(f, { force: true });
   }
-  const { groupId } = seedVisualDb(DB_PATH);
-  writeFileSync(STATE_PATH, JSON.stringify({ groupId }), "utf8");
+  const { groupId, superId } = seedVisualDb(DB_PATH);
+  writeFileSync(STATE_PATH, JSON.stringify({ groupId, superId }), "utf8");
 }
