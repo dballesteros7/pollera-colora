@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
 import { getGroupForMember, getGroupMembers } from "@/lib/groups";
 import { requireUser } from "@/lib/auth/require";
@@ -36,6 +36,7 @@ export default async function BonusPage({
   const db = getDb();
   const access = getGroupForMember(db, user.id, id);
   if (!access) notFound();
+  if (access.group.isSuper) redirect(`/g/${id}`);
   const { group } = access;
 
   const now = new Date();

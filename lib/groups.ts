@@ -4,6 +4,7 @@ import type { Db } from "./db";
 import { groups, memberships, users } from "./db/schema";
 import type { ScoringRules } from "./scoring/presets";
 import { addClaudeToGroup } from "./claude-bot";
+import { syncSuperPollaMembership } from "./super-polla";
 
 // unambiguous alphabet (no 0/O, 1/I/L) for invite codes read out loud at asados
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -44,6 +45,8 @@ export function createGroup(
     .run();
   // every polla gets the Claude bot player (no-op until the bot is seeded)
   addClaudeToGroup(db, group.id, now);
+  // the organizer (and anyone the bot adds) now competes in the Súper Polla too
+  syncSuperPollaMembership(db, now);
   return group;
 }
 
@@ -66,19 +69,25 @@ export function joinGroup(db: Db, userId: string, groupId: string, now = new Dat
     )
     .get();
   if (existing) return existing;
-  return db
+  const membership = db
     .insert(memberships)
     .values({ userId, groupId, role: "member", joinedAt: now })
     .returning()
     .get();
+  // joining your first polla makes you an active player → auto-enroll in the
+  // Súper Polla so your knockout picks compete for ultimate glory
+  syncSuperPollaMembership(db, now);
+  return membership;
 }
 
+// a user's real pollas — never the Súper Polla, which is surfaced on its own.
+// Used for the home list, "do you have other pollas", and copy-to-all-pollas.
 export function getUserGroups(db: Db, userId: string) {
   return db
     .select({ group: groups, role: memberships.role })
     .from(memberships)
     .innerJoin(groups, eq(memberships.groupId, groups.id))
-    .where(eq(memberships.userId, userId))
+    .where(and(eq(memberships.userId, userId), eq(groups.isSuper, false)))
     .all();
 }
 

@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { gt, sql } from "drizzle-orm";
+import { eq, gt, sql } from "drizzle-orm";
 import type { Db } from "./db";
 import {
   users,
@@ -47,8 +47,19 @@ export function collectMetrics(db: Db, now = new Date()): Metrics {
     dau: seenSince(dayAgo),
     wau: seenSince(weekAgo),
     sessions: count(db, sessions),
-    groups: count(db, groups),
-    memberships: count(db, memberships),
+    // real pollas only — the singleton Súper Polla and its auto-enrolled
+    // memberships would otherwise skew the counts (it ~doubles memberships)
+    groups: db
+      .select({ n: sql<number>`count(*)` })
+      .from(groups)
+      .where(eq(groups.isSuper, false))
+      .get()!.n,
+    memberships: db
+      .select({ n: sql<number>`count(*)` })
+      .from(memberships)
+      .innerJoin(groups, eq(memberships.groupId, groups.id))
+      .where(eq(groups.isSuper, false))
+      .get()!.n,
     predictions: count(db, predictions),
     questions: count(db, propQuestions),
     answers: count(db, propAnswers),

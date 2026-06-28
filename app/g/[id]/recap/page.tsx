@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getGroupForMember } from "@/lib/groups";
@@ -34,6 +34,7 @@ export default async function RecapIndexPage({
   const db = getDb();
   const access = getGroupForMember(db, user.id, id);
   if (!access) notFound();
+  if (access.group.isSuper) redirect(`/g/${id}`);
   const { group } = access;
 
   const lo = await getLocale();

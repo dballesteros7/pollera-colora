@@ -9,7 +9,14 @@ import {
   propQuestions,
   propAnswers,
 } from "../db/schema";
-import { getGroupBonusPicks, getOutcomes } from "../bonus";
+import { getGroupBonusPicks, getUserBonusPicks, getOutcomes } from "../bonus";
+import {
+  getSuperPolla,
+  homePollaIdOf,
+  isKnockoutStage,
+  syncSuperPollaMembership,
+  SUPER_PRESET,
+} from "../super-polla";
 import { PRESETS, parseScoringRules, type PresetDef } from "./presets";
 
 export interface MatchResult {
@@ -286,7 +293,126 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
   }
 }
 
+// The Súper Polla's leaderboard, over the knockout rounds under the Marcador o
+// nada + comodín ruleset. Each player has their own Súper-Polla picks; for any
+// knockout match they haven't picked there yet, we fall back to their home-polla
+// pick as a convenience (so nobody misses points before they notice the Súper
+// Polla). Props are group-specific and don't carry over; bonus picks do.
+export function rebuildSuperPollaScores(db: Db, now = new Date()) {
+  const sp = getSuperPolla(db);
+  if (!sp) return;
+  const preset = SUPER_PRESET;
+
+  const finishedKnockout = db
+    .select()
+    .from(matches)
+    .where(inArray(matches.status, ["FINISHED", "AWARDED"]))
+    .all()
+    .filter(
+      (m) =>
+        m.regHome !== null && m.regAway !== null && isKnockoutStage(m.stage),
+    );
+
+  const members = db
+    .select({ userId: memberships.userId })
+    .from(memberships)
+    .where(eq(memberships.groupId, sp.id))
+    .all();
+
+  const outcomes = getOutcomes(db);
+
+  for (const { userId } of members) {
+    const homeId = homePollaIdOf(db, userId);
+    let points = 0;
+    let exact = 0;
+    let result = 0;
+    let bonus = 0;
+
+    // the player's own Súper Polla picks win; home-polla picks fill the gaps
+    const ownPreds = new Map(
+      db
+        .select()
+        .from(predictions)
+        .where(
+          and(eq(predictions.userId, userId), eq(predictions.groupId, sp.id)),
+        )
+        .all()
+        .map((p) => [p.matchId, p]),
+    );
+    const homePreds = homeId
+      ? new Map(
+          db
+            .select()
+            .from(predictions)
+            .where(
+              and(
+                eq(predictions.userId, userId),
+                eq(predictions.groupId, homeId),
+              ),
+            )
+            .all()
+            .map((p) => [p.matchId, p]),
+        )
+      : new Map();
+
+    for (const match of finishedKnockout) {
+      const p = ownPreds.get(match.id) ?? homePreds.get(match.id);
+      if (!p) continue;
+      const s = scoreMatch(
+        p,
+        { regHome: match.regHome!, regAway: match.regAway!, stage: match.stage },
+        preset,
+      );
+      points += s.points;
+      if (s.exact) exact++;
+      if (s.result) result++;
+    }
+
+    // bonus (champion, top scorer, …) is copied from the home polla
+    if (homeId && outcomes.size > 0) {
+      for (const [category, value] of getUserBonusPicks(db, userId, homeId)) {
+        const real = outcomes.get(category);
+        if (real && fold(real) === fold(value)) {
+          bonus += preset.bonusPoints[category];
+        }
+      }
+    }
+
+    db.insert(scores)
+      .values({
+        userId,
+        groupId: sp.id,
+        pointsMatches: points,
+        pointsBonus: bonus,
+        pointsProps: 0,
+        exactCount: exact,
+        resultCount: result,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [scores.userId, scores.groupId],
+        set: {
+          pointsMatches: points,
+          pointsBonus: bonus,
+          pointsProps: 0,
+          exactCount: exact,
+          resultCount: result,
+          updatedAt: now,
+        },
+      })
+      .run();
+  }
+}
+
 export function rebuildAllScores(db: Db, now = new Date()) {
-  const allGroups = db.select({ id: groups.id }).from(groups).all();
-  for (const g of allGroups) rebuildGroupScores(db, g.id, now);
+  const allGroups = db
+    .select({ id: groups.id, isSuper: groups.isSuper })
+    .from(groups)
+    .all();
+  // regular pollas score their own predictions; the Súper Polla reuses theirs
+  for (const g of allGroups) {
+    if (!g.isSuper) rebuildGroupScores(db, g.id, now);
+  }
+  syncSuperPollaMembership(db, now);
+  rebuildSuperPollaScores(db, now);
 }

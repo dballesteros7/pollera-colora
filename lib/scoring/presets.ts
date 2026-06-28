@@ -107,6 +107,21 @@ export const PRESETS: Record<PresetId, PresetDef> = {
   },
 };
 
+// The Súper Polla scores under Marcador o nada, but with the comodín switched
+// on — players pick their own joker there (it isn't inherited from the home
+// polla), and a jokered knockout pick doubles in the glory table.
+export const SUPER_PRESET: PresetDef = { ...PRESETS.marcador_o_nada, joker: true };
+
+// Canonical preset resolver: the Súper Polla uses SUPER_PRESET; every other
+// polla uses the preset named in its stored scoring rules.
+export function presetForGroup(group: {
+  isSuper?: boolean | null;
+  scoringRules: unknown;
+}): PresetDef {
+  if (group.isSuper) return SUPER_PRESET;
+  return PRESETS[parseScoringRules(group.scoringRules).preset];
+}
+
 export function parseScoringRules(raw: unknown): ScoringRules {
   const obj = (typeof raw === "object" && raw !== null ? raw : {}) as Record<
     string,

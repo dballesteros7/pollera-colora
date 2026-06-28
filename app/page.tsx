@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Plus, LogOut, Crown } from "lucide-react";
+import { ChevronRight, Plus, LogOut, Crown, Trophy, Sparkles } from "lucide-react";
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUserGroups } from "@/lib/groups";
+import { getSuperPolla } from "@/lib/super-polla";
 import { Header, HeroLang } from "@/app/components/shell";
 import { getLocale, t } from "@/lib/i18n";
 import { logout } from "./login/actions";
@@ -81,7 +82,11 @@ export default async function Home() {
     );
   }
 
-  const memberships = getUserGroups(getDb(), user.id);
+  const db = getDb();
+  const memberships = getUserGroups(db, user.id);
+  // active players (in ≥1 real polla) are auto-enrolled in the Súper Polla;
+  // surface it as its own banner above the list
+  const superPolla = memberships.length > 0 ? getSuperPolla(db) : null;
 
   return (
     <>
@@ -97,6 +102,29 @@ export default async function Home() {
           <span className="eyebrow">{t(lo, "home.greeting", { name: user.displayName })}</span>
           <h1 style={{ margin: "2px 0 0" }}>{t(lo, "home.yourPollas")}</h1>
         </div>
+
+        {superPolla && (
+          <Link
+            href={`/g/${superPolla.id}`}
+            className="pc-card pc-quicklink"
+            style={{
+              borderColor: "var(--magenta)",
+              background: "color-mix(in srgb, var(--magenta) 10%, transparent)",
+            }}
+          >
+            <span className="pc-quicklink__icon" style={{ color: "var(--magenta)" }}>
+              <Trophy size={24} aria-hidden />
+            </span>
+            <span className="pc-quicklink__text">
+              <span className="pc-quicklink__label" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {t(lo, "super.bannerTitle")}
+                <span className="pc-badge pc-badge--open"><Sparkles size={12} aria-hidden />{t(lo, "super.tag")}</span>
+              </span>
+              <span className="pc-quicklink__sub">{t(lo, "super.bannerSub")}</span>
+            </span>
+            <ChevronRight size={20} className="pc-quicklink__chev" aria-hidden />
+          </Link>
+        )}
 
         {memberships.length === 0 ? (
           <div className="pc-card pc-empty">

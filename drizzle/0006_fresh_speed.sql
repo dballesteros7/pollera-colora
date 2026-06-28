@@ -1,0 +1,1 @@
+ALTER TABLE `groups` ADD `is_super` integer DEFAULT false NOT NULL;

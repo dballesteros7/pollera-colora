@@ -45,6 +45,9 @@ export const groups = sqliteTable("groups", {
     .references(() => users.id),
   // JSON: { preset: "clasica" | "marcador_o_nada" | "escalonada", unicoAcertado: boolean, overrides?: {...} }
   scoringRules: text("scoring_rules", { mode: "json" }).notNull(),
+  // the singleton "Súper Polla": every active player auto-competes here, scored
+  // by reusing their home-polla knockout picks. No pick entry of its own.
+  isSuper: integer("is_super", { mode: "boolean" }).notNull().default(false),
   bonusLockAt: integer("bonus_lock_at", { mode: "timestamp_ms" }),
   potNote: text("pot_note"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
@@ -217,6 +220,19 @@ export const tournamentOutcomes = sqliteTable("tournament_outcomes", {
     enum: ["champion", "runner_up", "third", "top_scorer", "best_gk"],
   }).primaryKey(),
   value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+// each player's chosen identity in the Súper Polla, set on first open. A row's
+// existence means they've decided; until then they're anonymized to strangers
+// by the usual famous-alias strategy. mode "real" reveals their display name to
+// everyone; "nickname" shows the chosen handle instead.
+export const superIdentities = sqliteTable("super_identities", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  mode: text("mode", { enum: ["real", "nickname"] }).notNull(),
+  nickname: text("nickname"),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
 

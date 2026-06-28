@@ -9,6 +9,10 @@ import {
   type ScoreBreakdown,
 } from "./scoring/score";
 import { roundKey } from "./predictions";
+import { FAMOUS_ALIASES, hashStr } from "./anon";
+
+// re-exported for callers/tests that import it from the recap module
+export { FAMOUS_ALIASES } from "./anon";
 
 type Match = typeof matches.$inferSelect;
 
@@ -371,38 +375,6 @@ export interface GlobalStanding {
   neighbors: GlobalEntry[]; // viewer ±2 (empty when not eligible)
 }
 
-// Famous footballers, with a wink. Used to mask players from pollas the viewer
-// isn't in: recognizable but clearly a gag, so nobody mistakes it for a leak of
-// a real name. Kept to household names only — with a small group, a short list
-// of universally known players is enough and reads more clearly as a joke.
-export const FAMOUS_ALIASES = [
-  "Lionel Messías",
-  "Cristiano Ronaldoh",
-  "Diego Maradoh",
-  "Zinedine Zidance",
-  "Ronaldinha Gaúcho",
-  "Kylian Mbappémonos",
-  "Andrés Iniestá",
-  "David Beckhambre",
-  "Johan Cruyffío",
-  "Robert Lewandifícil",
-  "Sergio Ramirámos",
-  "Gianluigi Bufón",
-  "Manuel Neuerón",
-  "Luka Modríguez",
-] as const;
-
-// deterministic (no Math.random) — FNV-1a, so a viewer always sees the same
-// alias for the same player across renders.
-function hashStr(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
 export function getGlobalRoundStanding(
   db: Db,
   viewerId: string,
@@ -490,13 +462,15 @@ export function getGlobalRoundStanding(
     );
   const total = ranked.length;
 
-  // people who share any polla with the viewer keep their real name
-  const myGroupRows = db
+  // people who share any *real* polla with the viewer keep their real name —
+  // the Súper Polla doesn't count (everyone's in it, so it would unmask all)
+  const myGroupIds = db
     .select({ groupId: memberships.groupId })
     .from(memberships)
-    .where(eq(memberships.userId, viewerId))
-    .all();
-  const myGroupIds = myGroupRows.map((r) => r.groupId);
+    .innerJoin(groups, eq(memberships.groupId, groups.id))
+    .where(and(eq(memberships.userId, viewerId), eq(groups.isSuper, false)))
+    .all()
+    .map((r) => r.groupId);
   const mates = new Set<string>([viewerId]);
   if (myGroupIds.length > 0) {
     for (const r of db
@@ -691,11 +665,13 @@ export function getPredictionBuddies(
   const nameById = new Map(userRows.map((u) => [u.id, u.displayName]));
   const human = (uid: string) => uid !== viewerId && !isBot.get(uid);
 
-  // who shares a polla with the viewer — keeps their real name (privacy rule)
+  // who shares a real polla with the viewer — keeps their real name (privacy
+  // rule). The Súper Polla is excluded: everyone's in it, so it unmasks nobody.
   const myGroupIds = db
     .select({ groupId: memberships.groupId })
     .from(memberships)
-    .where(eq(memberships.userId, viewerId))
+    .innerJoin(groups, eq(memberships.groupId, groups.id))
+    .where(and(eq(memberships.userId, viewerId), eq(groups.isSuper, false)))
     .all()
     .map((r) => r.groupId);
   const mates = new Set<string>();

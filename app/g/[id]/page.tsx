@@ -30,6 +30,24 @@ import { DayBoard, type DayChip } from "@/app/components/day-board";
 import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
 import { ScoringSheet } from "@/app/components/scoring-rules";
 import { savePredictionAction } from "./fixtures/actions";
+import {
+  getSuperIdentity,
+  superLeaderboard,
+  SUPER_PRESET,
+  isKnockoutStage,
+  homePollaIdOf,
+} from "@/lib/super-polla";
+import { setSuperIdentityAction } from "./super-actions";
+
+// knockout-stage labels for the Súper Polla pick cards
+const SUPER_STAGE_KEY: Record<string, string> = {
+  LAST_32: "f.r32",
+  LAST_16: "f.r16",
+  QUARTER_FINALS: "f.qf",
+  SEMI_FINALS: "f.sf",
+  THIRD_PLACE: "f.third",
+  FINAL: "f.final",
+};
 
 function countdown(ms: number): string {
   const mins = Math.max(1, Math.round(ms / 60000));
@@ -59,6 +77,216 @@ export default async function GroupPage({
   const rules = parseScoringRules(group.scoringRules);
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
+
+  // The Súper Polla is read-only: no pick entry, no invite, no sub-tabs — just
+  // the global glory table over everyone's home-polla knockout picks.
+  if (group.isSuper) {
+    const superBoard = superLeaderboard(db, user.id);
+    const noScores = superBoard.every((r) => r.total === 0);
+    const decided = getSuperIdentity(db, user.id) !== null;
+
+    // First open: a cheerful interstitial explaining what the Súper Polla is,
+    // and the one-time choice of how you want to appear. Shown until decided.
+    if (!decided) {
+      return (
+        <main className="pc-hero-shell">
+          <div className="pc-tricolor-rule" />
+          <div className="pc-hero-shell__center">
+            <div className="pc-hero-head">
+              <span style={{ fontSize: 56, lineHeight: 1 }} aria-hidden>🏆</span>
+              <h1 style={{ margin: 0 }}>{t(lo, "super.welcomeTitle")}</h1>
+              <p style={{ color: "var(--ink-soft)", margin: "8px 0 0" }}>
+                {t(lo, "super.welcomeBody")}
+              </p>
+            </div>
+            <div className="pc-card pc-card--pad-lg pc-flow">
+              <div>
+                <span className="pc-quicklink__label">{t(lo, "super.identityTitle")}</span>
+                <p className="pc-hint" style={{ margin: "4px 0 0" }}>{t(lo, "super.identityBody")}</p>
+              </div>
+              <form action={setSuperIdentityAction} className="pc-flow" style={{ gap: 8 }}>
+                <input type="hidden" name="groupId" value={group.id} />
+                <input type="hidden" name="mode" value="nickname" />
+                <div className="pc-field">
+                  <input
+                    className="pc-input"
+                    name="nickname"
+                    placeholder={t(lo, "super.nicknamePh")}
+                    required
+                    minLength={2}
+                    maxLength={40}
+                    autoFocus
+                  />
+                </div>
+                <button type="submit" className="pc-btn pc-btn--primary pc-btn--block">
+                  {t(lo, "super.useNickname")}
+                </button>
+              </form>
+              <form action={setSuperIdentityAction}>
+                <input type="hidden" name="groupId" value={group.id} />
+                <input type="hidden" name="mode" value="real" />
+                <button type="submit" className="pc-btn pc-btn--quiet pc-btn--block">
+                  {t(lo, "super.keepName", { name: user.displayName ?? "" })}
+                </button>
+              </form>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // your own Súper Polla picks for the open knockout matches; the home polla's
+    // pick pre-fills the input as a convenience until you save your own
+    const homeId = homePollaIdOf(db, user.id);
+    const ownPicks = getUserPredictions(db, user.id, group.id);
+    const homePicks = homeId ? getUserPredictions(db, user.id, homeId) : new Map();
+    const pickMatches = getAllMatches(db).filter(
+      (m) => isKnockoutStage(m.stage) && isPredictable(m, now),
+    );
+    const superAria = {
+      goals: t(lo, "f.goalsOf", { team: "{team}" }),
+      minus: t(lo, "f.minus", { team: "{team}" }),
+      plus: t(lo, "f.plus", { team: "{team}" }),
+    };
+
+    return (
+      <>
+        <Header />
+        <main className="page pc-flow">
+          <div>
+            <span className="eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--magenta)" }}>
+              <Trophy size={14} aria-hidden /> {t(lo, "super.title")}
+            </span>
+            <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{t(lo, "super.tag")}</h1>
+          </div>
+
+          {pickMatches.length > 0 && (
+            <section className="pc-flow" style={{ gap: "var(--gap-card)" }}>
+              <div>
+                <span className="pc-quicklink__label">{t(lo, "super.pickTitle")}</span>
+                <p className="pc-hint" style={{ margin: "4px 0 0" }}>{t(lo, "super.pickSub")}</p>
+              </div>
+              {pickMatches.map((m) => {
+                const own = ownPicks.get(m.id);
+                const eff = own ?? homePicks.get(m.id);
+                const copied = !own && Boolean(homePicks.get(m.id));
+                return (
+                  <article key={m.id} className="pc-match" data-state="open">
+                    <div className="pc-match__head">
+                      <span className="pc-match__meta">
+                        {SUPER_STAGE_KEY[m.stage] ? t(lo, SUPER_STAGE_KEY[m.stage]) : m.stage}
+                      </span>
+                      <span className="pc-match__time">{fmtTime.format(m.kickoffUtc)}</span>
+                    </div>
+                    <FeedbackForm
+                      action={savePredictionAction}
+                      doneMsg={t(lo, "ui.saved")}
+                      errMsg={t(lo, "ui.lockedErr")}
+                      invalidMsg={t(lo, "ui.scoreErr")}
+                    >
+                      <input type="hidden" name="groupId" value={group.id} />
+                      <input type="hidden" name="matchId" value={m.id} />
+                      <div className="pc-match__body">
+                        <ScoreInput
+                          homeTeam={teamName(m.homeTeam, lo)!}
+                          awayTeam={teamName(m.awayTeam, lo)!}
+                          homeCrest={m.homeCrest}
+                          awayCrest={m.awayCrest}
+                          defaultHome={eff?.predHome ?? null}
+                          defaultAway={eff?.predAway ?? null}
+                          aria={superAria}
+                        />
+                      </div>
+                      <div className="pc-match__footer">
+                        <label className="pc-comodin">
+                          <input type="checkbox" name="joker" defaultChecked={eff?.joker ?? false} />
+                          {t(lo, "comodin")}
+                        </label>
+                        <PendingButton
+                          label={own ? t(lo, "btn.update") : t(lo, "btn.save")}
+                          pendingLabel={t(lo, "ui.saving")}
+                          className={`pc-btn ${own ? "pc-btn--secondary" : "pc-btn--primary"} pc-btn--sm`}
+                          style={{ marginLeft: "auto" }}
+                        />
+                      </div>
+                      {copied && (
+                        <p className="pc-hint" style={{ margin: "6px 0 0" }}>
+                          {t(lo, "super.copiedHint")}
+                        </p>
+                      )}
+                    </FeedbackForm>
+                  </article>
+                );
+              })}
+            </section>
+          )}
+
+          {noScores ? (
+            <div className="pc-card pc-empty">
+              <span className="pc-empty__art">🏆</span>
+              <span className="pc-empty__title">{t(lo, "super.emptyTitle")}</span>
+              <p className="pc-empty__body">{t(lo, "super.emptyBody")}</p>
+            </div>
+          ) : (
+            <table className="pc-board">
+              <thead>
+                <tr>
+                  <th scope="col" aria-label="Puesto">#</th>
+                  <th scope="col">{t(lo, "g.who")}</th>
+                  <th scope="col" className="pc-num">{t(lo, "g.pts")}</th>
+                  <th scope="col" className="pc-num">{t(lo, "g.exact")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {superBoard.map((row) => (
+                  <tr key={row.userId} className={row.isYou ? "is-you" : undefined}>
+                    <td>
+                      {row.rank <= 3 ? (
+                        <span className={`pc-medal pc-medal--${row.rank}`}>{row.rank}</span>
+                      ) : (
+                        <span className="pc-rank">{row.rank}</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="pc-player">
+                        <span
+                          className="pc-player__name"
+                          style={row.masked ? { fontStyle: "italic", color: "var(--ink-soft)" } : undefined}
+                        >
+                          {row.name}
+                        </span>
+                        {row.isBot && (
+                          <Bot size={15} className="pc-bot-badge" aria-label={t(lo, "a11y.bot")} />
+                        )}
+                        {row.isYou && (
+                          <span className="pc-player__you">← {t(lo, "f.youTag")}</span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="pc-num pc-points">{row.total}</td>
+                    <td className="pc-num pc-exact">{row.exactCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <ScoringSheet preset={SUPER_PRESET} rules={rules} locale={lo} />
+
+          <details className="pc-card pc-sheet" open>
+            <summary>{t(lo, "super.explainTitle")}</summary>
+            <p style={{ margin: "var(--space-2) 0 0", fontSize: "var(--text-sm)", color: "var(--ink-soft)" }}>
+              {t(lo, "super.explainBody")}
+            </p>
+            <p style={{ margin: "var(--space-2) 0 0", fontSize: "var(--text-sm)", color: "var(--ink-soft)" }}>
+              {t(lo, "super.jokerNote")}
+            </p>
+          </details>
+        </main>
+      </>
+    );
+  }
+
   const hasOtherGroups = getUserGroups(db, user.id).length > 1;
   const organizer = getGroupMembers(db, group.id).find((m) => m.role === "organizer");
 
