@@ -1,8 +1,18 @@
 import { eq } from "drizzle-orm";
 import { createDb, type Db } from "../../lib/db";
-import { users, sessions, memberships, matches, scores, groups } from "../../lib/db/schema";
+import {
+  users,
+  sessions,
+  memberships,
+  matches,
+  scores,
+  groups,
+  predictions,
+  superIdentities,
+} from "../../lib/db/schema";
 import { createGroup } from "../../lib/groups";
 import { ensureClaudeBot, addClaudeToGroup, CLAUDE_BOT_ID } from "../../lib/claude-bot";
+import { getSuperPolla, syncSuperPollaMembership } from "../../lib/super-polla";
 
 export const SESSION_TOKEN = "pw-visual-session-token";
 
@@ -11,7 +21,7 @@ export const SESSION_TOKEN = "pw-visual-session-token";
 // so the Easter-egg button is reachable. Kickoffs are relative to now so the
 // "next 24h" day board always populates; the time-dependent text (countdowns,
 // chip times) is masked in the screenshots, so the baselines stay stable.
-export function seedVisualDb(dbPath: string): { groupId: string } {
+export function seedVisualDb(dbPath: string): { groupId: string; superId: string } {
   const db: Db = createDb(dbPath);
   const now = Date.now();
   const H = 3600_000;
@@ -95,5 +105,63 @@ export function seedVisualDb(dbPath: string): { groupId: string } {
     .onConflictDoNothing()
     .run();
 
-  return { groupId: group.id };
+  // --- Súper Polla coverage for the visual baseline ---
+  // a knockout match beyond the 24h window so it doesn't enter the regular
+  // group home board (keeping those baselines stable), but is still predictable
+  // → it shows in the Súper Polla pick carousel
+  const ko = db
+    .insert(matches)
+    .values({
+      fdId: 99010,
+      stage: "QUARTER_FINALS",
+      matchday: null,
+      kickoffUtc: at(30 * H),
+      homeTeam: "Argentina",
+      awayTeam: "Mexico",
+      homeCrest: null,
+      awayCrest: null,
+      status: "TIMED",
+      duration: null,
+      regHome: null,
+      regAway: null,
+      finalHome: null,
+      finalAway: null,
+      updatedAt: at(0),
+    })
+    .returning()
+    .get();
+
+  // Diego has a home-polla pick for it but no Súper pick yet → the input is
+  // pre-filled and the "copied from your polla" hint renders (the case we fix)
+  db.insert(predictions)
+    .values({
+      userId: "u-diego",
+      groupId: group.id,
+      matchId: ko.id,
+      predHome: 2,
+      predAway: 1,
+      joker: false,
+      updatedAt: at(0),
+    })
+    .onConflictDoNothing()
+    .run();
+
+  // enroll everyone in the Súper Polla; give Diego a decided identity so the
+  // pick page (not the first-open interstitial) renders
+  syncSuperPollaMembership(db, at(0));
+  const superId = getSuperPolla(db)!.id;
+  db.insert(superIdentities)
+    .values({ userId: "u-diego", mode: "real", nickname: null, updatedAt: at(0) })
+    .onConflictDoNothing()
+    .run();
+  db.insert(scores)
+    .values([
+      { userId: "u-cosima", groupId: superId, pointsMatches: 60, exactCount: 3, updatedAt: at(0) },
+      { userId: "u-diego", groupId: superId, pointsMatches: 40, exactCount: 2, updatedAt: at(0) },
+      { userId: "u-ana", groupId: superId, pointsMatches: 20, exactCount: 1, updatedAt: at(0) },
+    ])
+    .onConflictDoNothing()
+    .run();
+
+  return { groupId: group.id, superId };
 }
