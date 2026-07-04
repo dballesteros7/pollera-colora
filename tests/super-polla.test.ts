@@ -8,6 +8,7 @@ import { savePrediction } from "../lib/predictions";
 import {
   ensureSuperPolla,
   getSuperPolla,
+  getSuperEffectivePicks,
   getSuperIdentity,
   homePollaIdOf,
   setSuperIdentity,
@@ -287,6 +288,69 @@ describe("súper polla", () => {
     // a stranger sees the nickname too (not a famous alias)
     const fromCarlos = superLeaderboard(db, carlos.id).find((r) => r.userId === beto.id)!;
     expect(fromCarlos).toMatchObject({ name: "El Tigre", masked: false });
+  });
+
+  it("getSuperEffectivePicks merges own súper picks with the home-polla fallback", () => {
+    const ana = makeUser("ana@b.co");
+    const beto = makeUser("beto@b.co");
+    const polla = createGroup(db, ana.id, {
+      name: "Oficina",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    });
+    joinGroup(db, beto.id, polla.id, NOW);
+    const sp = getSuperPolla(db)!;
+    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
+
+    // ana only picked in her home polla; beto picked in both (súper must win)
+    savePrediction(db, { userId: ana.id, groupId: polla.id, matchId: quarter.id, predHome: 2, predAway: 1 }, NOW);
+    savePrediction(db, { userId: beto.id, groupId: polla.id, matchId: quarter.id, predHome: 0, predAway: 0 }, NOW);
+    savePrediction(db, { userId: beto.id, groupId: sp.id, matchId: quarter.id, predHome: 3, predAway: 1 }, NOW);
+
+    const picks = getSuperEffectivePicks(db, [quarter.id]).get(quarter.id)!;
+    const byUser = new Map(picks.map((p) => [p.userId, p]));
+    expect(byUser.get(ana.id)).toMatchObject({ predHome: 2, predAway: 1, fromHome: true });
+    expect(byUser.get(beto.id)).toMatchObject({ predHome: 3, predAway: 1, fromHome: false });
+    expect(picks).toHaveLength(2);
+  });
+
+  it("getSuperEffectivePicks ignores picks made only in a non-home polla", () => {
+    const ana = makeUser("ana@b.co");
+    const otro = makeUser("otro@b.co");
+    const first = createGroup(db, ana.id, {
+      name: "Primera",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }, NOW);
+    const second = createGroup(db, otro.id, {
+      name: "Segunda",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }, NOW);
+    joinGroup(db, ana.id, second.id, new Date("2026-06-12T20:00:00Z"));
+    expect(homePollaIdOf(db, ana.id)).toBe(first.id);
+
+    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
+    // only picked in the later polla — the súper polla doesn't score that one,
+    // so it must not be displayed either
+    savePrediction(db, { userId: ana.id, groupId: second.id, matchId: quarter.id, predHome: 2, predAway: 1 }, NOW);
+
+    const picks = getSuperEffectivePicks(db, [quarter.id]).get(quarter.id) ?? [];
+    expect(picks.find((p) => p.userId === ana.id)).toBeUndefined();
+  });
+
+  it("getSuperEffectivePicks carries the joker of whichever pick is effective", () => {
+    const ana = makeUser("ana@b.co");
+    const polla = createGroup(db, ana.id, {
+      name: "Oficina",
+      scoringRules: { preset: "escalonada", unicoAcertado: false },
+    });
+    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
+    savePrediction(
+      db,
+      { userId: ana.id, groupId: polla.id, matchId: quarter.id, predHome: 2, predAway: 1, joker: true, allowJoker: true },
+      NOW,
+    );
+
+    const picks = getSuperEffectivePicks(db, [quarter.id]).get(quarter.id)!;
+    expect(picks[0]).toMatchObject({ userId: ana.id, joker: true, fromHome: true });
   });
 
   it("rebuildAllScores refreshes the súper polla without scoring its own group", () => {

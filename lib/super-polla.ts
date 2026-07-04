@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Db } from "./db";
-import { groups, memberships, superIdentities, users } from "./db/schema";
+import { groups, memberships, predictions, superIdentities, users } from "./db/schema";
 import type { ScoringRules } from "./scoring/presets";
 import { getLeaderboard } from "./leaderboard";
 import { assignAliases } from "./anon";
@@ -124,6 +124,105 @@ export function homePollaIdOf(db: Db, userId: string): string | null {
     .orderBy(asc(memberships.joinedAt))
     .get();
   return row?.groupId ?? null;
+}
+
+// Everyone's *effective* pick per match — a player's own Súper Polla pick,
+// falling back to their home polla's. The same merge the score rebuild uses,
+// so the picks shown always match the points awarded. Only call this for
+// locked matches: picks are secret until kickoff.
+export interface SuperEffectivePick {
+  userId: string;
+  matchId: number;
+  predHome: number;
+  predAway: number;
+  joker: boolean;
+  fromHome: boolean; // inherited from the home polla, not set in the Súper Polla
+}
+
+export function getSuperEffectivePicks(
+  db: Db,
+  matchIds: number[],
+): Map<number, SuperEffectivePick[]> {
+  const out = new Map<number, SuperEffectivePick[]>();
+  if (matchIds.length === 0) return out;
+  const sp = getSuperPolla(db);
+  if (!sp) return out;
+
+  const memberIds = new Set(
+    db
+      .select({ userId: memberships.userId })
+      .from(memberships)
+      .where(eq(memberships.groupId, sp.id))
+      .all()
+      .map((r) => r.userId),
+  );
+  if (memberIds.size === 0) return out;
+
+  // each member's home polla: their earliest regular-polla membership
+  const homeOf = new Map<string, string>();
+  for (const r of db
+    .select({ userId: memberships.userId, groupId: memberships.groupId })
+    .from(memberships)
+    .innerJoin(groups, eq(memberships.groupId, groups.id))
+    .where(eq(groups.isSuper, false))
+    .orderBy(asc(memberships.joinedAt))
+    .all()) {
+    if (!homeOf.has(r.userId)) homeOf.set(r.userId, r.groupId);
+  }
+
+  const own = db
+    .select()
+    .from(predictions)
+    .where(
+      and(
+        eq(predictions.groupId, sp.id),
+        inArray(predictions.matchId, matchIds),
+      ),
+    )
+    .all();
+  const homeGroupIds = [...new Set(homeOf.values())];
+  const home =
+    homeGroupIds.length > 0
+      ? db
+          .select()
+          .from(predictions)
+          .where(
+            and(
+              inArray(predictions.groupId, homeGroupIds),
+              inArray(predictions.matchId, matchIds),
+            ),
+          )
+          .all()
+      : [];
+
+  const push = (
+    p: (typeof own)[number],
+    fromHome: boolean,
+  ) => {
+    out.set(p.matchId, [
+      ...(out.get(p.matchId) ?? []),
+      {
+        userId: p.userId,
+        matchId: p.matchId,
+        predHome: p.predHome,
+        predAway: p.predAway,
+        joker: p.joker,
+        fromHome,
+      },
+    ]);
+  };
+
+  const ownKeys = new Set(own.map((p) => `${p.userId}|${p.matchId}`));
+  for (const p of own) {
+    if (memberIds.has(p.userId)) push(p, false);
+  }
+  for (const p of home) {
+    if (!memberIds.has(p.userId)) continue;
+    if (homeOf.get(p.userId) !== p.groupId) continue; // not their home polla
+    if (ownKeys.has(`${p.userId}|${p.matchId}`)) continue; // own pick wins
+    push(p, true);
+  }
+  return out;
 }
 
 // ---- per-player identity (chosen on first open) ----

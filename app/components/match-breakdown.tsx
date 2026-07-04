@@ -26,6 +26,7 @@ export interface BreakdownPick {
   predAway: number;
   joker: boolean;
   isMe: boolean;
+  masked?: boolean; // the viewer sees an alias — style it as the leaderboard gag
 }
 
 // Per-match scoring transparency: a server-rendered <details> (no JS) that
@@ -76,7 +77,11 @@ export function MatchBreakdown({
                 <span className="pc-avatar pc-avatar--sm" aria-hidden>
                   {(pick.displayName ?? "?").slice(0, 2)}
                 </span>
-                {pick.displayName ?? "(sin nombre)"}
+                <span
+                  style={pick.masked ? { fontStyle: "italic", color: "var(--ink-soft)" } : undefined}
+                >
+                  {pick.displayName ?? "(sin nombre)"}
+                </span>
                 {pick.isBot && (
                   <Bot size={14} className="pc-bot-badge" aria-label={t(lo, "a11y.bot")} />
                 )}
@@ -99,11 +104,15 @@ export function MatchBreakdown({
                   {t(lo, "f.calcMiss")}
                 </span>
               )}
-              {b.parts.map((part, i) => (
-                <span className="pc-calc__chip" key={i}>
-                  {t(lo, PART_KEY[part.key])} <b>+{part.points}</b>
-                </span>
-              ))}
+              {b.parts
+                // a preset can value a part at 0 (e.g. goal diff in marcador o
+                // nada) — an advertised "+0" reads as a rule that doesn't exist
+                .filter((part) => part.points !== 0)
+                .map((part, i) => (
+                  <span className="pc-calc__chip" key={i}>
+                    {t(lo, PART_KEY[part.key])} <b>+{part.points}</b>
+                  </span>
+                ))}
               {b.multiplier !== 1 && (
                 <span className="pc-calc__chip">
                   {t(lo, "f.stageX", { m: b.multiplier })}

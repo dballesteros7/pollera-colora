@@ -28,3 +28,20 @@ test("súper polla — pick card with copied hint", async ({ page }) => {
     mask: [page.locator(dynamic)],
   });
 });
+
+// The Resultados carousel: past knockout picks are revealed, and a finished
+// match opens into the full per-player points breakdown (masked stranger
+// included — the alias must render italic like on the glory table).
+test("súper polla — past match with points breakdown", async ({ page }) => {
+  await page.goto(`/g/${superId}`);
+  const results = page.locator(".pc-daysec").nth(1);
+  await results.waitFor();
+  // newest first: chip 0 is the locked match (pick list), chip 1 the finished
+  // one — select it and expand "how were the points scored"
+  await results.locator(".pc-daychip").nth(1).click();
+  await results.locator(".pc-calc summary").click();
+  await expect(page).toHaveScreenshot("super-results.png", {
+    fullPage: true,
+    mask: [page.locator(dynamic)],
+  });
+});
