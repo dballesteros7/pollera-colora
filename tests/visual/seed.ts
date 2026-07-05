@@ -147,6 +147,79 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
     .onConflictDoNothing()
     .run();
 
+  // --- past knockout matches: the Resultados carousel ---
+  // a stranger from another polla with no chosen identity → the breakdown must
+  // show them under a masked famous-footballer alias, like the glory table
+  db.insert(users)
+    .values({ id: "u-rival", email: "rival@example.test", displayName: "Rivaldo R", createdAt: at(0) })
+    .onConflictDoNothing()
+    .run();
+  const rivalGroup = createGroup(
+    db,
+    "u-rival",
+    { name: "Rivales FC", scoringRules: { preset: "clasica", unicoAcertado: false } },
+    at(0),
+  );
+
+  // a finished quarter-final → full per-player points breakdown
+  const koDone = db
+    .insert(matches)
+    .values({
+      fdId: 99011,
+      stage: "QUARTER_FINALS",
+      matchday: null,
+      kickoffUtc: at(-3 * H),
+      homeTeam: "Netherlands",
+      awayTeam: "Italy",
+      homeCrest: null,
+      awayCrest: null,
+      status: "FINISHED",
+      duration: "REGULAR",
+      regHome: 2,
+      regAway: 1,
+      finalHome: 2,
+      finalAway: 1,
+      updatedAt: at(0),
+    })
+    .returning()
+    .get();
+  // a kicked-off match with no result yet → picks revealed as a plain list
+  const koLocked = db
+    .insert(matches)
+    .values({
+      fdId: 99012,
+      stage: "QUARTER_FINALS",
+      matchday: null,
+      kickoffUtc: at(-1 * H),
+      homeTeam: "Germany",
+      awayTeam: "Uruguay",
+      homeCrest: null,
+      awayCrest: null,
+      status: "TIMED",
+      duration: null,
+      regHome: null,
+      regAway: null,
+      finalHome: null,
+      finalAway: null,
+      updatedAt: at(0),
+    })
+    .returning()
+    .get();
+
+  // everyone picked in their home polla (the Súper Polla falls back to those):
+  // diego exact, cosima result + comodín, ana miss, masked rival exact
+  db.insert(predictions)
+    .values([
+      { userId: "u-diego", groupId: group.id, matchId: koDone.id, predHome: 2, predAway: 1, joker: false, updatedAt: at(0) },
+      { userId: "u-cosima", groupId: group.id, matchId: koDone.id, predHome: 1, predAway: 0, joker: true, updatedAt: at(0) },
+      { userId: "u-ana", groupId: group.id, matchId: koDone.id, predHome: 0, predAway: 2, joker: false, updatedAt: at(0) },
+      { userId: "u-rival", groupId: rivalGroup.id, matchId: koDone.id, predHome: 2, predAway: 1, joker: false, updatedAt: at(0) },
+      { userId: "u-diego", groupId: group.id, matchId: koLocked.id, predHome: 1, predAway: 1, joker: false, updatedAt: at(0) },
+      { userId: "u-rival", groupId: rivalGroup.id, matchId: koLocked.id, predHome: 0, predAway: 1, joker: false, updatedAt: at(0) },
+    ])
+    .onConflictDoNothing()
+    .run();
+
   // home-polla bonus picks (champion/top scorer) — the Súper Polla bonus form
   // pre-fills from these until Diego sets his own
   db.insert(bonusPicks)
@@ -170,6 +243,7 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
       { userId: "u-cosima", groupId: superId, pointsMatches: 60, exactCount: 3, updatedAt: at(0) },
       { userId: "u-diego", groupId: superId, pointsMatches: 40, exactCount: 2, updatedAt: at(0) },
       { userId: "u-ana", groupId: superId, pointsMatches: 20, exactCount: 1, updatedAt: at(0) },
+      { userId: "u-rival", groupId: superId, pointsMatches: 15, exactCount: 0, updatedAt: at(0) },
     ])
     .onConflictDoNothing()
     .run();

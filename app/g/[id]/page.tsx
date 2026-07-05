@@ -17,7 +17,7 @@ import { getGroupForMember, getGroupMembers, getUserGroups } from "@/lib/groups"
 import { getLeaderboard } from "@/lib/leaderboard";
 import { requireUser } from "@/lib/auth/require";
 import { PRESETS, parseScoringRules } from "@/lib/scoring/presets";
-import { getAllMatches, isPredictable, getUserPredictions } from "@/lib/predictions";
+import { getAllMatches, isLocked, isPredictable, getUserPredictions } from "@/lib/predictions";
 import { getGroupQuestions, getUserAnswers } from "@/lib/props";
 import {
   bonusLocked,
@@ -36,8 +36,11 @@ import { DayBoard, type DayChip } from "@/app/components/day-board";
 import { FeedbackForm, PendingButton } from "@/app/components/feedback-form";
 import { ScoringSheet } from "@/app/components/scoring-rules";
 import { savePredictionAction } from "./fixtures/actions";
+import { scoreMatch } from "@/lib/scoring/score";
+import { MatchBreakdown } from "@/app/components/match-breakdown";
 import {
   getSuperIdentity,
+  getSuperEffectivePicks,
   superLeaderboard,
   SUPER_PRESET,
   isKnockoutStage,
@@ -165,9 +168,32 @@ export default async function GroupPage({
     const homeBonus = homeId ? getUserBonusPicks(db, user.id, homeId) : new Map();
     const bonusOpen = !bonusLocked(group, now);
     const teams = getKnownTeams(db);
-    const pickMatches = getAllMatches(db)
-      .filter((m) => isKnockoutStage(m.stage) && isPredictable(m, now))
+    const knockouts = getAllMatches(db).filter((m) => isKnockoutStage(m.stage));
+    const pickMatches = knockouts
+      .filter((m) => isPredictable(m, now))
       .sort((a, b) => a.kickoffUtc.getTime() - b.kickoffUtc.getTime());
+    // kicked-off knockout matches, newest first: picks are public from kickoff,
+    // and once a result is in, the per-match breakdown shows how every point on
+    // the glory table was earned
+    const pastMatches = knockouts
+      .filter(
+        (m) =>
+          m.homeTeam !== null &&
+          m.awayTeam !== null &&
+          isLocked(m, now) &&
+          m.status !== "CANCELLED" &&
+          m.status !== "POSTPONED",
+      )
+      .sort((a, b) => b.kickoffUtc.getTime() - a.kickoffUtc.getTime());
+    const superPicks = getSuperEffectivePicks(db, pastMatches.map((m) => m.id));
+    // viewer-resolved names and masking, identical to the glory table's aliases
+    const nameById = new Map(superBoard.map((r) => [r.userId, r]));
+    const superMatchState = (m: (typeof pastMatches)[number]) =>
+      m.status === "FINISHED" || m.status === "AWARDED"
+        ? ("final" as const)
+        : m.status === "IN_PLAY" || m.status === "PAUSED"
+          ? ("live" as const)
+          : ("locked" as const);
     const superAria = {
       goals: t(lo, "f.goalsOf", { team: "{team}" }),
       minus: t(lo, "f.minus", { team: "{team}" }),
@@ -246,6 +272,176 @@ export default async function GroupPage({
     }));
     const pickDetails = pickMatches.map(renderSuperPick);
 
+    // a kicked-off match: the result, your effective pick, and everyone's picks
+    // — a plain list while it's locked/live, the full point breakdown once final
+    const STATE_BADGE: Record<string, { cls: string; key: string; dot?: boolean }> = {
+      locked: { cls: "pc-badge--locked", key: "badge.locked" },
+      live: { cls: "pc-badge--live", key: "badge.live", dot: true },
+      final: { cls: "pc-badge--final", key: "badge.final" },
+    };
+    const renderSuperResult = (m: (typeof pastMatches)[number]) => {
+      const state = superMatchState(m);
+      const badge = STATE_BADGE[state];
+      const picks = superPicks.get(m.id) ?? [];
+      const mine = picks.find((p) => p.userId === user.id);
+      const hasScore = m.regHome !== null && m.regAway !== null;
+      const earned =
+        state === "final" && hasScore && mine
+          ? scoreMatch(
+              mine,
+              { regHome: m.regHome!, regAway: m.regAway!, stage: m.stage },
+              SUPER_PRESET,
+            )
+          : null;
+      return (
+        <article key={m.id} className="pc-match pc-hero-match" data-state={state}>
+          <div className="pc-match__head">
+            <span className="pc-match__meta">
+              {SUPER_STAGE_KEY[m.stage] ? t(lo, SUPER_STAGE_KEY[m.stage]) : m.stage}
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="pc-match__time">{fmtDateTime.format(m.kickoffUtc)}</span>
+              <span className={`pc-badge ${badge.cls}`}>
+                {badge.dot && <span className="pc-dot" />}
+                {t(lo, badge.key)}
+              </span>
+            </span>
+          </div>
+          <div className="pc-match__body">
+            <div className="pc-match__row">
+              <span className="pc-team pc-team--home">
+                {m.homeCrest && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.homeCrest} alt="" className="pc-team__flag" width={26} height={19} />
+                )}
+                <span className="pc-team__name">{teamName(m.homeTeam, lo)}</span>
+              </span>
+              <span className="pc-result">
+                {state === "locked" ? (
+                  <span style={{ color: "var(--ink-faint)" }}>vs</span>
+                ) : (
+                  <>
+                    {state === "final" ? m.regHome : (m.finalHome ?? 0)} –{" "}
+                    {state === "final" ? m.regAway : (m.finalAway ?? 0)}
+                    {state === "final" && m.duration !== "REGULAR" && (
+                      <small>
+                        {t(lo, "f.reg90", { h: m.finalHome ?? 0, a: m.finalAway ?? 0 })}
+                      </small>
+                    )}
+                  </>
+                )}
+              </span>
+              <span className="pc-team pc-team--away">
+                {m.awayCrest && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.awayCrest} alt="" className="pc-team__flag" width={26} height={19} />
+                )}
+                <span className="pc-team__name">{teamName(m.awayTeam, lo)}</span>
+              </span>
+            </div>
+
+            <div className="pc-match__pick">
+              <span>
+                {t(lo, "f.yourPick")}{" "}
+                {mine ? (
+                  <b className="pc-pick">
+                    {mine.predHome}–{mine.predAway}
+                  </b>
+                ) : (
+                  t(lo, "f.noPickPailas")
+                )}
+                {mine?.joker && (
+                  <span className="pc-badge pc-badge--comodin" style={{ marginLeft: 8 }}>
+                    {t(lo, "comodin").toLowerCase()}
+                  </span>
+                )}
+                {mine?.fromHome && (
+                  <span className="pc-hint" style={{ marginLeft: 8 }}>
+                    ({t(lo, "super.fromPolla")})
+                  </span>
+                )}
+              </span>
+              {earned && (
+                <span className={`pc-badge ${earned.points > 0 ? "pc-badge--points" : "pc-badge--locked"}`}>
+                  {t(lo, "f.plusPts", { n: earned.points })}
+                </span>
+              )}
+            </div>
+
+            {picks.length === 0 ? (
+              <p className="pc-hint" style={{ margin: "var(--space-2) 0 0" }}>
+                {t(lo, "super.noPicks")}
+              </p>
+            ) : state === "final" && hasScore ? (
+              <MatchBreakdown
+                locale={lo}
+                preset={SUPER_PRESET}
+                result={{ regHome: m.regHome!, regAway: m.regAway!, stage: m.stage }}
+                unico={false}
+                picks={picks.map((p) => {
+                  const who = nameById.get(p.userId);
+                  return {
+                    userId: p.userId,
+                    displayName: who?.name ?? null,
+                    masked: who?.masked ?? false,
+                    isBot: who?.isBot ?? false,
+                    predHome: p.predHome,
+                    predAway: p.predAway,
+                    joker: p.joker,
+                    isMe: p.userId === user.id,
+                  };
+                })}
+              />
+            ) : (
+              <div className="pc-picklist">
+                {picks.map((p) => {
+                  const who = nameById.get(p.userId);
+                  return (
+                    <span key={p.userId} className="pc-picklist__row">
+                      <span className="pc-avatar pc-avatar--sm">
+                        {(who?.name ?? "?").slice(0, 2)}
+                      </span>
+                      <span
+                        style={who?.masked ? { fontStyle: "italic", color: "var(--ink-soft)" } : undefined}
+                      >
+                        {who?.name ?? "(sin nombre)"}
+                      </span>
+                      {who?.isBot && (
+                        <Bot size={14} className="pc-bot-badge" aria-label={t(lo, "a11y.bot")} />
+                      )}
+                      {p.joker && (
+                        <span className="pc-badge pc-badge--comodin">×2</span>
+                      )}
+                      <span className="pc-pick">
+                        {p.predHome}–{p.predAway}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </article>
+      );
+    };
+
+    const resultChips: DayChip[] = pastMatches.map((m) => {
+      const state = superMatchState(m);
+      return {
+        key: String(m.id),
+        home: teamAbbrev(m.homeTeam),
+        away: teamAbbrev(m.awayTeam),
+        homeCrest: m.homeCrest,
+        awayCrest: m.awayCrest,
+        center:
+          state === "locked"
+            ? fmtTime.format(m.kickoffUtc)
+            : `${m.finalHome ?? 0}–${m.finalAway ?? 0}`,
+        live: state === "live",
+      };
+    });
+    const resultDetails = pastMatches.map(renderSuperResult);
+
     return (
       <>
         <Header />
@@ -320,6 +516,21 @@ export default async function GroupPage({
                 ))}
               </tbody>
             </table>
+          )}
+
+          {pastMatches.length > 0 && (
+            <section className="pc-flow" style={{ gap: "var(--space-2)" }}>
+              <div>
+                <span className="pc-quicklink__label">{t(lo, "super.resultsTitle")}</span>
+                <p className="pc-hint" style={{ margin: "4px 0 0" }}>{t(lo, "super.resultsSub")}</p>
+              </div>
+              <DayBoard
+                label={t(lo, "super.resultsTitle")}
+                chips={resultChips}
+                details={resultDetails}
+                defaultIndex={0}
+              />
+            </section>
           )}
 
           <section className="pc-flow" style={{ gap: "var(--space-2)" }}>
