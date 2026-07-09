@@ -84,7 +84,7 @@ export default async function Home() {
 
   const db = getDb();
   const memberships = getUserGroups(db, user.id);
-  // active players (in ≥1 real polla) are auto-enrolled in the Súper Polla;
+  // active players (in ≥1 real polla) are auto-enrolled in the Superpolla;
   // surface it as its own banner above the list
   const superPolla = memberships.length > 0 ? getSuperPolla(db) : null;
 

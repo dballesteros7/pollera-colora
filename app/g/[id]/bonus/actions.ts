@@ -24,7 +24,7 @@ export async function saveBonusPicksAction(formData: FormData) {
   const access = getGroupForMember(db, user.id, groupId);
   if (!access) notFound();
 
-  // after the deadline the Súper Polla still takes first-time picks: only
+  // after the deadline the Superpolla still takes first-time picks: only
   // categories with no effective value anywhere for this player qualify
   // (saveBonusPick enforces the late-fill close and insert-only semantics)
   let lateFillable: Set<string> | null = null;
@@ -42,7 +42,7 @@ export async function saveBonusPicksAction(formData: FormData) {
       if (lateFillable && (!lateFillable.has(cat.id) || !String(value).trim())) {
         continue; // never touch existing bets past the deadline
       }
-      // a late fill lands everywhere the player plays: the Súper Polla and
+      // a late fill lands everywhere the player plays: the Superpolla and
       // each of their regular pollas (a fillable category is empty in all of
       // them, and inserts never overwrite anything anyway)
       const targets = lateFillable
@@ -65,7 +65,7 @@ export async function saveBonusPicksAction(formData: FormData) {
     return { err: true };
   }
   revalidatePath(`/g/${groupId}/bonus`);
-  // the Súper Polla renders bonus inline on its home page
+  // the Superpolla renders bonus inline on its home page
   revalidatePath(`/g/${groupId}`);
   return {};
 }

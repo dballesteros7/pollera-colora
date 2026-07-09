@@ -40,7 +40,7 @@ export function startScheduler() {
   let runningSince = 0;
   let lastSnapshotHour = -1;
   let lastCleanupDay = -1;
-  // ensure the Súper Polla exists; done on the first tick (not synchronously at
+  // ensure the Superpolla exists; done on the first tick (not synchronously at
   // boot) so we never touch the DB before it's ready — on Fly the volume may not
   // be mounted yet, and in tests the seed DB is written just after boot
   let superSeeded = false;

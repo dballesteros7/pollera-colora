@@ -1,4 +1,4 @@
-// Read-only dump of everything needed to audit the Súper Polla before the
+// Read-only dump of everything needed to audit the Superpolla before the
 // quarterfinals: memberships, knockout picks (all groups), jokers, bonus picks,
 // outcomes, and the cached super scores. Prints one JSON blob to stdout.
 // Usage: tsx scripts/super-audit.ts

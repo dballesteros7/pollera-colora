@@ -36,7 +36,7 @@ function body(missing: string[]): string {
     "",
     list,
     "",
-    "Normally these closed on July 3 and Tania forgives nothing. But since several of you were in the same boat, we're leaving the door open un momentico: you can add the ones you're missing — first time only, existing picks don't move — until Monday night (July 13). They'll count in the Súper Polla AND in your pollas.",
+    "Normally these closed on July 3 and Tania forgives nothing. But since several of you were in the same boat, we're leaving the door open un momentico: you can add the ones you're missing — first time only, existing picks don't move — until Monday night (July 13). They'll count in the Superpolla AND in your pollas.",
     "",
     `Fill the holes here, under "Tournament picks": ${APP_URL}`,
     "",
@@ -50,7 +50,7 @@ function body(missing: string[]): string {
 async function main() {
   const db = getDb();
   const sp = getSuperPolla(db);
-  if (!sp) throw new Error("No Súper Polla in this DB");
+  if (!sp) throw new Error("No Superpolla in this DB");
 
   const members = db
     .select({ email: users.email, name: users.displayName, id: users.id })

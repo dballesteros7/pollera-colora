@@ -62,7 +62,7 @@ export function addClaudeToGroup(db: Db, groupId: string, now = new Date()) {
 }
 
 export function addClaudeToAllGroups(db: Db, now = new Date()) {
-  // real pollas only — the bot joins the Súper Polla via membership sync, like
+  // real pollas only — the bot joins the Superpolla via membership sync, like
   // every other active player
   const all = db
     .select({ id: groups.id })

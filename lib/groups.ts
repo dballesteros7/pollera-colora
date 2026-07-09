@@ -45,7 +45,7 @@ export function createGroup(
     .run();
   // every polla gets the Claude bot player (no-op until the bot is seeded)
   addClaudeToGroup(db, group.id, now);
-  // the organizer (and anyone the bot adds) now competes in the Súper Polla too
+  // the organizer (and anyone the bot adds) now competes in the Superpolla too
   syncSuperPollaMembership(db, now);
   return group;
 }
@@ -75,12 +75,12 @@ export function joinGroup(db: Db, userId: string, groupId: string, now = new Dat
     .returning()
     .get();
   // joining your first polla makes you an active player → auto-enroll in the
-  // Súper Polla so your knockout picks compete for ultimate glory
+  // Superpolla so your knockout picks compete for ultimate glory
   syncSuperPollaMembership(db, now);
   return membership;
 }
 
-// a user's real pollas — never the Súper Polla, which is surfaced on its own.
+// a user's real pollas — never the Superpolla, which is surfaced on its own.
 // Used for the home list, "do you have other pollas", and copy-to-all-pollas.
 export function getUserGroups(db: Db, userId: string) {
   return db
