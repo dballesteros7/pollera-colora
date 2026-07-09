@@ -23,7 +23,6 @@ import {
   bonusLocked,
   bonusDeadline,
   BONUS_CATEGORIES,
-  getUserBonusPicks,
   getKnownTeams,
 } from "@/lib/bonus";
 import { featuredRecapRound } from "@/lib/recap";
@@ -41,10 +40,11 @@ import { MatchBreakdown } from "@/app/components/match-breakdown";
 import {
   getSuperIdentity,
   getSuperEffectivePicks,
+  effectiveSuperPicksByUser,
+  effectiveSuperBonusByUser,
   superLeaderboard,
   SUPER_PRESET,
   isKnockoutStage,
-  homePollaIdOf,
 } from "@/lib/super-polla";
 import { setSuperIdentityAction } from "./super-actions";
 import { saveBonusPicksAction } from "./bonus/actions";
@@ -97,8 +97,9 @@ export default async function GroupPage({
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
 
-  // The Súper Polla is read-only: no pick entry, no invite, no sub-tabs — just
-  // the global glory table over everyone's home-polla knockout picks.
+  // The Súper Polla: no invite, no sub-tabs — knockout pick entry (with its own
+  // comodín) plus the global glory table. Unpicked matches fall back to the
+  // player's regular pollas, earliest joined first, joker never inherited.
   if (group.isSuper) {
     const superBoard = superLeaderboard(db, user.id);
     const noScores = superBoard.every((r) => r.total === 0);
@@ -154,21 +155,24 @@ export default async function GroupPage({
       );
     }
 
-    // your own Súper Polla picks for the open knockout matches; the home polla's
-    // pick pre-fills the input as a convenience until you save your own
-    const homeId = homePollaIdOf(db, user.id);
+    // your own Súper Polla picks for the open knockout matches; picks from
+    // your regular pollas (earliest first) pre-fill the gaps until you save
+    // your own — without their comodín, which is chosen here
     const ownPicks = getUserPredictions(db, user.id, group.id);
-    const homePicks = homeId ? getUserPredictions(db, user.id, homeId) : new Map();
     // the user's real pollas (Súper Polla excluded) — targets for "save to all"
     const hasRealPollas = getUserGroups(db, user.id).length > 0;
 
-    // tournament bonus: own Súper pick per category, falling back to the home
-    // polla's. Enterable while bonus is open (the Súper Polla has no early lock).
-    const ownBonus = getUserBonusPicks(db, user.id, group.id);
-    const homeBonus = homeId ? getUserBonusPicks(db, user.id, homeId) : new Map();
+    // tournament bonus: own Súper pick per category, falling back across the
+    // user's pollas. Enterable while bonus is open (no early lock here).
+    const effBonus =
+      effectiveSuperBonusByUser(db).get(user.id) ??
+      new Map<string, { value: string; fromHome: boolean }>();
     const bonusOpen = !bonusLocked(group, now);
     const teams = getKnownTeams(db);
     const knockouts = getAllMatches(db).filter((m) => isKnockoutStage(m.stage));
+    const myPicks =
+      effectiveSuperPicksByUser(db, knockouts.map((m) => m.id)).get(user.id) ??
+      new Map();
     const pickMatches = knockouts
       .filter((m) => isPredictable(m, now))
       .sort((a, b) => a.kickoffUtc.getTime() - b.kickoffUtc.getTime());
@@ -204,8 +208,8 @@ export default async function GroupPage({
     // so making a pick doesn't bury the glory table below
     const renderSuperPick = (m: (typeof pickMatches)[number]) => {
       const own = ownPicks.get(m.id);
-      const eff = own ?? homePicks.get(m.id);
-      const copied = !own && Boolean(homePicks.get(m.id));
+      const eff = myPicks.get(m.id); // own pick, else earliest polla's (joker stripped)
+      const copied = Boolean(eff?.fromHome);
       return (
         <article key={m.id} className="pc-match pc-hero-match" data-state="open">
           <div className="pc-match__head">
@@ -547,7 +551,7 @@ export default async function GroupPage({
               >
                 <input type="hidden" name="groupId" value={group.id} />
                 {BONUS_CATEGORIES.map((cat) => {
-                  const eff = ownBonus.get(cat.id) ?? homeBonus.get(cat.id) ?? "";
+                  const eff = effBonus.get(cat.id)?.value ?? "";
                   return (
                     <div className="pc-field" key={cat.id}>
                       <label className="pc-label" htmlFor={`pick_${cat.id}`}>
@@ -583,7 +587,7 @@ export default async function GroupPage({
             ) : (
               <div className="pc-card pc-card--pad-lg pc-flow" style={{ gap: 8 }}>
                 {BONUS_CATEGORIES.map((cat) => {
-                  const eff = ownBonus.get(cat.id) ?? homeBonus.get(cat.id);
+                  const eff = effBonus.get(cat.id)?.value;
                   return (
                     <div key={cat.id} className="pc-match__pick" style={{ marginTop: 0, paddingTop: 0, borderTop: "none" }}>
                       <span>{t(lo, BONUS_KEY[cat.id])}</span>

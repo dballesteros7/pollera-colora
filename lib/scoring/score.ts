@@ -11,13 +11,13 @@ import {
 } from "../db/schema";
 import {
   getGroupBonusPicks,
-  getUserBonusPicks,
   getOutcomes,
   BONUS_CATEGORIES,
 } from "../bonus";
 import {
+  effectiveSuperBonusByUser,
+  effectiveSuperPicksByUser,
   getSuperPolla,
-  homePollaIdOf,
   isKnockoutStage,
   syncSuperPollaMembership,
   SUPER_PRESET,
@@ -300,9 +300,10 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
 
 // The Súper Polla's leaderboard, over the knockout rounds under the Marcador o
 // nada + comodín ruleset. Each player has their own Súper-Polla picks; for any
-// knockout match they haven't picked there yet, we fall back to their home-polla
-// pick as a convenience (so nobody misses points before they notice the Súper
-// Polla). Props are group-specific and don't carry over; bonus picks do.
+// knockout match they haven't picked there yet, we fall back to their regular
+// pollas — earliest joined first — so nobody misses points before they notice
+// the Súper Polla. Inherited picks never carry the comodín (it's chosen here).
+// Props are group-specific and don't carry over; bonus picks do.
 export function rebuildSuperPollaScores(db: Db, now = new Date()) {
   const sp = getSuperPolla(db);
   if (!sp) return;
@@ -325,43 +326,21 @@ export function rebuildSuperPollaScores(db: Db, now = new Date()) {
     .all();
 
   const outcomes = getOutcomes(db);
+  const effPicks = effectiveSuperPicksByUser(
+    db,
+    finishedKnockout.map((m) => m.id),
+  );
+  const effBonus = outcomes.size > 0 ? effectiveSuperBonusByUser(db) : null;
 
   for (const { userId } of members) {
-    const homeId = homePollaIdOf(db, userId);
     let points = 0;
     let exact = 0;
     let result = 0;
     let bonus = 0;
 
-    // the player's own Súper Polla picks win; home-polla picks fill the gaps
-    const ownPreds = new Map(
-      db
-        .select()
-        .from(predictions)
-        .where(
-          and(eq(predictions.userId, userId), eq(predictions.groupId, sp.id)),
-        )
-        .all()
-        .map((p) => [p.matchId, p]),
-    );
-    const homePreds = homeId
-      ? new Map(
-          db
-            .select()
-            .from(predictions)
-            .where(
-              and(
-                eq(predictions.userId, userId),
-                eq(predictions.groupId, homeId),
-              ),
-            )
-            .all()
-            .map((p) => [p.matchId, p]),
-        )
-      : new Map();
-
+    const preds = effPicks.get(userId);
     for (const match of finishedKnockout) {
-      const p = ownPreds.get(match.id) ?? homePreds.get(match.id);
+      const p = preds?.get(match.id);
       if (!p) continue;
       const s = scoreMatch(
         p,
@@ -373,13 +352,11 @@ export function rebuildSuperPollaScores(db: Db, now = new Date()) {
       if (s.result) result++;
     }
 
-    // bonus (champion, top scorer, …): the player's own Súper Polla pick wins;
-    // the home-polla pick fills any category they haven't set here
-    if (outcomes.size > 0) {
-      const ownBonus = getUserBonusPicks(db, userId, sp.id);
-      const homeBonus = homeId ? getUserBonusPicks(db, userId, homeId) : new Map();
+    // bonus (champion, top scorer, …): same own-wins/pollas-fill merge
+    const myBonus = effBonus?.get(userId);
+    if (myBonus) {
       for (const cat of BONUS_CATEGORIES) {
-        const value = ownBonus.get(cat.id) ?? homeBonus.get(cat.id);
+        const value = myBonus.get(cat.id)?.value;
         if (!value) continue;
         const real = outcomes.get(cat.id);
         if (real && fold(real) === fold(value)) {
