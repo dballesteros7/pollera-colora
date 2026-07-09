@@ -17,10 +17,10 @@ test.beforeEach(async ({ context }) => {
   ]);
 });
 
-// The Súper Polla pick card with a pre-filled (copied-from-home) pick — the
+// The Superpolla pick card with a pre-filled (copied-from-home) pick — the
 // "Pre-llenado con el de tu polla…" hint must sit inside the card's padding,
 // not flush against the edge / accent rail.
-test("súper polla — pick card with copied hint", async ({ page }) => {
+test("superpolla — pick card with copied hint", async ({ page }) => {
   await page.goto(`/g/${superId}`);
   await page.waitForSelector(".pc-daysec");
   await expect(page).toHaveScreenshot("super-pick.png", {
@@ -32,7 +32,7 @@ test("súper polla — pick card with copied hint", async ({ page }) => {
 // The Resultados carousel: past knockout picks are revealed, and a finished
 // match opens into the full per-player points breakdown (masked stranger
 // included — the alias must render italic like on the glory table).
-test("súper polla — past match with points breakdown", async ({ page }) => {
+test("superpolla — past match with points breakdown", async ({ page }) => {
   await page.goto(`/g/${superId}`);
   const results = page.locator(".pc-daysec").nth(1);
   await results.waitFor();

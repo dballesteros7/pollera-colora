@@ -298,11 +298,11 @@ export function rebuildGroupScores(db: Db, groupId: string, now = new Date()) {
   }
 }
 
-// The Súper Polla's leaderboard, over the knockout rounds under the Marcador o
-// nada + comodín ruleset. Each player has their own Súper-Polla picks; for any
+// The Superpolla's leaderboard, over the knockout rounds under the Marcador o
+// nada + comodín ruleset. Each player has their own Superpolla picks; for any
 // knockout match they haven't picked there yet, we fall back to their regular
 // pollas — earliest joined first — so nobody misses points before they notice
-// the Súper Polla. Inherited picks never carry the comodín (it's chosen here).
+// the Superpolla. Inherited picks never carry the comodín (it's chosen here).
 // Props are group-specific and don't carry over; bonus picks do.
 export function rebuildSuperPollaScores(db: Db, now = new Date()) {
   const sp = getSuperPolla(db);
@@ -396,7 +396,7 @@ export function rebuildAllScores(db: Db, now = new Date()) {
     .select({ id: groups.id, isSuper: groups.isSuper })
     .from(groups)
     .all();
-  // regular pollas score their own predictions; the Súper Polla reuses theirs
+  // regular pollas score their own predictions; the Superpolla reuses theirs
   for (const g of allGroups) {
     if (!g.isSuper) rebuildGroupScores(db, g.id, now);
   }

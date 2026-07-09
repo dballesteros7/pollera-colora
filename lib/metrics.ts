@@ -47,7 +47,7 @@ export function collectMetrics(db: Db, now = new Date()): Metrics {
     dau: seenSince(dayAgo),
     wau: seenSince(weekAgo),
     sessions: count(db, sessions),
-    // real pollas only — the singleton Súper Polla and its auto-enrolled
+    // real pollas only — the singleton Superpolla and its auto-enrolled
     // memberships would otherwise skew the counts (it ~doubles memberships)
     groups: db
       .select({ n: sql<number>`count(*)` })

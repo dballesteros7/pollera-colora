@@ -50,7 +50,7 @@ import {
 import { setSuperIdentityAction } from "./super-actions";
 import { saveBonusPicksAction } from "./bonus/actions";
 
-// knockout-stage labels for the Súper Polla pick cards
+// knockout-stage labels for the Superpolla pick cards
 const SUPER_STAGE_KEY: Record<string, string> = {
   LAST_32: "f.r32",
   LAST_16: "f.r16",
@@ -98,7 +98,7 @@ export default async function GroupPage({
   const preset = PRESETS[rules.preset];
   const board = getLeaderboard(db, group.id);
 
-  // The Súper Polla: no invite, no sub-tabs — knockout pick entry (with its own
+  // The Superpolla: no invite, no sub-tabs — knockout pick entry (with its own
   // comodín) plus the global glory table. Unpicked matches fall back to the
   // player's regular pollas, earliest joined first, joker never inherited.
   if (group.isSuper) {
@@ -106,7 +106,7 @@ export default async function GroupPage({
     const noScores = superBoard.every((r) => r.total === 0);
     const decided = getSuperIdentity(db, user.id) !== null;
 
-    // First open: a cheerful interstitial explaining what the Súper Polla is,
+    // First open: a cheerful interstitial explaining what the Superpolla is,
     // and the one-time choice of how you want to appear. Shown until decided.
     if (!decided) {
       return (
@@ -156,11 +156,11 @@ export default async function GroupPage({
       );
     }
 
-    // your own Súper Polla picks for the open knockout matches; picks from
+    // your own Superpolla picks for the open knockout matches; picks from
     // your regular pollas (earliest first) pre-fill the gaps until you save
     // your own — without their comodín, which is chosen here
     const ownPicks = getUserPredictions(db, user.id, group.id);
-    // the user's real pollas (Súper Polla excluded) — targets for "save to all"
+    // the user's real pollas (Superpolla excluded) — targets for "save to all"
     const hasRealPollas = getUserGroups(db, user.id).length > 0;
 
     // tournament bonus: own Súper pick per category, falling back across the

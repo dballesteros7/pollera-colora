@@ -26,7 +26,7 @@ export async function savePredictionAction(formData: FormData) {
   try {
     if (applyAll) {
       // score goes to every polla; the joker stays in this one. getUserGroups
-      // omits the Súper Polla, so add the origin explicitly when saving from it
+      // omits the Superpolla, so add the origin explicitly when saving from it
       // — otherwise the user's Súper pick would be dropped entirely.
       const targets = getUserGroups(db, user.id).map((g) => g.group);
       if (!targets.some((g) => g.id === groupId)) targets.unshift(access.group);

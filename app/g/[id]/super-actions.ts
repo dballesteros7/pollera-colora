@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth/require";
 import { getGroupForMember } from "@/lib/groups";
 import { setSuperIdentity } from "@/lib/super-polla";
 
-// First-open choice on the Súper Polla: keep your real name, or pick a nickname
+// First-open choice on the Superpolla: keep your real name, or pick a nickname
 // that everyone sees. Until this is set, strangers see a famous-footballer alias.
 export async function setSuperIdentityAction(formData: FormData) {
   const groupId = String(formData.get("groupId") ?? "");

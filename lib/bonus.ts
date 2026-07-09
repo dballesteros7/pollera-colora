@@ -19,7 +19,7 @@ export class BonusLockedError extends Error {}
 // set an *earlier* bonusLockAt, but never a later one.
 export const BONUS_CLOSE = new Date("2026-07-03T22:00:00Z");
 
-// The Súper Polla door stays ajar a little longer for *first-time* picks: a
+// The Superpolla door stays ajar a little longer for *first-time* picks: a
 // player who never made a category's pick anywhere may still add it there —
 // insert only, never edit or delete, so late information can't move existing
 // bets. Closes for good between the quarterfinals and the semis.

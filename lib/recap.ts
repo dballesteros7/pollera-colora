@@ -463,7 +463,7 @@ export function getGlobalRoundStanding(
   const total = ranked.length;
 
   // people who share any *real* polla with the viewer keep their real name —
-  // the Súper Polla doesn't count (everyone's in it, so it would unmask all)
+  // the Superpolla doesn't count (everyone's in it, so it would unmask all)
   const myGroupIds = db
     .select({ groupId: memberships.groupId })
     .from(memberships)
@@ -666,7 +666,7 @@ export function getPredictionBuddies(
   const human = (uid: string) => uid !== viewerId && !isBot.get(uid);
 
   // who shares a real polla with the viewer — keeps their real name (privacy
-  // rule). The Súper Polla is excluded: everyone's in it, so it unmasks nobody.
+  // rule). The Superpolla is excluded: everyone's in it, so it unmasks nobody.
   const myGroupIds = db
     .select({ groupId: memberships.groupId })
     .from(memberships)

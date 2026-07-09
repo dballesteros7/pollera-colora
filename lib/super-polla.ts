@@ -15,23 +15,23 @@ import type { ScoringRules } from "./scoring/presets";
 import { getLeaderboard } from "./leaderboard";
 import { assignAliases } from "./anon";
 
-// the Súper Polla ruleset (Marcador o nada + comodín) lives in the leaf presets
+// the Superpolla ruleset (Marcador o nada + comodín) lives in the leaf presets
 // module; re-exported here so existing importers don't move
 export { SUPER_PRESET } from "./scoring/presets";
 
-// The Súper Polla is a singleton group flagged `isSuper`. Every active player
+// The Superpolla is a singleton group flagged `isSuper`. Every active player
 // (anyone in at least one regular polla) is auto-enrolled. Players make their
-// knockout picks (and comodín) in the Súper Polla itself; any match they
+// knockout picks (and comodín) in the Superpolla itself; any match they
 // haven't picked here falls back to their regular pollas — earliest joined
 // first — so nobody misses points just because they never opened this page.
-export const SUPER_POLLA_NAME = "La Súper Polla";
+export const SUPER_POLLA_NAME = "La Superpolla";
 
 const SUPER_RULES: ScoringRules = {
   preset: "marcador_o_nada",
   unicoAcertado: false,
 };
 
-// the Súper Polla only counts knockout matches — the group stage stays in each
+// the Superpolla only counts knockout matches — the group stage stays in each
 // player's own polla. Every non-group stage is a knockout round.
 export function isKnockoutStage(stage: string): boolean {
   return stage !== "GROUP_STAGE";
@@ -41,7 +41,7 @@ export function getSuperPolla(db: Db) {
   return db.select().from(groups).where(eq(groups.isSuper, true)).get() ?? null;
 }
 
-// the organizer FK just needs a real user; the Súper Polla exposes no organizer
+// the organizer FK just needs a real user; the Superpolla exposes no organizer
 // powers. Prefer the first admin, fall back to the earliest human player.
 function pickOrganizer(db: Db): string | null {
   const admin = db
@@ -90,7 +90,7 @@ export function ensureSuperPolla(db: Db, now = new Date()) {
     .get();
 }
 
-// auto-enroll: every player in a regular polla becomes a Súper Polla member.
+// auto-enroll: every player in a regular polla becomes a Superpolla member.
 // Safe to call repeatedly (on join, on group create, on score rebuild).
 export function syncSuperPollaMembership(db: Db, now = new Date()) {
   const sp = ensureSuperPolla(db, now);
@@ -154,10 +154,10 @@ export function regularPollaIdsOf(db: Db, userId: string): string[] {
     .map((r) => r.groupId);
 }
 
-// Everyone's *effective* pick per match — a player's own Súper Polla pick,
+// Everyone's *effective* pick per match — a player's own Superpolla pick,
 // falling back to the earliest of their regular pollas that has one. Inherited
-// picks never bring their comodín along: the Súper Polla joker is chosen in
-// the Súper Polla itself (see SUPER_PRESET), a home-polla joker keeps doubling
+// picks never bring their comodín along: the Superpolla joker is chosen in
+// the Superpolla itself (see SUPER_PRESET), a home-polla joker keeps doubling
 // only at home. But nobody plays a round bare either: a player who never set a
 // comodín here gets it auto-applied to the last match of the round they have a
 // pick for. This is the single merge the score rebuild, the reveal UI and the
@@ -168,7 +168,7 @@ export interface SuperEffectivePick {
   predHome: number;
   predAway: number;
   joker: boolean;
-  fromHome: boolean; // inherited from a regular polla, not set in the Súper Polla
+  fromHome: boolean; // inherited from a regular polla, not set in the Superpolla
   autoJoker: boolean; // joker granted by the auto-comodín, not placed by hand
 }
 
@@ -319,7 +319,7 @@ export function getSuperEffectivePicks(
 }
 
 // Everyone's effective tournament bonus picks (champion, top scorer, …): the
-// player's own Súper Polla pick per category, falling back to the earliest of
+// player's own Superpolla pick per category, falling back to the earliest of
 // their regular pollas that has that category set.
 export interface SuperEffectiveBonus {
   value: string;
@@ -347,7 +347,7 @@ export function effectiveSuperBonusByUser(
     if (!memberIds.has(b.userId)) continue;
     let rank: number;
     if (b.groupId === sp.id) {
-      rank = -1; // the player's own Súper Polla pick always wins
+      rank = -1; // the player's own Superpolla pick always wins
     } else {
       const i = order.get(b.userId)?.indexOf(b.groupId) ?? -1;
       if (i < 0) continue; // not one of their regular pollas
@@ -410,7 +410,7 @@ export interface SuperRow {
 
 const NO_NAME = "(sin nombre)";
 
-// The Súper Polla leaderboard as a given viewer should see it: each player's
+// The Superpolla leaderboard as a given viewer should see it: each player's
 // chosen identity wins (real name or nickname); otherwise pollamates and the bot
 // keep their real names and everyone else is masked with a famous-footballer
 // alias — the same cross-polla anonymization used in the recaps.

@@ -1,4 +1,4 @@
-// One-shot full score rebuild (all pollas + the Súper Polla). Run after a
+// One-shot full score rebuild (all pollas + the Superpolla). Run after a
 // scoring-logic change ships so cached totals pick up the new rules without
 // waiting for the next result to land. Usage: tsx scripts/rebuild-scores.ts
 import { getDb } from "../lib/db";
@@ -11,7 +11,7 @@ rebuildAllScores(db, new Date());
 
 const sp = getSuperPolla(db);
 if (sp) {
-  console.log("Súper Polla after rebuild:");
+  console.log("Superpolla after rebuild:");
   for (const r of getLeaderboard(db, sp.id)) {
     console.log(
       ` ${String(r.total).padStart(4)} pts  ${r.displayName ?? "(sin nombre)"} (exact ${r.exactCount})`,

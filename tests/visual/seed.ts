@@ -106,10 +106,10 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
     .onConflictDoNothing()
     .run();
 
-  // --- Súper Polla coverage for the visual baseline ---
+  // --- Superpolla coverage for the visual baseline ---
   // a knockout match beyond the 24h window so it doesn't enter the regular
   // group home board (keeping those baselines stable), but is still predictable
-  // → it shows in the Súper Polla pick carousel
+  // → it shows in the Superpolla pick carousel
   const ko = db
     .insert(matches)
     .values({
@@ -206,7 +206,7 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
     .returning()
     .get();
 
-  // everyone picked in their home polla (the Súper Polla falls back to those):
+  // everyone picked in their home polla (the Superpolla falls back to those):
   // diego exact, cosima result + comodín, ana miss, masked rival exact
   db.insert(predictions)
     .values([
@@ -220,7 +220,7 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
     .onConflictDoNothing()
     .run();
 
-  // home-polla bonus picks (champion/top scorer) — the Súper Polla bonus form
+  // home-polla bonus picks (champion/top scorer) — the Superpolla bonus form
   // pre-fills from these until Diego sets his own
   db.insert(bonusPicks)
     .values([
@@ -230,7 +230,7 @@ export function seedVisualDb(dbPath: string): { groupId: string; superId: string
     .onConflictDoNothing()
     .run();
 
-  // enroll everyone in the Súper Polla; give Diego a decided identity so the
+  // enroll everyone in the Superpolla; give Diego a decided identity so the
   // pick page (not the first-open interstitial) renders
   syncSuperPollaMembership(db, at(0));
   const superId = getSuperPolla(db)!.id;

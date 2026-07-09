@@ -1,6 +1,6 @@
-// Tania's quarterfinals nudge: remind every player how the Súper Polla works
+// Tania's quarterfinals nudge: remind every player how the Superpolla works
 // now that the knockouts are getting serious — picks and the comodín are chosen
-// in the Súper Polla itself (jokers don't inherit from your polla), plus a
+// in the Superpolla itself (jokers don't inherit from your polla), plus a
 // recap of the remaining rules. Spanish first, English below, like the name
 // nudge. Dry-run by default; pass --send to actually deliver.
 // Usage: tsx scripts/send-super-reminder.ts [--send]
@@ -18,10 +18,10 @@ const SUBJECT = "Quarterfinals tonight: don't leave your comodín in your pocket
 const BODY = [
   "¡Quiubo! Tania here, reporting live from Bucaramanga.",
   "",
-  "The quarterfinals kick off tonight, and in the Súper Polla we're playing for la gloria total. Before the ref blows the whistle, a quick word — because rumor has it more than one of you has been leaving your comodín in your pocket:",
+  "The quarterfinals kick off tonight, and in the Superpolla we're playing for la gloria total. Before the ref blows the whistle, a quick word — because rumor has it more than one of you has been leaving your comodín in your pocket:",
   "",
-  "• The Súper Polla has its own picks. Go in and make yours. If you don't, we'll borrow the ones from your regular pollas as a courtesy (any of your pollas now, not just the first one you joined) — but where's the fun in that?",
-  "• The comodín does NOT tag along from your polla. You play it in the Súper Polla itself, on whichever match you fancy. One per round, and it doubles that match's points.",
+  "• The Superpolla has its own picks. Go in and make yours. If you don't, we'll borrow the ones from your regular pollas as a courtesy (any of your pollas now, not just the first one you joined) — but where's the fun in that?",
+  "• The comodín does NOT tag along from your polla. You play it in the Superpolla itself, on whichever match you fancy. One per round, and it doubles that match's points.",
   "• Forgot it? Tranquilo. We'll drop it on the last match you picked in the round. But picking it yourself is half the sabor.",
   "• Four comodines are still on the table: quarterfinals, semis, the third-place match, and the final. Yes, the third-place match gets its own. Don't say Tania never told you.",
   "• Scoring is Marcador o nada: 4 points for calling the result, 10 for the exact score. Quarters and semis count double, the final counts triple — and a comodín doubles all of that again. Do the math and fan yourself.",
@@ -37,8 +37,8 @@ const BODY = [
 async function main() {
   const db = getDb();
   const sp = getSuperPolla(db);
-  if (!sp) throw new Error("No Súper Polla in this DB");
-  // only actual players: Súper Polla members (auto-enrolled from real pollas)
+  if (!sp) throw new Error("No Superpolla in this DB");
+  // only actual players: Superpolla members (auto-enrolled from real pollas)
   const recipients = db
     .select({ email: users.email, name: users.displayName })
     .from(memberships)

@@ -24,7 +24,7 @@ const NOW = new Date("2026-06-11T20:00:00Z");
 const KICKOFF = new Date("2026-07-04T19:00:00Z");
 const AFTER = new Date("2026-07-04T22:00:00Z");
 
-describe("súper polla", () => {
+describe("superpolla", () => {
   let db: Db;
   let fd = 0;
 
@@ -124,7 +124,7 @@ describe("súper polla", () => {
     const beto = makeUser("beto@b.co");
     const polla = createGroup(db, ana.id, {
       name: "Oficina",
-      // clásica home polla — the súper polla re-scores under marcador o nada
+      // clásica home polla — the superpolla re-scores under marcador o nada
       scoringRules: { preset: "clasica", unicoAcertado: false },
     });
     joinGroup(db, beto.id, polla.id, NOW);
@@ -132,7 +132,7 @@ describe("súper polla", () => {
     const groupGame = finishedMatch("GROUP_STAGE", 1, 0);
     const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
 
-    // both nail the group game exactly (must NOT count in the súper polla)
+    // both nail the group game exactly (must NOT count in the superpolla)
     savePrediction(db, { userId: ana.id, groupId: polla.id, matchId: groupGame.id, predHome: 1, predAway: 0 }, NOW);
     savePrediction(db, { userId: beto.id, groupId: polla.id, matchId: groupGame.id, predHome: 1, predAway: 0 }, NOW);
     // QF: ana exact (2-1), beto right winner only (3-1)
@@ -248,7 +248,7 @@ describe("súper polla", () => {
     expect(superScore(ana.id)!.pointsMatches).toBe(60);
   });
 
-  it("a súper-polla pick overrides the home-polla copy", () => {
+  it("a superpolla pick overrides the home-polla copy", () => {
     const ana = makeUser("ana@b.co");
     const polla = createGroup(db, ana.id, {
       name: "Oficina",
@@ -336,7 +336,7 @@ describe("súper polla", () => {
     expect(superScore(ana.id)!.pointsMatches).toBe(40);
   });
 
-  it("getUserGroups never returns the súper polla", () => {
+  it("getUserGroups never returns the superpolla", () => {
     const ana = makeUser("ana@b.co");
     const polla = createGroup(db, ana.id, {
       name: "Oficina",
@@ -345,7 +345,7 @@ describe("súper polla", () => {
     const mine = getUserGroups(db, ana.id);
     expect(mine).toHaveLength(1);
     expect(mine[0].group.id).toBe(polla.id);
-    // but she IS enrolled in the súper polla under the hood
+    // but she IS enrolled in the superpolla under the hood
     expect(superMemberIds()).toContain(ana.id);
   });
 
@@ -492,7 +492,7 @@ describe("súper polla", () => {
     joinGroup(db, ana.id, second.id, new Date("2026-06-12T20:00:00Z"));
     const sp = getSuperPolla(db)!;
 
-    // champion set only in the later polla; top scorer set in the súper polla
+    // champion set only in the later polla; top scorer set in the superpolla
     saveBonusPick(db, { userId: ana.id, groupId: second.id, category: "champion", value: "Colombia" }, NOW);
     saveBonusPick(db, { userId: ana.id, groupId: sp.id, category: "top_scorer", value: "Luis Díaz" }, NOW);
 
@@ -501,7 +501,7 @@ describe("súper polla", () => {
     expect(mine.get("top_scorer")).toEqual({ value: "Luis Díaz", fromHome: false });
   });
 
-  it("rebuildAllScores refreshes the súper polla without scoring its own group", () => {
+  it("rebuildAllScores refreshes the superpolla without scoring its own group", () => {
     const ana = makeUser("ana@b.co");
     const polla = createGroup(db, ana.id, {
       name: "Oficina",
@@ -513,7 +513,7 @@ describe("súper polla", () => {
     rebuildAllScores(db, AFTER);
 
     expect(superScore(ana.id)!.pointsMatches).toBe(40); // exact ×2 × auto-comodín
-    // and there are no súper-polla-scoped predictions feeding it
+    // and there are no superpolla-scoped predictions feeding it
     syncSuperPollaMembership(db, AFTER);
   });
 });
