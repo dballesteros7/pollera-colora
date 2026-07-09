@@ -13,28 +13,24 @@ const SEND = process.argv.includes("--send");
 const FROM = process.env.EMAIL_FROM ?? "Tania de Pollera Colorá <onboarding@resend.dev>";
 const APP_URL = process.env.APP_URL ?? "https://pollera-colora.com";
 
-const SUBJECT = "Cuartos de final: no deje su comodín tirado — le habla Tania";
+const SUBJECT = "Quarterfinals tonight: don't leave your comodín in your pocket — Tania";
 
 const BODY = [
-  "¡Quiubo! Le habla Tania, desde Bucaramanga.",
+  "¡Quiubo! Tania here, reporting live from Bucaramanga.",
   "",
-  "Esta noche arrancan los cuartos de final, y en la Súper Polla se juega la gloria total. Antes de que pite el árbitro, repasemos las reglas — que me contaron que a más de uno se le está quedando el comodín en el bolsillo:",
+  "The quarterfinals kick off tonight, and in the Súper Polla we're playing for la gloria total. Before the ref blows the whistle, a quick word — because rumor has it more than one of you has been leaving your comodín in your pocket:",
   "",
-  "• La Súper Polla tiene sus propios pronósticos: entre y marque los suyos. Si no marca, usamos los de sus pollas de siempre como cortesía (ahora de cualquiera de sus pollas, no solo la primera).",
-  "• El comodín NO se hereda de su polla: se activa en la Súper Polla, en el pronóstico del partido que usted elija. Uno por ronda, dobla los puntos de ese partido.",
-  "• ¿Se le olvida? Tranquilo: se lo aplicamos solito al último partido que tenga pronosticado de la ronda. Pero elegirlo usted mismo es la gracia.",
-  "• Quedan 4 comodines por jugar: cuartos, semifinales, tercer puesto y final.",
-  "• Se puntúa Marcador o nada: 4 pts por acertar el resultado, 10 por el marcador exacto (en los 90 minutos). Cuartos y semis multiplican ×2, la final ×3 — con comodín, eso se dobla otra vez.",
-  "• Los pronósticos de campeón, goleador y demás ya cerraron; los partidos se revelan con el pitazo inicial, con su detalle de puntos.",
+  "• The Súper Polla has its own picks. Go in and make yours. If you don't, we'll borrow the ones from your regular pollas as a courtesy (any of your pollas now, not just the first one you joined) — but where's the fun in that?",
+  "• The comodín does NOT tag along from your polla. You play it in the Súper Polla itself, on whichever match you fancy. One per round, and it doubles that match's points.",
+  "• Forgot it? Tranquilo. We'll drop it on the last match you picked in the round. But picking it yourself is half the sabor.",
+  "• Four comodines are still on the table: quarterfinals, semis, the third-place match, and the final. Yes, the third-place match gets its own. Don't say Tania never told you.",
+  "• Scoring is Marcador o nada: 4 points for calling the result, 10 for the exact score (in the 90 minutes). Quarters and semis count double, the final counts triple — and a comodín doubles all of that again. Do the math and fan yourself.",
+  "• Champion, goleador and the other big calls are locked. Everyone's picks go public at kickoff, with the points spelled out match by match.",
   "",
-  `Su comodín lo espera aquí: ${APP_URL}`,
+  `Your comodín is waiting for you here: ${APP_URL}`,
   "",
-  "Nos vemos en la tabla,",
+  "See you at the top of the table (well, one of us),",
   "Tania",
-  "",
-  "—",
-  "",
-  "(English) Hi! Tania here, from Bucaramanga. The quarterfinals kick off tonight, and the Súper Polla plays for ultimate glory. Quick rules recap: the Súper Polla has its own picks — go make yours; if you don't, we fall back to your regular pollas' picks as a courtesy (now from any of your pollas, not just the first). The comodín is NOT inherited from your polla: you switch it on in the Súper Polla, on the match you choose — one per round, it doubles that match. Forget it and it auto-applies to the last match of the round you have a pick for, but choosing it yourself is the fun part. Four comodines are still in play: quarters, semis, third place, and the final. Scoring is Marcador o nada: 4 pts for the right result, 10 for the exact score (in 90 minutes); quarters and semis count ×2, the final ×3 — a comodín doubles that again. Champion/top-scorer picks are closed, and everyone's picks are revealed at kickoff. Your comodín is waiting at the link above.",
 ].join("\n");
 
 async function main() {
