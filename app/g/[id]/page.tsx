@@ -23,6 +23,7 @@ import {
   bonusLocked,
   bonusDeadline,
   BONUS_CATEGORIES,
+  BONUS_LATE_FILL_CLOSE,
   getKnownTeams,
 } from "@/lib/bonus";
 import { featuredRecapRound } from "@/lib/recap";
@@ -168,6 +169,12 @@ export default async function GroupPage({
       effectiveSuperBonusByUser(db).get(user.id) ??
       new Map<string, { value: string; fromHome: boolean }>();
     const bonusOpen = !bonusLocked(group, now);
+    // past the deadline, categories the player never picked anywhere can still
+    // be filled — first time only — until the late-fill close
+    const lateFillCats =
+      !bonusOpen && now.getTime() < BONUS_LATE_FILL_CLOSE.getTime()
+        ? BONUS_CATEGORIES.filter((c) => !effBonus.get(c.id)?.value)
+        : [];
     const teams = getKnownTeams(db);
     const knockouts = getAllMatches(db).filter((m) => isKnockoutStage(m.stage));
     const myPicks =
@@ -585,19 +592,62 @@ export default async function GroupPage({
                 />
               </FeedbackForm>
             ) : (
-              <div className="pc-card pc-card--pad-lg pc-flow" style={{ gap: 8 }}>
-                {BONUS_CATEGORIES.map((cat) => {
-                  const eff = effBonus.get(cat.id)?.value;
-                  return (
-                    <div key={cat.id} className="pc-match__pick" style={{ marginTop: 0, paddingTop: 0, borderTop: "none" }}>
-                      <span>{t(lo, BONUS_KEY[cat.id])}</span>
-                      <b className="pc-pick">
-                        {eff ? (cat.team ? teamName(eff, lo) : eff) : t(lo, "b.none")}
-                      </b>
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                <div className="pc-card pc-card--pad-lg pc-flow" style={{ gap: 8 }}>
+                  {BONUS_CATEGORIES.map((cat) => {
+                    const eff = effBonus.get(cat.id)?.value;
+                    return (
+                      <div key={cat.id} className="pc-match__pick" style={{ marginTop: 0, paddingTop: 0, borderTop: "none" }}>
+                        <span>{t(lo, BONUS_KEY[cat.id])}</span>
+                        <b className="pc-pick">
+                          {eff ? (cat.team ? teamName(eff, lo) : eff) : t(lo, "b.none")}
+                        </b>
+                      </div>
+                    );
+                  })}
+                </div>
+                {lateFillCats.length > 0 && (
+                  <FeedbackForm
+                    action={saveBonusPicksAction}
+                    doneMsg={t(lo, "ui.saved")}
+                    errMsg={t(lo, "ui.lockedErr")}
+                    className="pc-card pc-card--pad-lg pc-flow"
+                  >
+                    <input type="hidden" name="groupId" value={group.id} />
+                    <p className="pc-hint" style={{ margin: 0 }}>{t(lo, "super.bonusLateFill")}</p>
+                    {lateFillCats.map((cat) => (
+                      <div className="pc-field" key={cat.id}>
+                        <label className="pc-label" htmlFor={`pick_${cat.id}`}>
+                          {t(lo, BONUS_KEY[cat.id])}{" "}
+                          <span className="pc-badge pc-badge--points">+{t(lo, "s.pts", { n: SUPER_PRESET.bonusPoints[cat.id] })}</span>
+                        </label>
+                        {cat.team ? (
+                          <select id={`pick_${cat.id}`} name={`pick_${cat.id}`} className="pc-input" defaultValue="">
+                            <option value="">{t(lo, "b.none")}</option>
+                            {teams.map((team) => (
+                              <option key={team} value={team}>{teamName(team, lo)}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            id={`pick_${cat.id}`}
+                            name={`pick_${cat.id}`}
+                            className="pc-input"
+                            defaultValue=""
+                            placeholder={t(lo, "b.playerPh")}
+                            maxLength={60}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    <PendingButton
+                      label={t(lo, "b.save")}
+                      pendingLabel={t(lo, "ui.saving")}
+                      className="pc-btn pc-btn--primary pc-btn--block"
+                    />
+                  </FeedbackForm>
+                )}
+              </>
             )}
           </section>
 

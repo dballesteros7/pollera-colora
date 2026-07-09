@@ -19,6 +19,12 @@ export class BonusLockedError extends Error {}
 // set an *earlier* bonusLockAt, but never a later one.
 export const BONUS_CLOSE = new Date("2026-07-03T22:00:00Z");
 
+// The Súper Polla door stays ajar a little longer for *first-time* picks: a
+// player who never made a category's pick anywhere may still add it there —
+// insert only, never edit or delete, so late information can't move existing
+// bets. Closes for good between the quarterfinals and the semis.
+export const BONUS_LATE_FILL_CLOSE = new Date("2026-07-13T22:00:00Z");
+
 // The effective bonus deadline: the earlier of the group-phase close and any
 // per-group override. There is always a deadline now (the group phase always
 // ends), so bonus is no longer open-forever when an organizer leaves it unset.
@@ -42,6 +48,9 @@ export function saveBonusPick(
     groupId: string;
     category: BonusCategory;
     value: string;
+    // late fill: the caller vouches this is a first-time pick (the player has
+    // no value for the category anywhere). Insert-only past the deadline.
+    lateFill?: boolean;
   },
   now = new Date(),
 ) {
@@ -52,7 +61,29 @@ export function saveBonusPick(
     .get();
   if (!group) throw new Error("Group not found");
   if (bonusLocked(group, now)) {
-    throw new BonusLockedError("Los pronósticos de torneo ya cerraron.");
+    const value = opts.value.trim();
+    if (
+      !opts.lateFill ||
+      !value ||
+      now.getTime() >= BONUS_LATE_FILL_CLOSE.getTime()
+    ) {
+      throw new BonusLockedError("Los pronósticos de torneo ya cerraron.");
+    }
+    // never overwrite: if a row exists after all, the late fill is a no-op
+    return (
+      db
+        .insert(bonusPicks)
+        .values({
+          userId: opts.userId,
+          groupId: opts.groupId,
+          category: opts.category,
+          value,
+          updatedAt: now,
+        })
+        .onConflictDoNothing()
+        .returning()
+        .get() ?? null
+    );
   }
   const value = opts.value.trim();
   if (!value) {
