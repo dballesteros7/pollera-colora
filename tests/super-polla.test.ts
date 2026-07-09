@@ -5,12 +5,14 @@ import { createDb, type Db } from "../lib/db";
 import { users, matches, scores, memberships } from "../lib/db/schema";
 import { createGroup, joinGroup, getUserGroups } from "../lib/groups";
 import { savePrediction } from "../lib/predictions";
+import { saveBonusPick } from "../lib/bonus";
 import {
   ensureSuperPolla,
   getSuperPolla,
   getSuperEffectivePicks,
+  effectiveSuperBonusByUser,
   getSuperIdentity,
-  homePollaIdOf,
+  regularPollaIdsOf,
   setSuperIdentity,
   superLeaderboard,
   syncSuperPollaMembership,
@@ -40,13 +42,18 @@ describe("súper polla", () => {
   }
 
   // a finished match in `stage` with regulation score regHome–regAway
-  function finishedMatch(stage: string, regHome: number, regAway: number) {
+  function finishedMatch(
+    stage: string,
+    regHome: number,
+    regAway: number,
+    kickoffUtc = KICKOFF,
+  ) {
     const m = db
       .insert(matches)
       .values({
         fdId: ++fd,
         stage,
-        kickoffUtc: KICKOFF,
+        kickoffUtc,
         homeTeam: "Mexico",
         awayTeam: "Colombia",
         status: "FINISHED",
@@ -134,31 +141,109 @@ describe("súper polla", () => {
 
     rebuildSuperPollaScores(db, AFTER);
 
-    // marcador o nada: exact 10, result 4, QF multiplier ×2
-    expect(superScore(ana.id)!.pointsMatches).toBe(20); // 10 × 2
+    // marcador o nada: exact 10, result 4, QF multiplier ×2 — and the QF pick
+    // is each player's only one in the round, so the auto-comodín doubles it
+    expect(superScore(ana.id)!.pointsMatches).toBe(40); // 10 × 2 × 2
     expect(superScore(ana.id)!.exactCount).toBe(1);
-    expect(superScore(beto.id)!.pointsMatches).toBe(8); // 4 × 2
+    expect(superScore(beto.id)!.pointsMatches).toBe(16); // 4 × 2 × 2
     expect(superScore(beto.id)!.exactCount).toBe(0);
   });
 
-  it("falls back to the home-polla joker until a súper pick is made", () => {
+  it("an inherited pick never brings its home-polla comodín along", () => {
     const ana = makeUser("ana@b.co");
     const polla = createGroup(db, ana.id, {
       name: "Oficina",
       scoringRules: { preset: "escalonada", unicoAcertado: false },
     });
-    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
-    // exact pick with the joker on it in the home polla (no súper pick yet)
+    const early = finishedMatch("QUARTER_FINALS", 2, 1, KICKOFF);
+    const late = finishedMatch(
+      "QUARTER_FINALS",
+      2,
+      0,
+      new Date(KICKOFF.getTime() + 24 * 3600 * 1000),
+    );
+    // exact pick with the joker on it in the home polla (no súper picks):
+    // the pick falls through, the joker stays home (it doubles only there) —
+    // instead the auto-comodín lands on the round's LAST picked match
     savePrediction(
       db,
-      { userId: ana.id, groupId: polla.id, matchId: quarter.id, predHome: 2, predAway: 1, joker: true, allowJoker: true },
+      { userId: ana.id, groupId: polla.id, matchId: early.id, predHome: 2, predAway: 1, joker: true, allowJoker: true },
+      NOW,
+    );
+    savePrediction(
+      db,
+      { userId: ana.id, groupId: polla.id, matchId: late.id, predHome: 1, predAway: 0 },
       NOW,
     );
 
     rebuildSuperPollaScores(db, AFTER);
 
-    // exact 10 × QF multiplier 2 × joker 2 = 40
-    expect(superScore(ana.id)!.pointsMatches).toBe(40);
+    // early: exact 10 × QF 2 = 20 (home joker ignored); late: result 4 × QF 2
+    // × auto-comodín 2 = 16. An inherited joker would have made early 40.
+    expect(superScore(ana.id)!.pointsMatches).toBe(36);
+  });
+
+  it("a forgotten comodín lands on the last match of the round you picked", () => {
+    const ana = makeUser("ana@b.co");
+    const polla = createGroup(db, ana.id, {
+      name: "Oficina",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    });
+    const first = finishedMatch("QUARTER_FINALS", 1, 0, KICKOFF);
+    const second = finishedMatch(
+      "QUARTER_FINALS",
+      2,
+      0,
+      new Date(KICKOFF.getTime() + 24 * 3600 * 1000),
+    );
+    const unpicked = finishedMatch(
+      "QUARTER_FINALS",
+      3,
+      0,
+      new Date(KICKOFF.getTime() + 48 * 3600 * 1000),
+    );
+    // both picks exact, no joker anywhere; the round's literal last match is
+    // never picked, so the auto-comodín falls on the last one ana DID pick
+    savePrediction(db, { userId: ana.id, groupId: polla.id, matchId: first.id, predHome: 1, predAway: 0 }, NOW);
+    savePrediction(db, { userId: ana.id, groupId: polla.id, matchId: second.id, predHome: 2, predAway: 0 }, NOW);
+
+    rebuildSuperPollaScores(db, AFTER);
+
+    // first: 10 × 2 = 20; second: 10 × 2 × auto-comodín 2 = 40
+    expect(superScore(ana.id)!.pointsMatches).toBe(60);
+
+    const picks = getSuperEffectivePicks(db, [first.id, second.id, unpicked.id]);
+    expect(picks.get(first.id)![0].joker).toBe(false);
+    expect(picks.get(second.id)![0].joker).toBe(true);
+    expect(picks.get(unpicked.id)).toBeUndefined();
+  });
+
+  it("a home joker can't double-dip next to an own súper comodín in the same round", () => {
+    const ana = makeUser("ana@b.co");
+    const polla = createGroup(db, ana.id, {
+      name: "Oficina",
+      scoringRules: { preset: "escalonada", unicoAcertado: false },
+    });
+    const sp = getSuperPolla(db)!;
+    const qfA = finishedMatch("QUARTER_FINALS", 2, 1);
+    const qfB = finishedMatch("QUARTER_FINALS", 1, 0);
+
+    // own súper comodín on match A (exact), home-polla joker on match B (exact)
+    savePrediction(
+      db,
+      { userId: ana.id, groupId: sp.id, matchId: qfA.id, predHome: 2, predAway: 1, joker: true, allowJoker: true },
+      NOW,
+    );
+    savePrediction(
+      db,
+      { userId: ana.id, groupId: polla.id, matchId: qfB.id, predHome: 1, predAway: 0, joker: true, allowJoker: true },
+      NOW,
+    );
+
+    rebuildSuperPollaScores(db, AFTER);
+
+    // A: exact 10 × QF 2 × comodín 2 = 40; B falls through jokerless: 10 × 2 = 20
+    expect(superScore(ana.id)!.pointsMatches).toBe(60);
   });
 
   it("a súper-polla pick overrides the home-polla copy", () => {
@@ -213,7 +298,7 @@ describe("súper polla", () => {
     }, NOW);
     joinGroup(db, ana.id, second.id, new Date("2026-06-12T20:00:00Z"));
 
-    expect(homePollaIdOf(db, ana.id)).toBe(first.id);
+    expect(regularPollaIdsOf(db, ana.id)).toEqual([first.id, second.id]);
 
     const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
     // exact in the home polla, wrong in the later one — home polla must win out
@@ -222,8 +307,31 @@ describe("súper polla", () => {
 
     rebuildSuperPollaScores(db, AFTER);
 
-    expect(superScore(ana.id)!.pointsMatches).toBe(20); // exact from `first`, ×2
+    // exact from `first` ×2, doubled again by the auto-comodín (only QF pick)
+    expect(superScore(ana.id)!.pointsMatches).toBe(40);
     expect(superScore(ana.id)!.exactCount).toBe(1);
+  });
+
+  it("falls back to a later polla for matches the earliest one never picked", () => {
+    const ana = makeUser("ana@b.co");
+    const otro = makeUser("otro@b.co");
+    createGroup(db, ana.id, {
+      name: "Primera",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }, NOW);
+    const second = createGroup(db, otro.id, {
+      name: "Segunda",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }, NOW);
+    joinGroup(db, ana.id, second.id, new Date("2026-06-12T20:00:00Z"));
+
+    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
+    // ana only plays in the later polla — those bets must still count here
+    savePrediction(db, { userId: ana.id, groupId: second.id, matchId: quarter.id, predHome: 2, predAway: 1 }, NOW);
+
+    rebuildSuperPollaScores(db, AFTER);
+    // exact ×2 from `second`, doubled again by the auto-comodín (only QF pick)
+    expect(superScore(ana.id)!.pointsMatches).toBe(40);
   });
 
   it("getUserGroups never returns the súper polla", () => {
@@ -313,7 +421,7 @@ describe("súper polla", () => {
     expect(picks).toHaveLength(2);
   });
 
-  it("getSuperEffectivePicks ignores picks made only in a non-home polla", () => {
+  it("getSuperEffectivePicks shows picks made only in a later polla, earliest polla winning", () => {
     const ana = makeUser("ana@b.co");
     const otro = makeUser("otro@b.co");
     const first = createGroup(db, ana.id, {
@@ -325,32 +433,69 @@ describe("súper polla", () => {
       scoringRules: { preset: "clasica", unicoAcertado: false },
     }, NOW);
     joinGroup(db, ana.id, second.id, new Date("2026-06-12T20:00:00Z"));
-    expect(homePollaIdOf(db, ana.id)).toBe(first.id);
+    expect(regularPollaIdsOf(db, ana.id)).toEqual([first.id, second.id]);
 
-    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
-    // only picked in the later polla — the súper polla doesn't score that one,
-    // so it must not be displayed either
-    savePrediction(db, { userId: ana.id, groupId: second.id, matchId: quarter.id, predHome: 2, predAway: 1 }, NOW);
+    const qfA = finishedMatch("QUARTER_FINALS", 2, 1);
+    const qfB = finishedMatch("QUARTER_FINALS", 1, 0);
+    // A picked only in the later polla — displayed (and scored) from there;
+    // B picked in both — the earliest polla wins
+    savePrediction(db, { userId: ana.id, groupId: second.id, matchId: qfA.id, predHome: 2, predAway: 1 }, NOW);
+    savePrediction(db, { userId: ana.id, groupId: first.id, matchId: qfB.id, predHome: 1, predAway: 0 }, NOW);
+    savePrediction(db, { userId: ana.id, groupId: second.id, matchId: qfB.id, predHome: 3, predAway: 3 }, NOW);
 
-    const picks = getSuperEffectivePicks(db, [quarter.id]).get(quarter.id) ?? [];
-    expect(picks.find((p) => p.userId === ana.id)).toBeUndefined();
+    const forA = getSuperEffectivePicks(db, [qfA.id, qfB.id]).get(qfA.id) ?? [];
+    expect(forA.find((p) => p.userId === ana.id)).toMatchObject({ predHome: 2, predAway: 1, fromHome: true });
+    const forB = getSuperEffectivePicks(db, [qfA.id, qfB.id]).get(qfB.id) ?? [];
+    expect(forB.find((p) => p.userId === ana.id)).toMatchObject({ predHome: 1, predAway: 0, fromHome: true });
   });
 
-  it("getSuperEffectivePicks carries the joker of whichever pick is effective", () => {
+  it("getSuperEffectivePicks strips inherited jokers but keeps own súper ones", () => {
     const ana = makeUser("ana@b.co");
     const polla = createGroup(db, ana.id, {
       name: "Oficina",
       scoringRules: { preset: "escalonada", unicoAcertado: false },
     });
-    const quarter = finishedMatch("QUARTER_FINALS", 2, 1);
+    const sp = getSuperPolla(db)!;
+    const qfA = finishedMatch("QUARTER_FINALS", 2, 1);
+    const qfB = finishedMatch("QUARTER_FINALS", 1, 0);
     savePrediction(
       db,
-      { userId: ana.id, groupId: polla.id, matchId: quarter.id, predHome: 2, predAway: 1, joker: true, allowJoker: true },
+      { userId: ana.id, groupId: polla.id, matchId: qfA.id, predHome: 2, predAway: 1, joker: true, allowJoker: true },
+      NOW,
+    );
+    savePrediction(
+      db,
+      { userId: ana.id, groupId: sp.id, matchId: qfB.id, predHome: 1, predAway: 0, joker: true, allowJoker: true },
       NOW,
     );
 
-    const picks = getSuperEffectivePicks(db, [quarter.id]).get(quarter.id)!;
-    expect(picks[0]).toMatchObject({ userId: ana.id, joker: true, fromHome: true });
+    const inherited = getSuperEffectivePicks(db, [qfA.id, qfB.id]).get(qfA.id)!;
+    expect(inherited[0]).toMatchObject({ userId: ana.id, joker: false, fromHome: true });
+    const own = getSuperEffectivePicks(db, [qfA.id, qfB.id]).get(qfB.id)!;
+    expect(own[0]).toMatchObject({ userId: ana.id, joker: true, fromHome: false });
+  });
+
+  it("bonus picks fall back across pollas, own súper pick first", () => {
+    const ana = makeUser("ana@b.co");
+    const otro = makeUser("otro@b.co");
+    createGroup(db, ana.id, {
+      name: "Primera",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }, NOW);
+    const second = createGroup(db, otro.id, {
+      name: "Segunda",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }, NOW);
+    joinGroup(db, ana.id, second.id, new Date("2026-06-12T20:00:00Z"));
+    const sp = getSuperPolla(db)!;
+
+    // champion set only in the later polla; top scorer set in the súper polla
+    saveBonusPick(db, { userId: ana.id, groupId: second.id, category: "champion", value: "Colombia" }, NOW);
+    saveBonusPick(db, { userId: ana.id, groupId: sp.id, category: "top_scorer", value: "Luis Díaz" }, NOW);
+
+    const mine = effectiveSuperBonusByUser(db).get(ana.id)!;
+    expect(mine.get("champion")).toEqual({ value: "Colombia", fromHome: true });
+    expect(mine.get("top_scorer")).toEqual({ value: "Luis Díaz", fromHome: false });
   });
 
   it("rebuildAllScores refreshes the súper polla without scoring its own group", () => {
@@ -364,7 +509,7 @@ describe("súper polla", () => {
 
     rebuildAllScores(db, AFTER);
 
-    expect(superScore(ana.id)!.pointsMatches).toBe(20);
+    expect(superScore(ana.id)!.pointsMatches).toBe(40); // exact ×2 × auto-comodín
     // and there are no súper-polla-scoped predictions feeding it
     syncSuperPollaMembership(db, AFTER);
   });
