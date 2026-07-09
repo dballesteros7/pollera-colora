@@ -4,9 +4,10 @@
 // recap of the remaining rules. Spanish first, English below, like the name
 // nudge. Dry-run by default; pass --send to actually deliver.
 // Usage: tsx scripts/send-super-reminder.ts [--send]
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../lib/db";
-import { users } from "../lib/db/schema";
+import { memberships, users } from "../lib/db/schema";
+import { getSuperPolla } from "../lib/super-polla";
 
 const SEND = process.argv.includes("--send");
 const FROM = process.env.EMAIL_FROM ?? "Tania de Pollera Colorá <onboarding@resend.dev>";
@@ -37,10 +38,14 @@ const BODY = [
 
 async function main() {
   const db = getDb();
+  const sp = getSuperPolla(db);
+  if (!sp) throw new Error("No Súper Polla in this DB");
+  // only actual players: Súper Polla members (auto-enrolled from real pollas)
   const recipients = db
     .select({ email: users.email, name: users.displayName })
-    .from(users)
-    .where(eq(users.isBot, false))
+    .from(memberships)
+    .innerJoin(users, eq(memberships.userId, users.id))
+    .where(and(eq(memberships.groupId, sp.id), eq(users.isBot, false)))
     .all()
     .filter((u) => u.email.includes("@"));
 
