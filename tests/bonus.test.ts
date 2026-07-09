@@ -12,6 +12,7 @@ import {
   bonusDeadline,
   bonusLocked,
   BONUS_CLOSE,
+  BONUS_LATE_FILL_CLOSE,
 } from "../lib/bonus";
 import { rebuildGroupScores } from "../lib/scoring/score";
 
@@ -96,5 +97,73 @@ describe("bonus closes at the group phase end", () => {
   it("locks at the group-phase close even with no override", () => {
     expect(bonusLocked({ bonusLockAt: null }, before)).toBe(false);
     expect(bonusLocked({ bonusLockAt: null }, after)).toBe(true);
+  });
+});
+
+describe("late fill: first-time picks squeeze in after the deadline", () => {
+  let db: Db;
+  let userId: string;
+  let groupId: string;
+  const LOCKED = new Date(BONUS_CLOSE.getTime() + 3600_000);
+  const TOO_LATE = new Date(BONUS_LATE_FILL_CLOSE.getTime() + 3600_000);
+
+  beforeEach(() => {
+    db = createDb(":memory:");
+    userId = db
+      .insert(users)
+      .values({ id: randomUUID(), email: "a@b.co", createdAt: NOW })
+      .returning()
+      .get().id;
+    groupId = createGroup(db, userId, {
+      name: "Polla",
+      scoringRules: { preset: "clasica", unicoAcertado: false },
+    }).id;
+  });
+
+  it("inserts a first-time pick while the late-fill window is open", () => {
+    saveBonusPick(
+      db,
+      { userId, groupId, category: "best_gk", value: "Maignan", lateFill: true },
+      LOCKED,
+    );
+    expect(getUserBonusPicks(db, userId, groupId).get("best_gk")).toBe("Maignan");
+  });
+
+  it("never overwrites an existing pick", () => {
+    saveBonusPick(db, { userId, groupId, category: "champion", value: "Colombia" }, NOW);
+    saveBonusPick(
+      db,
+      { userId, groupId, category: "champion", value: "France", lateFill: true },
+      LOCKED,
+    );
+    expect(getUserBonusPicks(db, userId, groupId).get("champion")).toBe("Colombia");
+  });
+
+  it("can't delete: an empty late fill still throws", () => {
+    saveBonusPick(db, { userId, groupId, category: "champion", value: "Colombia" }, NOW);
+    expect(() =>
+      saveBonusPick(
+        db,
+        { userId, groupId, category: "champion", value: "", lateFill: true },
+        LOCKED,
+      ),
+    ).toThrow(BonusLockedError);
+    expect(getUserBonusPicks(db, userId, groupId).get("champion")).toBe("Colombia");
+  });
+
+  it("closes for good at the late-fill deadline", () => {
+    expect(() =>
+      saveBonusPick(
+        db,
+        { userId, groupId, category: "best_gk", value: "Maignan", lateFill: true },
+        TOO_LATE,
+      ),
+    ).toThrow(BonusLockedError);
+  });
+
+  it("without the lateFill flag the lock still holds", () => {
+    expect(() =>
+      saveBonusPick(db, { userId, groupId, category: "best_gk", value: "Maignan" }, LOCKED),
+    ).toThrow(BonusLockedError);
   });
 });

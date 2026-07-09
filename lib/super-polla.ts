@@ -169,6 +169,7 @@ export interface SuperEffectivePick {
   predAway: number;
   joker: boolean;
   fromHome: boolean; // inherited from a regular polla, not set in the Súper Polla
+  autoJoker: boolean; // joker granted by the auto-comodín, not placed by hand
 }
 
 export function effectiveSuperPicksByUser(
@@ -237,6 +238,7 @@ export function effectiveSuperPicksByUser(
       predAway: p.predAway,
       joker: fromHome ? false : p.joker,
       fromHome,
+      autoJoker: false,
     });
   };
 
@@ -283,7 +285,10 @@ export function effectiveSuperPicksByUser(
         lastByRound.set(round, p);
       }
     }
-    for (const p of lastByRound.values()) p.joker = true;
+    for (const p of lastByRound.values()) {
+      p.joker = true;
+      p.autoJoker = true;
+    }
   }
 
   // filter down to what the caller asked about
