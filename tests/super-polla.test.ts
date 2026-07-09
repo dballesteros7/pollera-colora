@@ -214,7 +214,9 @@ describe("súper polla", () => {
 
     const picks = getSuperEffectivePicks(db, [first.id, second.id, unpicked.id]);
     expect(picks.get(first.id)![0].joker).toBe(false);
-    expect(picks.get(second.id)![0].joker).toBe(true);
+    // the granted joker is flagged as automatic — the UI must not present it
+    // as a hand-placed comodín (it moves as more picks come in)
+    expect(picks.get(second.id)![0]).toMatchObject({ joker: true, autoJoker: true });
     expect(picks.get(unpicked.id)).toBeUndefined();
   });
 
@@ -472,7 +474,8 @@ describe("súper polla", () => {
     const inherited = getSuperEffectivePicks(db, [qfA.id, qfB.id]).get(qfA.id)!;
     expect(inherited[0]).toMatchObject({ userId: ana.id, joker: false, fromHome: true });
     const own = getSuperEffectivePicks(db, [qfA.id, qfB.id]).get(qfB.id)!;
-    expect(own[0]).toMatchObject({ userId: ana.id, joker: true, fromHome: false });
+    // hand-placed, not the auto-comodín
+    expect(own[0]).toMatchObject({ userId: ana.id, joker: true, fromHome: false, autoJoker: false });
   });
 
   it("bonus picks fall back across pollas, own súper pick first", () => {

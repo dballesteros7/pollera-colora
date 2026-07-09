@@ -250,8 +250,16 @@ export default async function GroupPage({
                   {t(lo, "super.copiedHint")}
                 </p>
               )}
+              {eff?.autoJoker && (
+                <p className="pc-hint" style={{ flexBasis: "100%", margin: 0 }}>
+                  {t(lo, "super.autoJokerHint")}
+                </p>
+              )}
               <label className="pc-comodin">
-                <input type="checkbox" name="joker" defaultChecked={eff?.joker ?? false} />
+                {/* only a comodín the player actually placed pre-checks the
+                    box — the auto-comodín stays virtual so a later save
+                    doesn't accidentally pin it to this match */}
+                <input type="checkbox" name="joker" defaultChecked={own?.joker ?? false} />
                 {t(lo, "comodin")}
               </label>
               {hasRealPollas && (
