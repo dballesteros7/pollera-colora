@@ -4,11 +4,13 @@ import type { Db } from "./db";
 import {
   bonusPicks,
   groups,
+  matches,
   memberships,
   predictions,
   superIdentities,
   users,
 } from "./db/schema";
+import { roundKey } from "./predictions";
 import type { ScoringRules } from "./scoring/presets";
 import { getLeaderboard } from "./leaderboard";
 import { assignAliases } from "./anon";
@@ -156,8 +158,10 @@ export function regularPollaIdsOf(db: Db, userId: string): string[] {
 // falling back to the earliest of their regular pollas that has one. Inherited
 // picks never bring their comodín along: the Súper Polla joker is chosen in
 // the Súper Polla itself (see SUPER_PRESET), a home-polla joker keeps doubling
-// only at home. This is the single merge both the score rebuild and the reveal
-// UI use, so the picks shown always match the points awarded.
+// only at home. But nobody plays a round bare either: a player who never set a
+// comodín here gets it auto-applied to the last match of the round they have a
+// pick for. This is the single merge the score rebuild, the reveal UI and the
+// pick pre-fill use, so the picks shown always match the points awarded.
 export interface SuperEffectivePick {
   userId: string;
   matchId: number;
@@ -188,13 +192,23 @@ export function effectiveSuperPicksByUser(
 
   const order = pollaOrderByUser(db);
 
+  // the merge always runs over every knockout match — the auto-comodín needs
+  // whole-round context — and is filtered to the requested matches at the end
+  const knockout = db
+    .select()
+    .from(matches)
+    .all()
+    .filter((m) => isKnockoutStage(m.stage));
+  const knockoutIds = knockout.map((m) => m.id);
+  if (knockoutIds.length === 0) return out;
+
   const own = db
     .select()
     .from(predictions)
     .where(
       and(
         eq(predictions.groupId, sp.id),
-        inArray(predictions.matchId, matchIds),
+        inArray(predictions.matchId, knockoutIds),
       ),
     )
     .all();
@@ -207,7 +221,7 @@ export function effectiveSuperPicksByUser(
           .where(
             and(
               inArray(predictions.groupId, regularGroupIds),
-              inArray(predictions.matchId, matchIds),
+              inArray(predictions.matchId, knockoutIds),
             ),
           )
           .all()
@@ -243,7 +257,45 @@ export function effectiveSuperPicksByUser(
     bestRank.set(key, rank);
     put(p, true);
   }
-  return out;
+
+  // auto-comodín: everyone plays a joker every knockout round. If a player
+  // never switched one on here, it lands on the last match of the round they
+  // have a pick for (latest kickoff, then highest id for safety — knockout
+  // games never kick off together).
+  const matchById = new Map(knockout.map((m) => [m.id, m]));
+  for (const byMatch of out.values()) {
+    const ownJokerRounds = new Set<string>();
+    for (const p of byMatch.values()) {
+      if (p.joker) ownJokerRounds.add(roundKey(matchById.get(p.matchId)!));
+    }
+    const lastByRound = new Map<string, SuperEffectivePick>();
+    for (const p of byMatch.values()) {
+      const m = matchById.get(p.matchId)!;
+      const round = roundKey(m);
+      if (ownJokerRounds.has(round)) continue;
+      const cur = lastByRound.get(round);
+      const curM = cur ? matchById.get(cur.matchId)! : null;
+      if (
+        !curM ||
+        m.kickoffUtc.getTime() > curM.kickoffUtc.getTime() ||
+        (m.kickoffUtc.getTime() === curM.kickoffUtc.getTime() && m.id > curM.id)
+      ) {
+        lastByRound.set(round, p);
+      }
+    }
+    for (const p of lastByRound.values()) p.joker = true;
+  }
+
+  // filter down to what the caller asked about
+  const wanted = new Set(matchIds);
+  const filtered = new Map<string, Map<number, SuperEffectivePick>>();
+  for (const [userId, byMatch] of out) {
+    const kept = new Map(
+      [...byMatch].filter(([matchId]) => wanted.has(matchId)),
+    );
+    if (kept.size > 0) filtered.set(userId, kept);
+  }
+  return filtered;
 }
 
 // the same merge, shaped per match for the reveal UI. Only call this for
